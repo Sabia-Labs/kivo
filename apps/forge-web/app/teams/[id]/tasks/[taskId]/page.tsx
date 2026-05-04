@@ -6,19 +6,21 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Loader2,
-  ListTodo,
   Trash2,
   MessageSquare,
-  Users,
-  Activity,
-  ClipboardList,
-  CheckSquare,
-  FileCheck
+  Check,
+  Edit2,
+  X,
+  Info
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { Team, Task, Agent, Comment } from "@/lib/types";
-import { Button, CommentsList } from "@/components/shared-ui";
+import { CommentsList } from "@/components/shared-ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export default function TaskPage() {
   const { token, isLoading: authLoading } = useAuth();
@@ -31,11 +33,16 @@ export default function TaskPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [team, setTeam]         = useState<Team | null>(null);
   const [task, setTask]         = useState<Task | null>(null);
+  const [request, setRequest]   = useState<any>(null);
   const [agents, setAgents]     = useState<Agent[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
 
   const [newComment, setNewComment] = useState("");
   const [isPostingComment, setIsPostingComment] = useState(false);
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [title, setTitle] = useState("");
+  const [showInstructionsModal, setShowInstructionsModal] = useState(false);
 
   const headers = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
@@ -65,8 +72,20 @@ export default function TaskPage() {
 
         setTeam(tm);
         setTask(t);
+        setTitle(t.title || "");
         setAgents(a);
         setComments(c);
+
+        if (t.requestId) {
+          fetch(`${API_BASE}/teams/${teamId}/requests/${t.requestId}`, { headers: headers() })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.data) {
+                setRequest(data.data);
+              }
+            })
+            .catch(err => console.error("Failed to load related request", err));
+        }
       })
       .catch((err) => {
         console.error("Failed to load task data:", err);
@@ -93,6 +112,27 @@ export default function TaskPage() {
       router.replace(`/teams/${teamId}`);
     } catch {
       toast.error("Failed to delete task");
+    }
+  };
+
+  const handleUpdateTitle = async () => {
+    if (!task || !title.trim() || title === task.title) {
+      setTitle(task?.title || "");
+      return;
+    }
+    
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${taskId}`, {
+        method: "PUT",
+        headers: headers(),
+        body: JSON.stringify({ ...task, title: title.trim() }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Title updated");
+      setTask({ ...task, title: title.trim() });
+    } catch {
+      toast.error("Failed to update title");
+      setTitle(task.title || "");
     }
   };
 
@@ -144,128 +184,246 @@ export default function TaskPage() {
 
   const assignedAgent = agents.find(a => a.id === task.assignedToId);
 
+  const statusLabel = task.status === "completed" 
+    ? (task.resolution === "success" ? "ok" : "failed") 
+    : task.status === "open" ? "created" : task.status.replace("_", " ");
+
+  const statusColorClass = task.status === "draft" ? "bg-muted text-muted-foreground" :
+    task.status === "open" ? "bg-blue-500/10 text-blue-500" :
+    task.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
+    task.status === "waiting_user" ? "bg-purple-500/10 text-purple-500" :
+    task.status === "completed" ? (
+      task.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+    ) :
+    task.status === "cancelled" ? "bg-gray-500/10 text-gray-500" :
+    "bg-emerald-500/10 text-emerald-500";
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-card/50 px-6 py-3">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href={`/teams/${teamId}`} className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="size-3.5" />
-              {team.name}
-            </Link>
-            <div className="h-4 w-px bg-border" />
-            <span className="text-[10px] font-mono font-medium text-muted-foreground">ID: {task.id.substring(0, 8)}</span>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="h-8 gap-2 border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground" onClick={handleDeleteTask}>
-              <Trash2 className="size-3.5" /> Delete
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
+      <div className="flex items-center justify-between mb-6">
+        <Link href={`/teams/${teamId}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="size-3.5" />
+          Back to Team
+        </Link>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleDeleteTask}
+          className="h-8 px-2 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+          title="Delete Task"
+        >
+          <Trash2 className="size-4" />
+        </Button>
+      </div>
+
+      <div className="mb-8 space-y-3">
+        {isEditingTitle ? (
+          <div className="flex items-center gap-2">
+            <Input 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              autoFocus
+              className="text-3xl font-bold h-14 w-full px-4"
+              placeholder="Task Title"
+              onKeyDown={e => {
+                if (e.key === "Enter") {
+                  setIsEditingTitle(false);
+                  handleUpdateTitle();
+                }
+              }}
+            />
+            <Button size="icon" variant="ghost" className="shrink-0" onClick={() => {
+              setIsEditingTitle(false);
+              handleUpdateTitle();
+            }}>
+              <Check className="size-6 text-emerald-500" />
             </Button>
           </div>
+        ) : (
+          <div className="flex items-center gap-2 group">
+            <h1 className="text-3xl font-bold tracking-tight px-1 flex items-center gap-2">
+              {task.title}
+            </h1>
+            <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity size-8 shrink-0" onClick={() => setIsEditingTitle(true)}>
+              <Edit2 className="size-4 text-muted-foreground" />
+            </Button>
+          </div>
+        )}
+        <div className="flex items-center gap-4">
+          <p className="text-xs text-muted-foreground flex items-center gap-2 px-1 flex-wrap">
+            <span className={cn("px-2 py-0.5 rounded-full font-medium capitalize", statusColorClass)}>
+              {statusLabel}
+            </span>
+            <span>•</span>
+            <span>
+              Created on {new Date(task.createdAt!).toLocaleString()} — executed by <span className="font-semibold text-foreground">{assignedAgent?.name || "Unassigned"}</span>
+            </span>
+            {request && (
+              <>
+                <span>•</span>
+                <Link href={`/teams/${teamId}/requests/${request.identifier || request.id}`} className="hover:underline flex items-center gap-1">
+                  Related request: <span className="font-mono text-primary">{request.identifier || request.id.substring(0,8)}</span>
+                </Link>
+              </>
+            )}
+          </p>
         </div>
       </div>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-10">
-            <div className="space-y-4">
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">{task.title}</h1>
+      <div className="flex flex-col gap-8 w-full">
+        {/* INPUT */}
+        <section className="rounded-xl border bg-card p-6 space-y-6">
+          <h2 className="text-lg font-semibold border-b pb-2">Input</h2>
+          <div className="grid gap-6">
+            <div className="space-y-2">
+              <Label>Prompt</Label>
+              <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+                {task.prompt || <span className="text-muted-foreground italic">No prompt provided.</span>}
+              </div>
             </div>
+            
+            <div className="flex items-center justify-end">
+              <Button variant="ghost" size="sm" onClick={() => setShowInstructionsModal(true)} className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground">
+                <Info className="size-3.5 mr-1.5" />
+                View passed instructions
+              </Button>
+            </div>
+          </div>
+        </section>
 
-            {task.plan && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest"><ListTodo className="size-3.5" /> Plan</div>
-                <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap leading-relaxed">
-                  {task.plan}
-                </div>
+        {/* EXECUTION */}
+        <section className="rounded-xl border bg-card p-6 space-y-6">
+          <h2 className="text-lg font-semibold border-b pb-2">Execution</h2>
+          <div className="grid gap-6">
+            {!task.plan && !task.taskList ? (
+              <div className="text-sm text-muted-foreground italic">
+                No execution plan or task list was necessary due to the simplicity of the task.
               </div>
-            )}
-
-            {task.taskList && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest"><CheckSquare className="size-3.5" /> Task List</div>
-                <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap leading-relaxed font-mono">
-                  {task.taskList}
-                </div>
-              </div>
-            )}
-
-            {task.executionLog && task.executionLog.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest"><Activity className="size-3.5" /> Execution Log</div>
-                <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap leading-relaxed bg-zinc-950 text-zinc-300 font-mono overflow-x-auto">
-                  {task.executionLog.map((log, idx) => (
-                    <div key={idx} className="border-b border-white/5 pb-3 mb-3 last:border-0 last:pb-0 last:mb-0">
-                      {log}
+            ) : (
+              <>
+                {task.plan && (
+                  <div className="space-y-2">
+                    <Label>Plan</Label>
+                    <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+                      {task.plan}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+                {task.taskList && (
+                  <div className="space-y-2">
+                    <Label>Task List</Label>
+                    <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap font-mono">
+                      {task.taskList}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
+          </div>
+        </section>
 
+        {/* RESULT */}
+        <section className="rounded-xl border bg-card p-6 space-y-6">
+          <h2 className="text-lg font-semibold border-b pb-2">Result</h2>
+          <div className="grid gap-6">
             {task.workSummary && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest"><ClipboardList className="size-3.5" /> Work Summary</div>
-                <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap leading-relaxed">
+              <div className="space-y-2">
+                <Label>Work Summary</Label>
+                <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
                   {task.workSummary}
                 </div>
               </div>
             )}
-
+            
             {task.result && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest"><FileCheck className="size-3.5" /> Deliverable / Result</div>
-                <div className="rounded-xl border border-border bg-card p-5 text-sm whitespace-pre-wrap leading-relaxed bg-primary/5 border-primary/20">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  Result
+                  {task.status === "completed" && (
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                      task.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                    )}>
+                      {task.resolution === "success" ? "Success" : "Failed"}
+                    </span>
+                  )}
+                </Label>
+                <div className={cn(
+                  "p-4 rounded-lg border text-sm whitespace-pre-wrap mt-1",
+                  task.status === "completed" && task.resolution !== "success"
+                    ? "bg-red-500/5 border-red-500/20"
+                    : "bg-emerald-500/5 border-emerald-500/20"
+                )}>
                   {task.result}
                 </div>
               </div>
             )}
+            
+            {!task.workSummary && !task.result && (
+              <div className="text-sm text-muted-foreground italic">
+                No result provided yet.
+              </div>
+            )}
+          </div>
+        </section>
 
-            <div className="pt-10 space-y-6">
-              <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground uppercase tracking-widest"><MessageSquare className="size-3.5" /> Comments</div>
-              <CommentsList comments={comments} agents={agents} onDelete={handleDeleteComment} />
-              <div className="flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-4">
-                <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Add a comment..." className="min-h-[80px] w-full resize-none bg-transparent text-sm outline-none" />
-                <div className="flex justify-end"><Button size="sm" onClick={handlePostComment} disabled={!newComment.trim() || isPostingComment}>{isPostingComment ? <Loader2 className="size-3.5 animate-spin" /> : "Post Comment"}</Button></div>
+        {/* Comments Area */}
+        <div className="grid grid-cols-1 w-full mt-6">
+          <section className="rounded-xl border bg-card flex flex-col h-[500px]">
+            <div className="border-b px-5 py-4 flex items-center gap-2 bg-muted/20">
+              <MessageSquare className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">Comments & Updates</h3>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+               <CommentsList comments={comments} agents={agents} onDelete={handleDeleteComment} />
+            </div>
+
+            <div className="p-4 border-t bg-muted/10">
+              <textarea
+                placeholder="Add a comment..."
+                className="w-full min-h-[80px] p-3 text-sm rounded-md border border-input bg-background resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                value={newComment}
+                onChange={e => setNewComment(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handlePostComment();
+                  }
+                }}
+              />
+              <div className="mt-2 flex justify-end">
+                <Button 
+                  size="sm" 
+                  disabled={!newComment.trim() || isPostingComment}
+                  onClick={handlePostComment}
+                >
+                  {isPostingComment ? <Loader2 className="size-3.5 animate-spin" /> : "Post Comment"}
+                </Button>
               </div>
             </div>
-          </div>
+          </section>
+        </div>
+      </div>
 
-          <div className="space-y-6">
-            <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Properties</h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-muted-foreground">Worked On By</label>
-                  <div className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                    {assignedAgent ? (
-                      <>
-                        <span>{assignedAgent.icon}</span>
-                        <span>{assignedAgent.name}</span>
-                      </>
-                    ) : (
-                      <span className="text-muted-foreground">Unassigned</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Team</h3>
-              <div className="flex items-center gap-3 p-2 -m-2">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Users className="size-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold truncate text-foreground">{team.name}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase font-mono">Team Task</p>
-                </div>
-              </div>
-            </section>
+      {showInstructionsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowInstructionsModal(false)}>
+          <div className="bg-card text-card-foreground border rounded-xl shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b flex items-center justify-between bg-muted/20">
+              <h3 className="font-semibold flex items-center gap-2"><Info className="size-4 text-muted-foreground" /> Context & Instructions</h3>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowInstructionsModal(false)}>
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="p-6 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed">
+              {task.instructions || <span className="text-muted-foreground italic">No instructions provided.</span>}
+            </div>
+            <div className="px-6 py-4 border-t bg-muted/20 flex justify-end">
+              <Button variant="outline" onClick={() => setShowInstructionsModal(false)}>Close</Button>
+            </div>
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

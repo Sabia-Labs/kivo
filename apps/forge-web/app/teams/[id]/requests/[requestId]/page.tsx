@@ -266,7 +266,7 @@ export default function RequestDetailsPage() {
   // Draft edit state
   const [title, setTitle] = useState("");
   const [requestDetails, setRequestDetails] = useState("");
-  const [requestCapabilities, setRequestCapabilities] = useState<string[]>([]);
+  const [capabilitiesWorkflow, setCapabilitiesWorkflow] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
 
@@ -304,7 +304,7 @@ export default function RequestDetailsPage() {
         setRequest(d);
         setTitle(d.title);
         setRequestDetails(d.requestDetails || "");
-        setRequestCapabilities(d.requestCapabilities || []);
+        setCapabilitiesWorkflow(d.capabilitiesWorkflow || []);
       } else {
         toast.error("Request not found");
         router.replace(`/teams/${teamId}`);
@@ -349,33 +349,7 @@ export default function RequestDetailsPage() {
     }
   };
 
-  const [newTargetType, setNewTargetType] = useState<"anyone" | "agent" | "role">("anyone");
-  const [newTargetAgentId, setNewTargetAgentId] = useState("");
-  const [newTargetRole, setNewTargetRole] = useState("");
-  const [isReassigning, setIsReassigning] = useState(false);
-
-  const handleReassign = async () => {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`${API_BASE}/teams/${teamId}/requests/${requestId}`, {
-        method: "PATCH",
-        headers: headers(),
-        body: JSON.stringify({ 
-          targetAgentId: newTargetType === "agent" ? newTargetAgentId || null : null,
-          targetRole: newTargetType === "role" ? newTargetRole || null : null,
-          status: "open" // Reset status to open to trigger retry
-        }),
-      });
-      if (!res.ok) throw new Error("Failed to reassign request");
-      toast.success("Request reassigned and retried");
-      setIsReassigning(false);
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const [showContextModal, setShowContextModal] = useState(false);
 
   const handleUpdateTitle = async () => {
     if (!title.trim()) return;
@@ -448,9 +422,24 @@ export default function RequestDetailsPage() {
   if (!request) return null;
 
   const isDraft = request.status === "draft";
-  const targetAgent = agents.find(a => a.id === request.targetAgentId);
-  const targetRoleName = roles.find(r => r.id === request.targetRole)?.name;
-  const assignedAgent = agents.find(a => a.id === request.assignedAgentId);
+  const getExecutorName = () => {
+    if (tasks && tasks.length > 0) {
+      const sortedTasks = [...tasks].sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const lastTask = sortedTasks[0];
+      if (lastTask.assignedAgentId) {
+        const agent = agents.find(a => a.id === lastTask.assignedAgentId);
+        if (agent) return agent.name;
+      }
+    }
+    const teamLeaderRole = roles.find(r => r.name.toLowerCase().includes('leader') || r.name.toLowerCase().includes('líder'));
+    if (teamLeaderRole) {
+      const leaderAgent = agents.find(a => a.roleId === teamLeaderRole.id);
+      if (leaderAgent) return leaderAgent.name;
+    }
+    return "Team Leader";
+  };
+
+  const executorName = getExecutorName();
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
@@ -551,91 +540,12 @@ export default function RequestDetailsPage() {
 
 
 
-              {/* Target and Assignee */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>{request.status === "completed" || request.status === "cancelled" || request.status === "failed" ? "Who was supposed to do it" : "Who is supposed to do it"}</Label>
-                    {!(request.status === "completed" && request.resolution === "success") && (
-                      <button 
-                        onClick={() => {
-                          setIsReassigning(!isReassigning);
-                          if (!isReassigning) {
-                            setNewTargetType(request.targetAgentId ? "agent" : request.targetRole ? "role" : "anyone");
-                            setNewTargetAgentId(request.targetAgentId || "");
-                            setNewTargetRole(request.targetRole || "");
-                          }
-                        }}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        {isReassigning ? "Cancel" : "Reassign & Retry"}
-                      </button>
-                    )}
-                  </div>
-                  {isReassigning ? (
-                    <div className="flex flex-col gap-3 p-3 bg-muted/30 rounded-lg border">
-                      <div className="flex gap-2">
-                        <select
-                          className="flex h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background"
-                          value={newTargetType}
-                          onChange={e => setNewTargetType(e.target.value as any)}
-                        >
-                          <option value="anyone">Anyone</option>
-                          <option value="agent">Specific Agent</option>
-                          <option value="role">Specific Role</option>
-                        </select>
-                        {newTargetType === "agent" && (
-                          <select
-                            className="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background"
-                            value={newTargetAgentId}
-                            onChange={e => setNewTargetAgentId(e.target.value)}
-                          >
-                            <option value="" disabled>Select Agent</option>
-                            {agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                          </select>
-                        )}
-                        {newTargetType === "role" && (
-                          <select
-                            className="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background"
-                            value={newTargetRole}
-                            onChange={e => setNewTargetRole(e.target.value)}
-                          >
-                            <option value="" disabled>Select Role</option>
-                            {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                          </select>
-                        )}
-                      </div>
-                      <Button size="sm" onClick={handleReassign} disabled={isSubmitting}>
-                        Confirm Retry
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
-                      <Bot className="size-5 text-muted-foreground" />
-                      <span className="text-sm font-medium">
-                        {targetAgent ? targetAgent.name : targetRoleName ? `Role: ${targetRoleName}` : "Anyone (Auto-assign)"}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{request.status === "completed" || request.status === "cancelled" || request.status === "failed" ? "Who last worked on it" : "Who is working on it"}</Label>
-                  <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
-                    <Bot className={cn("size-5", assignedAgent ? "text-primary" : "text-muted-foreground/50")} />
-                    <span className={cn("text-sm font-medium", !assignedAgent && "text-muted-foreground italic")}>
-                      {assignedAgent ? assignedAgent.name : "Unassigned"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               {/* Response */}
               {request.status !== "created" && request.response && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-2">
-                      Resolution Explanation
+                      Response
                       {request.status === "completed" && (
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
@@ -645,9 +555,15 @@ export default function RequestDetailsPage() {
                         </span>
                       )}
                     </Label>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1.5" title="Time of response">
-                      <Clock className="size-3" />
-                      {new Date(request.completedAt || request.updatedAt).toLocaleString()}
+                    <span className="text-xs text-muted-foreground flex items-center gap-3" title="Time of response">
+                      <span className="flex items-center gap-1">
+                        <Bot className="size-3" />
+                        {executorName}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {new Date(request.completedAt || request.updatedAt).toLocaleString()}
+                      </span>
                     </span>
                   </div>
                   <div className={cn(
@@ -661,36 +577,34 @@ export default function RequestDetailsPage() {
                 </div>
               )}
 
-              {/* Instructions Link */}
-              {request.instructions && (
-                <div className="flex items-center mt-[-8px]">
-                  <button
-                    onClick={() => setShowInstructionsModal(true)}
-                    className="text-xs text-muted-foreground hover:text-primary hover:underline flex items-center gap-1.5 transition-colors"
-                  >
-                    <Info className="size-3.5" />
-                    Instruções que o agente seguiu para cumprir com a requisição
-                  </button>
-                </div>
-              )}
 
-              {/* Capabilities */}
-              <div className="space-y-2">
-                <Label>{request.status === "completed" ? "Capabilities used" : "Suggested Capabilities"}</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {requestCapabilities.length === 0 ? (
-                    <span className="text-sm text-muted-foreground italic">None.</span>
-                  ) : (
-                    requestCapabilities.map(capId => {
-                      const cap = capabilities.find(c => c.identifier === capId);
-                      return (
-                        <span key={capId} className="px-3 py-1.5 text-xs rounded-full border bg-muted/50">
-                          {cap ? cap.name : capId}
-                        </span>
-                      );
-                    })
-                  )}
+
+              {/* Capabilities & State */}
+              <div className="flex items-center justify-between gap-4 w-full">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <Label className="shrink-0">{request.status === "completed" ? "Capabilities used" : "Suggested Capabilities"}</Label>
+                  <div className="flex items-center gap-2 overflow-x-auto flex-nowrap min-w-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                    {capabilitiesWorkflow.length === 0 ? (
+                      <span className="text-sm text-muted-foreground italic shrink-0">None.</span>
+                    ) : (
+                      capabilitiesWorkflow.map(capIdRaw => {
+                        const capId = typeof capIdRaw === 'object' && capIdRaw !== null ? (capIdRaw as any).identifier : String(capIdRaw);
+                        const capName = typeof capIdRaw === 'object' && capIdRaw !== null ? (capIdRaw as any).name : capId;
+                        const cap = capabilities.find(c => c.identifier === capId);
+                        return (
+                          <span key={capId} className="px-3 py-1 text-xs rounded-full border bg-muted/50 shrink-0 whitespace-nowrap">
+                            {cap ? cap.name : capName}
+                          </span>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
+                {request.state && request.state.length > 0 && (
+                  <Button variant="outline" size="sm" onClick={() => setShowContextModal(true)} className="h-7 px-3 text-xs shrink-0">
+                    Context / State
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -895,6 +809,25 @@ export default function RequestDetailsPage() {
         </div>
         
       </div>
+
+      {/* Context/State Modal */}
+      {showContextModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
+          <div className="bg-card w-full max-w-2xl max-h-[80vh] flex flex-col rounded-xl border shadow-lg overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="font-semibold text-lg">Context / State</h3>
+              <Button variant="ghost" size="icon" onClick={() => setShowContextModal(false)} className="size-8">
+                <X className="size-4" />
+              </Button>
+            </div>
+            <div className="p-4 overflow-y-auto text-sm font-mono whitespace-pre-wrap flex flex-col gap-2">
+              {request.state.map((s: string, i: number) => (
+                <div key={i} className="border-b last:border-0 border-border/50 pb-2 last:pb-0">{s}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Instructions Modal */}
       {showInstructionsModal && (

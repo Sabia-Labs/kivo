@@ -78,6 +78,21 @@ export function replyRoutingKey(sessionKey: string): string {
 }
 
 /**
+ * Returns RabbitMQ admin credentials configured for a specific workspace (tenant).
+ * Useful for the API to publish messages and wait for replies using the global admin account.
+ */
+export function getAdminCredentialsForWorkspace(workspaceId: string): RabbitMQCredentials {
+  return {
+    host:     AMQP_HOST,
+    amqpPort: AMQP_PORT,
+    vhost:    tenantVhost(workspaceId),
+    username: ADMIN_USER,
+    password: ADMIN_PASS,
+    exchange: tenantExchange(workspaceId),
+  };
+}
+
+/**
  * Makes an authenticated HTTP call to the RabbitMQ Management API.
  * Uses the built-in Basic Auth over HTTP (management plugin must be enabled).
  */

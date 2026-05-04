@@ -54,9 +54,10 @@ export function registerRequestTools(server: McpServer, actor: any, authHeader: 
       title: z.string().describe("A brief summary or title of what this request is about"),
       targetAgentId: z.string().uuid().describe("The ID of the target agent that will process this request"),
       requestDetails: z.string().optional().describe("Input data or context for the target agent (Markdown string)"),
-      instructions: z.string().optional().describe("Summary of instructions for the agent"),
+      capabilitiesWorkflow: z.any().optional().describe("Array of capability identifiers involved in this request"),
+      state: z.array(z.string()).optional().describe("Array of string contexts indicating the current state or relevant context"),
       priority: z.number().int().min(0).max(4).optional().describe("Priority level (0-4)"),
-      responseContract: z.string().optional().describe("Instructions on what the target agent should return (Markdown string)"),
+
       parentRequestId: z.string().optional().describe("If this request is a child of another request, provide the parent request identifier or UUID"),
     },
     async ({ teamId, ...rest }) => {

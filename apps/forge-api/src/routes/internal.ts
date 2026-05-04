@@ -8,7 +8,7 @@ import { provisionTenant } from "../lib/rabbitmq";
 import { teamCapabilities, tasks, requests, conversations, messages, activities } from "../db/schema";
 import { createTaskInternal } from "./tasks";
 import { randomBytes } from "crypto";
-import { publishToAgent, tenantVhost, tenantExchange } from "../lib/rabbitmq";
+import { publishToAgent, getAdminCredentialsForWorkspace } from "../lib/rabbitmq";
 import { desc, and, sql } from "drizzle-orm";
 import { assignAgentToRequest } from "../lib/agent-assignment";
 import { buildTeamRequestMessage } from "../lib/messages";
@@ -278,7 +278,6 @@ internalRouter.post(
           identifier,
           requesterUserId: SYSTEM_ACTOR.id,
           targetAgentId: capability.assignedAgentId,
-          assignedAgentId: targetAgentId,
           targetRole: capability.assignedRole,
           title: `Capability Execution: ${capability.name}`,
           requestDetails: requestDetails,
@@ -312,14 +311,7 @@ internalRouter.post(
          const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
          
          if (workspace) {
-           const rabbitCreds = {
-              host:     process.env.RABBITMQ_AMQP_HOST ?? "localhost",
-              amqpPort: Number(process.env.RABBITMQ_AMQP_PORT ?? 5672),
-              vhost:    tenantVhost(workspace.id),
-              username: process.env.RABBITMQ_ADMIN_USER ?? "admin",
-              password: process.env.RABBITMQ_ADMIN_PASSWORD ?? "admin",
-              exchange: tenantExchange(workspace.id),
-            };
+           const rabbitCreds = getAdminCredentialsForWorkspace(workspace.id);
             
             try {
               await publishToAgent(rabbitCreds, {

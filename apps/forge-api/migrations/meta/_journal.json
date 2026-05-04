@@ -36,6 +36,13 @@
       "when": 1777390639741,
       "tag": "0004_familiar_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1777867863662,
+      "tag": "0005_lonely_archangel",
+      "breakpoints": true
     }
   ]
 }

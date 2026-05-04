@@ -6,6 +6,7 @@ import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { createTaskSchema, updateTaskSchema, createCommentSchema, updateCommentSchema } from "../schemas/task-management.schema";
 import { z } from "zod";
+import { updateRequest } from "../controllers/requestsController";
 
 export const tasksRouter = Router();
 
@@ -21,6 +22,15 @@ tasksRouter.get("/by-team/:teamId", authMiddleware, async (req: Request, res: Re
       .from(tasks)
       .where(eq(tasks.teamId, String(req.params.teamId)))
       .orderBy(desc(tasks.createdAt));
+      
+    await Promise.all(rows.map(async (row) => {
+      if (row.requestId) {
+        const [reqRec] = await db.select({ state: requests.state }).from(requests).where(eq(requests.id, row.requestId));
+        if (reqRec && reqRec.state) {
+          (row as any).context = reqRec.state;
+        }
+      }
+    }));
     
     // We might want to include labels and types, let's keep it simple for now or fetch them.
     res.json(success(rows));
@@ -47,12 +57,15 @@ export async function createTaskInternal(input: any, actor: { id: string, type: 
         teamId: input.teamId,
         requestId: finalRequestId,
         title: input.title,
+        prompt: input.prompt,
+        instructions: input.instructions,
         plan: input.plan,
         taskList: input.taskList,
-        executionLog: input.executionLog,
         workSummary: input.workSummary,
         result: input.result,
         assignedToId: input.assignedToId,
+        status: input.status,
+        resolution: input.resolution,
       })
       .returning();
 
@@ -99,6 +112,13 @@ tasksRouter.get("/:id", authMiddleware, async (req: Request, res: Response, next
     if (!task) {
       res.status(404).json(failure("Task not found"));
       return;
+    }
+    
+    if (task.requestId) {
+      const [reqRec] = await db.select({ state: requests.state }).from(requests).where(eq(requests.id, task.requestId));
+      if (reqRec && reqRec.state) {
+        (task as any).context = reqRec.state;
+      }
     }
 
     res.json(success(task));
@@ -157,6 +177,20 @@ tasksRouter.put("/:id", authMiddleware, async (req: Request, res: Response, next
 
       return updated;
     });
+
+    if (result.status === "completed" && result.requestId) {
+      const resolution = result.resolution === "failed" ? "failed" : "success";
+      await updateRequest(
+        result.requestId,
+        {
+          status: "completed",
+          resolution,
+          response: result.result || "Task completed."
+        },
+        req.actor!.id,
+        req.actor!.type
+      );
+    }
 
     res.json(success(result));
   } catch (err: any) {

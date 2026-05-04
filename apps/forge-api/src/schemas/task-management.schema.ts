@@ -8,12 +8,15 @@ export const createTaskSchema = z.object({
   teamId: z.string().uuid(),
   requestId: z.string().nullable().optional(),
   title: z.string().min(1).max(200),
+  prompt: z.string().nullable().optional(),
+  instructions: z.string().nullable().optional(),
   plan: z.string().nullable().optional(),
   taskList: z.string().nullable().optional(),
-  executionLog: z.array(z.string()).nullable().optional(),
   workSummary: z.string().nullable().optional(),
   result: z.string().nullable().optional(),
   assignedToId: z.string().uuid().nullable().optional(),
+  status: z.enum(["open", "in_progress", "waiting_user", "completed", "cancelled"]).optional(),
+  resolution: z.enum(["success", "failed"]).nullable().optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial().omit({ teamId: true });

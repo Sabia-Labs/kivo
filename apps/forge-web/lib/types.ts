@@ -29,13 +29,19 @@ export interface Team {
 
 export interface Task {
   id: string;
+  teamId: string;
+  requestId?: string | null;
   title: string;
+  prompt?: string | null;
+  instructions?: string | null;
   plan?: string | null;
   taskList?: string | null;
-  executionLog?: string[] | null;
   workSummary?: string | null;
   result?: string | null;
   assignedToId?: string | null;
+  status: string;
+  resolution?: string | null;
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -51,7 +57,8 @@ export interface TeamRequest {
   targetAgentId: string;
   taskId?: string | null;
   inputData?: any | null;
-  responseContract?: string | null;
+  capabilitiesWorkflow?: any | null;
+  state?: string[] | null;
   status: RequestStatus;
   responseStatusCode?: number | null;
   responseMetadata?: any | null;

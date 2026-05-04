@@ -8,9 +8,7 @@ import { success, failure } from "../lib/response";
 import {
   publishToAgent,
   waitForReply,
-  tenantVhost,
-  tenantUser,
-  tenantExchange,
+  getAdminCredentialsForWorkspace,
 } from "../lib/rabbitmq";
 
 export const conversationsRouter = Router();
@@ -162,16 +160,7 @@ conversationsRouter.post("/:id/messages", async (req: Request, res: Response, ne
     const messageId = randomBytes(16).toString("hex");
     const sessionKey = conversationId; // ubiquitous language: sessionKey = conversationId
 
-    const rabbitCreds = {
-      host:     process.env.RABBITMQ_AMQP_HOST ?? "localhost",
-      amqpPort: Number(process.env.RABBITMQ_AMQP_PORT ?? 5672),
-      vhost:    tenantVhost(workspace.id),
-      // Use admin credentials — the admin user has full access to all vhosts.
-      // The tenant-user credentials are only for the consumer sidecar in the agent pod.
-      username: process.env.RABBITMQ_ADMIN_USER ?? "admin",
-      password: process.env.RABBITMQ_ADMIN_PASSWORD ?? "admin",
-      exchange: tenantExchange(workspace.id),
-    };
+    const rabbitCreds = getAdminCredentialsForWorkspace(workspace.id);
 
     try {
       await publishToAgent(rabbitCreds, {

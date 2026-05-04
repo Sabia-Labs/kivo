@@ -14,6 +14,8 @@ import {
   workspaceNamespace,
 } from "../k8s/provisioner";
 import { provisionTenant } from "../lib/rabbitmq";
+import { getTeamById } from "../controllers/teamsController";
+import { getAgentsByTeam } from "../controllers/agentsController";
 
 export const teamManagementRouter = Router();
 
@@ -38,10 +40,7 @@ teamManagementRouter.get("/", async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const [team] = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.id, teamId));
+    const team = await getTeamById(teamId);
 
     if (!team) {
       res.status(404).json(failure("Team not found"));
@@ -81,11 +80,7 @@ teamManagementRouter.get("/members", async (req: Request, res: Response, next: N
       return;
     }
 
-    const rows = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.teamId, teamId))
-      .orderBy(agents.createdAt);
+    const rows = await getAgentsByTeam(teamId);
 
     const sanitized = rows.map((a: any) => {
       const { gatewayToken: _gt, ...safeAgent } = a;
@@ -117,7 +112,7 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
 
     const input = createAgentSchema.parse({ ...req.body, teamId });
 
-    const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
+    const team = await getTeamById(teamId);
     if (!team) {
       res.status(404).json(failure("Team not found"));
       return;

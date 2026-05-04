@@ -4,11 +4,11 @@
 > **CRITICAL CONTEXT:** Whenever we discuss Process, Capabilities, Requests, and Tasks, these are **exclusive entities of the FORGE application** (which acts as the agent orchestration layer). 
 > You **MUST** use the **FORGE MCP** to manage these entities and their workflows. Do not confuse them with external systems or general concepts.
 
-This document explains how a Forge Team operates to fulfill requests using:
+This document explains how a Forge Team operates. The system no longer works based solely on requests. Instead, it operates using:
+- Requests (the user's desire and the orchestrating instrument for tasks)
+- Tasks (the fundamental unit of work for agents)
 - Capabilities (what the team can do)
 - Skills (what agents can do)
-- Tasks (what is being executed)
-- Requests (how agents collaborate)
 - Events (how work progresses)
 
 ---
@@ -92,41 +92,30 @@ Capability: `Write User Story`
 
 - Suggested triggers:
   - feature_requested
-
----
-
-### Event
-An Event is a fact that something happened.
-
-Events are used to:
-- Signal progress
-- Suggest next steps
-- Connect capabilities
-
-Examples:
-- feature_requested
-- user_story_written
-- bug_triaged
-- PR_created
-- PR_reviewed
-
-Events DO NOT force execution.
-Agents decide what to do next.
-
+  
 ---
 
 ### Task
-A Task represents work being executed.
+A Task is the fundamental unit of work for an agent (equivalent, for example, to Langgraph NODES). 
 
-A task is usually an instance of a Capability.
+Tasks are explicitly assigned to a specific agent who will execute the service and must mark the task status as `completed` when finished. 
 
 Each task has:
-- Goal
-- Inputs
-- Status (todo, in_progress, blocked, done)
-- Assignee
+- Prompt (the specific command of what to do)
+- Instructions (how to execute the task, including capability context and expected output)
+- Status:
+  - draft
+  - open
+  - in_progress
+  - waiting_user
+  - completed
+  - cancelled
+- Context (An array of strings where the request injects team context, request context, etc., at creation time)
+- Assignee (The specific agent executing the task)
 - Related capability
 - Produced events
+
+> **TODO:** Handle multi-step tasks. When the first task is closed, we need to think about how to continue the step-by-step execution of subsequent tasks for a multi-step request.
 
 #### Example
 
@@ -134,13 +123,12 @@ Task: `Write user story for feature X`
 - Capability: Write User Story
 - Status: in_progress
 - Assignee: Product Manager Agent
+- Context: ["Team context info...", "Request context info..."]
 
 ---
 
 ### Request
-A Request is how agents collaborate.
-
-It is a formal ask from one actor to another.
+A Request represents the user's desire and acts as the orchestrating instrument for Tasks. 
 
 Each request has:
 - Sender
@@ -153,10 +141,10 @@ Each request has:
   - waiting_user
   - completed
   - cancelled
-- Linked task
+- Linked tasks
 - Response (result)
 
-Requests are the backbone of coordination.
+Requests orchestrate the workflow by creating Tasks and injecting necessary context (team context, request context) into the Task's context array.
 
 ---
 
@@ -179,43 +167,43 @@ A human or agent creates a request to ask for work to be done.
 Example:
 > "Implement feature X"
 
-This creates:
-- A Request
-
-It does NOT automatically create a task.
+This creates a Request. The Request represents the overarching goal and acts as the orchestrator. It may require one or multiple Tasks to be fully resolved.
 
 ---
 
-### Step 2 — The Request is assigned
+### Step 2 — The Orchestrator Creates Tasks
 
-The Request is assigned to an Agent (either manually by a human or automatically by the system).
-The assigned Agent receives a push message via chat notifying them of the new Request with its ID.
+The system (the Orchestrator) processes the Request, determines what needs to be done, and creates Tasks. The orchestrator takes care of the request lifecycle, leaving the task as the final unit of work for the agents. The orchestrator injects the necessary context (team context, request context) into the tasks.
+
+---
+
+### Step 3 — The Task is assigned to an Agent
+
+The Task is assigned to a specific Agent. The assigned Agent receives a push message via chat notifying them of the new Task with its ID.
 
 > [!WARNING]
-> Agents are entirely reactive. You must wait for the incoming notification message for each new request. Polling for tasks, implementing a "heartbeat", or actively querying `list_requests` to find your own work is expressly forbidden to conserve tokens.
+> Agents are entirely reactive. You must wait for the incoming notification message for each new task. Polling for tasks, implementing a "heartbeat", or actively querying `list_tasks` to find your own work is expressly forbidden to conserve tokens.
 
-**CRITICAL**: The agent MUST use the Forge MCP `get_request` tool to fetch the details of this Request before proceeding.
-
----
-
-### Step 3 — The Agent creates a Task
-
-After evaluating the request, the assigned Agent MUST create a Task using the Forge MCP `create_task` tool to document their unit of work.
-
-```text
-Task: Implement feature X
-Status: in_progress
-Assignee: Team Lead Agent
-```
+**CRITICAL**: The agent MUST use the Forge MCP `get_task` tool to fetch the details of this Task before proceeding.
 
 ---
 
-### Step 4 — The Agent executes the work
+### Step 4 — The Agent accepts the Task
 
-The Agent performs the necessary actions (e.g., writing code, calling APIs, creating subtasks).
+After fetching the task with `get_task`, the agent evaluates the instructions and context. 
+- If accepted, the agent updates the task status to `in_progress` using the `update_task` tool.
+- If rejected, the agent updates the task status to `rejected` with an explanation.
 
 ---
 
-### Step 5 — The Request is completed
+### Step 5 — The Agent executes the work
 
-Once the task is completely finished (whether successful or failed), the Agent MUST update the Request status to `completed` using the `update_request_status` MCP tool and provide a final response and `resolution` (`success` or `failed`) back to the requester.
+The Agent performs the necessary actions (e.g., writing code, calling APIs, analyzing data) to fulfill the Task.
+
+---
+
+### Step 6 — The Task is completed
+
+Once the task is finished, the Agent MUST update the Task status to `completed` using the `update_task` MCP tool, providing the final output or result.
+
+By completing the task, the agent concludes their unit of work. The Orchestrator system then resumes control of the Request, continuing the step-by-step execution by potentially dispatching the next Task in the sequence until the original Request is fully resolved.

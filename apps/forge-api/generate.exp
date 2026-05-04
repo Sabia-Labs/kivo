@@ -1,6 +1,0 @@
-spawn npm run db:generate
-expect "table created or renamed"
-send "\033\[B\r"
-expect "table created or renamed"
-send "\033\[B\r"
-expect eof

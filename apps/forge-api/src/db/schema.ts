@@ -55,9 +55,26 @@ export const requestStatusEnum = pgEnum("request_status", [
 
 export const requestResolutionEnum = pgEnum("request_resolution", ["success", "failed"]);
 
+export const taskStatusEnum = pgEnum("task_status", [
+  "open", 
+  "in_progress", 
+  "waiting_user", 
+  "completed", 
+  "cancelled"
+]);
+
+export const taskResolutionEnum = pgEnum("task_resolution", ["success", "failed"]);
+
 export const changeTypeEnum = pgEnum("change_type", ["data", "status", "relationship", "creation", "deletion"]);
 
 export const notificationPriorityEnum = pgEnum("notification_priority", ["info", "normal", "high", "alert"]);
+
+export const capabilityNatureEnum = pgEnum("capability_nature", [
+  "inquiry", 
+  "analysis", 
+  "execution", 
+  "project"
+]);
 
 
 export const activities = pgTable("activities", {
@@ -248,12 +265,15 @@ export const tasks = pgTable("tasks", {
     .references(() => teams.id, { onDelete: "cascade" }),
   requestId: uuid("request_id").references((): AnyPgColumn => requests.id, { onDelete: "set null" }),
   title: text("title").notNull(),
+  prompt: text("prompt"),
+  instructions: text("instructions"),
   plan: text("plan"),
   taskList: text("task_list"),
-  executionLog: jsonb("execution_log").$type<string[]>(),
   workSummary: text("work_summary"),
   result: text("result"),
   assignedToId: uuid("assigned_to_id"),
+  status: taskStatusEnum("status").notNull().default("open"),
+  resolution: taskResolutionEnum("resolution"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -280,16 +300,15 @@ export const requests = pgTable("requests", {
   
   title: text("title").notNull().default("New Request"),
   requestDetails: text("request_details"),
-  instructions: text("instructions"),
   priority: integer("priority").notNull().default(0),
   
   targetRole: text("target_role"),
   targetAgentId: uuid("target_agent_id").references(() => agents.id, { onDelete: "set null" }),
-  assignedAgentId: uuid("assigned_agent_id").references(() => agents.id, { onDelete: "set null" }),
   
-  responseContract: text("response_contract"),
-  requestCapabilities: jsonb("request_capabilities"),
+  capabilitiesWorkflow: jsonb("capabilities_workflow"),
   
+  state: jsonb("state").$type<string[]>(),
+
   status: requestStatusEnum("status").notNull().default("open"),
   resolution: requestResolutionEnum("resolution"),
   response: text("response"),
@@ -348,12 +367,12 @@ export const teamMetaCapabilities = pgTable("team_meta_capabilities", {
     .references(() => teamTypes.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   identifier: text("identifier").notNull(),
-  triggers: jsonb("triggers"), // Array of string identifiers
   instructions: text("instructions").notNull(),
   inputsDescription: text("inputs_description"),
   expectedOutputsDescription: text("expected_outputs_description"),
-  expectedEventsOutput: jsonb("expected_events_output"), // Array of strings
   suggestedNextCapabilities: jsonb("suggested_next_capabilities"), // Array of string identifiers
+  nature: capabilityNatureEnum("nature"),
+  isCandidate: boolean("is_candidate").notNull().default(false),
   isFavorite: boolean("is_favorite").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -369,12 +388,12 @@ export const teamCapabilities = pgTable("team_capabilities", {
     .references(() => teams.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   identifier: text("identifier").notNull(),
-  triggers: jsonb("triggers"),
   instructions: text("instructions").notNull(),
   inputsDescription: text("inputs_description"),
   expectedOutputsDescription: text("expected_outputs_description"),
-  expectedEventsOutput: jsonb("expected_events_output"),
   suggestedNextCapabilities: jsonb("suggested_next_capabilities"),
+  nature: capabilityNatureEnum("nature"),
+  isCandidate: boolean("is_candidate").notNull().default(false),
   isEnabled: boolean("is_enabled").notNull().default(true),
   isFavorite: boolean("is_favorite").notNull().default(false),
   scheduleConfig: jsonb("schedule_config"),
@@ -389,19 +408,6 @@ export const teamCapabilities = pgTable("team_capabilities", {
 export type TeamCapability = typeof teamCapabilities.$inferSelect;
 export type NewTeamCapability = typeof teamCapabilities.$inferInsert;
 
-export const teamEvents = pgTable("team_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  teamId: uuid("team_id")
-    .notNull()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  identifier: text("identifier").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => ({
-  unq_team_event_identifier: unique().on(t.teamId, t.identifier),
-}));
-
-export type TeamEvent = typeof teamEvents.$inferSelect;
-export type NewTeamEvent = typeof teamEvents.$inferInsert;
 
 export const agentRoles = pgTable("agent_roles", {
   id: text("id").primaryKey(), // Using text IDs like 'software_engineer'

@@ -47,11 +47,15 @@ export function registerTaskTools(server: McpServer, actor: any, authHeader: str
       title: z.string().describe("The title of the task"),
       plan: z.string().optional().describe("The agent's plan to accomplish the task"),
       taskList: z.string().optional().describe("A markdown or text list of steps/to-dos to follow during execution"),
-      executionLog: z.array(z.string()).optional().describe("Array of log entries describing decisions and actions taken during execution"),
+      prompt: z.string().optional().describe("Command/instruction describing what to do"),
+      instructions: z.string().optional().describe("Guidelines and how to execute this task"),
       workSummary: z.string().optional().describe("Final summary of what was done"),
       result: z.string().optional().describe("The deliverable or final outcome/result of the work done"),
       assignedToId: z.string().optional().describe("Agent ID or User ID assigned to the task"),
       requestId: z.string().optional().describe("ID of the request this task is fulfilling"),
+      status: z.enum(["open", "in_progress", "waiting_user", "completed", "cancelled"]).optional().describe("Current status of the task"),
+      resolution: z.enum(["success", "failed"]).optional().describe("Resolution of the task when finished"),
+
     },
     async (params) => {
       try {
@@ -78,11 +82,15 @@ export function registerTaskTools(server: McpServer, actor: any, authHeader: str
       title: z.string().optional(),
       plan: z.string().optional(),
       taskList: z.string().optional(),
-      executionLog: z.array(z.string()).optional(),
+      prompt: z.string().optional(),
+      instructions: z.string().optional(),
       workSummary: z.string().optional(),
       result: z.string().optional(),
       assignedToId: z.string().optional(),
       requestId: z.string().optional(),
+      status: z.enum(["open", "in_progress", "waiting_user", "completed", "cancelled"]).optional(),
+      resolution: z.enum(["success", "failed"]).optional(),
+
     },
     async ({ idOrIdentifier, ...body }) => {
       try {

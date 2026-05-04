@@ -29,52 +29,6 @@ Common operations:
 For all task, team, and request operations, you **MUST** use the native Forge MCP tools (e.g., `list_tasks`, `get_task`, `create_task`, `update_task`, `list_subtasks`, `list_requests`).
 These tools are pre-installed in your environment. Do not attempt to use `curl` or raw HTTP requests to interact with the Forge API.
 
----
-
-## Agent-to-Agent Messaging (Message Bus)
-
-You can communicate directly with other agents in your team using the Forge message bus.
-Use this to coordinate with engineers, delegate product-related questions, or share context.
-
-### send_to_agent
-
-Dispatch a message via the workspace RabbitMQ exchange.
-
-**Endpoint:** `POST http://127.0.0.1:18780/send`
-
-**Request body:**
-```json
-{
-  "targetAgentId": "<uuid of the target agent>",
-  "action": "chat_message",
-  "payload": {
-    "task": "Priority for ENG-42 has changed — please pause current work",
-    "context": "Operator confirmed new top priority is ENG-55",
-    "priority": "high"
-  },
-  "sessionKey": "<optional: use to continue an existing conversation>"
-}
-```
-
-**Common actions:**
-- `chat_message` — general communication (priority changes, clarifications, context sharing)
-- `delegate_task` — ask an agent to handle a specific product support task
-- `share_context` — share product decisions or priority signals relevant to ongoing work
-
-**Response:**
-```json
-{
-  "queued": true,
-  "messageId": "<uuid>",
-  "targetAgentId": "<uuid>",
-  "sessionKey": "<session key used>"
-}
-```
-
-**When to use:** Communicate priority changes, scope decisions, or blocker resolutions to the Team Lead or specific engineers directly. Do not rely solely on ticket updates for time-sensitive changes.
-
----
-
 ## Product Documentation
 
 For writing product artifacts (PRDs, decision logs, ADRs):

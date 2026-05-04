@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Save, Send, X, Plus } from "lucide-react";
+import { ArrowLeft, Save, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -11,115 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-function SmartCapabilitySelect({ 
-  value, 
-  onChange, 
-  availableCapabilities 
-}: { 
-  value: string[], 
-  onChange: (val: string[]) => void, 
-  availableCapabilities: { identifier: string; name: string }[] 
-}) {
-  const [inputValue, setInputValue] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  const currentValues = value || [];
-  
-  const cleanInput = inputValue.trim().toLowerCase();
-  
-  const filteredCaps = availableCapabilities.filter(c => 
-    !currentValues.includes(c.identifier) && 
-    (c.identifier.toLowerCase().includes(cleanInput) || c.name.toLowerCase().includes(cleanInput))
-  );
-
-  const handleAdd = (id: string) => {
-    onChange([...currentValues, id]);
-    setInputValue("");
-    inputRef.current?.focus();
-  };
-  
-  const handleRemove = (id: string) => {
-    const next = currentValues.filter(v => v !== id);
-    onChange(next);
-  };
-  
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && cleanInput) {
-      e.preventDefault();
-      if (filteredCaps.length > 0) {
-        handleAdd(filteredCaps[0].identifier);
-      }
-    } else if (e.key === 'Backspace' && !inputValue && currentValues.length > 0) {
-      handleRemove(currentValues[currentValues.length - 1]);
-    }
-  };
-
-  return (
-    <div className="relative flex flex-col w-full">
-      <div 
-        className={cn(
-          "flex flex-wrap gap-1.5 p-1.5 w-full rounded-md border bg-transparent min-h-[40px] text-sm shadow-sm transition-colors",
-          isFocused ? "border-primary ring-1 ring-primary" : "border-input"
-        )}
-        onClick={() => inputRef.current?.focus()}
-      >
-        {currentValues.map(v => {
-          const cap = availableCapabilities.find(c => c.identifier === v);
-          return (
-            <span key={v} className={cn(
-              "flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium cursor-default",
-              cap ? "bg-muted text-foreground border" : "bg-primary/20 text-primary border border-primary/30"
-            )}>
-              {cap ? cap.name : v}
-              <button 
-                type="button" 
-                onClick={(e) => { e.stopPropagation(); handleRemove(v); }}
-                className="hover:bg-black/10 rounded-full p-0.5 transition-colors"
-              >
-                <X className="size-3" />
-              </button>
-            </span>
-          );
-        })}
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => {
-            setTimeout(() => setIsFocused(false), 200);
-          }}
-          className="flex-1 min-w-[120px] bg-transparent outline-none px-1 py-0.5 text-sm"
-          placeholder={currentValues.length === 0 ? "Type capability identifier or name..." : ""}
-        />
-      </div>
-
-      {isFocused && (inputValue || filteredCaps.length > 0) && (
-        <div className="absolute top-[calc(100%+4px)] left-0 w-full z-50 bg-popover text-popover-foreground rounded-md border shadow-md overflow-hidden max-h-[200px] overflow-y-auto">
-          {filteredCaps.map(cap => (
-            <div 
-              key={cap.identifier}
-              className="px-3 py-2 text-sm hover:bg-muted cursor-pointer flex justify-between items-center"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => handleAdd(cap.identifier)}
-            >
-              <span>{cap.name}</span>
-              <span className="text-xs text-muted-foreground">{cap.identifier}</span>
-            </div>
-          ))}
-          {filteredCaps.length === 0 && inputValue && (
-            <div className="px-3 py-2 text-sm text-muted-foreground text-center">
-              No matching capabilities
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function NewRequestPage() {
   const { token, isLoading: authLoading } = useAuth();
@@ -132,8 +23,6 @@ export default function NewRequestPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
-  const [capabilities, setCapabilities] = useState<any[]>([]);
   const [selectedCapabilityInfo, setSelectedCapabilityInfo] = useState<any>(null);
 
   // Form State
@@ -141,10 +30,15 @@ export default function NewRequestPage() {
   const [targetAgentId, setTargetAgentId] = useState("");
   const [targetRole, setTargetRole] = useState("");
   const [requestDetails, setRequestDetails] = useState("");
-  const [requestCapabilities, setRequestCapabilities] = useState<string[]>([]);
+  const [capabilitiesWorkflow, setCapabilitiesWorkflow] = useState<string[]>([]);
+  
+  // New Suggestion State
+  const [title, setTitle] = useState("");
+  const [hasUserEditedTitle, setHasUserEditedTitle] = useState(false);
+  const [suggestedCapability, setSuggestedCapability] = useState<string | null>(null);
   
   // UI State
-  const [showAdvancedTarget, setShowAdvancedTarget] = useState(false);
+
   const [isLeaderThinking, setIsLeaderThinking] = useState(false);
   const [leaderThought, setLeaderThought] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -164,11 +58,8 @@ export default function NewRequestPage() {
       let loadedAgents = [];
       let loadedCaps = [];
       if (agentsRes.ok) loadedAgents = (await agentsRes.json()).data ?? [];
-      if (rolesRes.ok) setRoles((await rolesRes.json()).data ?? []);
       if (capsRes.ok) loadedCaps = (await capsRes.json()).data ?? [];
-      
       setAgents(loadedAgents);
-      setCapabilities(loadedCaps);
 
       let loadedRequest = null;
       if (reqRes && reqRes.ok) {
@@ -178,7 +69,7 @@ export default function NewRequestPage() {
       if (loadedRequest) {
         // Populate from existing draft
         setRequestDetails(loadedRequest.requestDetails || "");
-        setRequestCapabilities(loadedRequest.requestCapabilities || []);
+        setCapabilitiesWorkflow(loadedRequest.capabilitiesWorkflow || []);
         if (loadedRequest.targetAgentId) {
           setTargetType("agent");
           setTargetAgentId(loadedRequest.targetAgentId);
@@ -200,55 +91,93 @@ export default function NewRequestPage() {
         if (capabilityIdParam && loadedCaps.length > 0) {
           const cap = loadedCaps.find((c: any) => c.id === capabilityIdParam);
           if (cap) {
-            setRequestCapabilities([cap.identifier]);
+            setCapabilitiesWorkflow([cap.identifier]);
             setSelectedCapabilityInfo(cap);
-            if (cap.inputsDescription) {
-              setRequestDetails(`Request:\nPlease provide the following inputs:\n${cap.inputsDescription}`);
-            }
           }
         }
       }
     });
   }, [authLoading, token, teamId, capabilityIdParam, requestIdParam]);
 
-  // Fake AI Thinking Logic
+  // Real Field Insight Logic
+  const fetchFieldInsight = async (details: string, caps: string[]) => {
+    try {
+      const res = await fetch(`${API_BASE}/teams/${teamId}/requests/insight`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          requestDetails: details,
+          capabilitiesWorkflow: caps,
+        }),
+      });
+      if (!res.ok) {
+        setLeaderThought("I'm having trouble analyzing this right now, but feel free to submit!");
+        return;
+      }
+      const json = await res.json();
+      setLeaderThought(json.data.leaderThought);
+
+      if (json.data.suggestedTitle && !hasUserEditedTitle) {
+        setTitle(json.data.suggestedTitle);
+      }
+
+      if (json.data.suggestedCapabilityIdentifier) {
+        setSuggestedCapability(json.data.suggestedCapabilityIdentifier);
+      } else {
+        setSuggestedCapability(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setLeaderThought("I'm having trouble analyzing this right now, but feel free to submit!");
+    } finally {
+      setIsLeaderThinking(false);
+    }
+  };
+
   const handleDetailsChange = (value: string) => {
     setRequestDetails(value);
-    setLeaderThought(null);
-    setIsLeaderThinking(true);
     
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
     
-    typingTimeoutRef.current = setTimeout(() => {
+    const cleanValue = value.trim();
+    if (!cleanValue) {
+      setLeaderThought(null);
       setIsLeaderThinking(false);
-      const cleanValue = value.trim();
-      if (!cleanValue) {
-        setLeaderThought(null);
-        return;
-      }
-      
-      if (cleanValue.length < 25 && !selectedCapabilityInfo) {
-        setLeaderThought("I can probably answer this for you right now without creating a formal request...");
-      } else {
-        setLeaderThought("Looks good. Let's submit to the team.");
-      }
+      return;
+    }
+    
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsLeaderThinking(true);
+      fetchFieldInsight(cleanValue, capabilitiesWorkflow);
     }, 2000);
   };
   
   // Also trigger thinking when capabilities change
   useEffect(() => {
-    if (!authLoading && requestCapabilities.length > 0) {
-      setLeaderThought(null);
-      setIsLeaderThinking(true);
-      const to = setTimeout(() => {
-        setIsLeaderThinking(false);
-        setLeaderThought("I have updated the execution plan based on the selected capabilities. Looks good.");
-      }, 1500);
-      return () => clearTimeout(to);
+    if (!authLoading && capabilitiesWorkflow.length > 0) {
+      if (requestDetails.trim()) {
+        setLeaderThought(null);
+        setIsLeaderThinking(true);
+        const to = setTimeout(() => {
+          fetchFieldInsight(requestDetails.trim(), capabilitiesWorkflow);
+        }, 1500);
+        return () => clearTimeout(to);
+      } else {
+        setLeaderThought(null);
+        setIsLeaderThinking(true);
+        const to = setTimeout(() => {
+          setIsLeaderThinking(false);
+          setLeaderThought("I have updated the execution plan based on the selected capabilities. Provide details to proceed.");
+        }, 1500);
+        return () => clearTimeout(to);
+      }
     }
-  }, [requestCapabilities, authLoading]);
+  }, [capabilitiesWorkflow, authLoading]);
 
   const handleSubmit = async (status: "draft" | "open") => {
     if (!requestDetails.trim()) {
@@ -258,11 +187,7 @@ export default function NewRequestPage() {
 
     setIsSubmitting(true);
     try {
-      // Auto-generate title
-      const cleanDesc = requestDetails.replace(/^Request:\nPlease provide the following inputs:\n/, "").trim();
-      const words = cleanDesc.split(/\s+/);
-      const generatedTitle = words.slice(0, 5).join(" ") + (words.length > 5 ? "..." : "");
-      const finalTitle = generatedTitle || "New Request";
+      const finalTitle = title.trim() || "New Request";
 
       const endpoint = requestIdParam 
         ? `${API_BASE}/teams/${teamId}/requests/${requestIdParam}`
@@ -281,7 +206,7 @@ export default function NewRequestPage() {
           targetAgentId: targetType === "agent" ? targetAgentId || null : null,
           targetRole: targetType === "role" ? targetRole || null : null,
           requestDetails,
-          requestCapabilities,
+          capabilitiesWorkflow: capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow : (suggestedCapability ? [suggestedCapability] : []),
           status
         }),
       });
@@ -350,26 +275,6 @@ export default function NewRequestPage() {
             ) : leaderThought ? (
               <div className="space-y-4 animate-in fade-in slide-in-from-left-2">
                 <p className="text-sm text-foreground leading-relaxed">{leaderThought}</p>
-                
-                {selectedCapabilityInfo?.expectedOutputsDescription && (
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">What you should expect as a result:</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedCapabilityInfo.expectedOutputsDescription}</p>
-                  </div>
-                )}
-                
-                {selectedCapabilityInfo?.instructions && (
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-foreground">We will use these instructions or guidelines to deliver your work:</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{selectedCapabilityInfo.instructions}</p>
-                  </div>
-                )}
-                
-                {requestCapabilities.length > 0 && (
-                  <p className="text-sm text-foreground pt-1">
-                    And see below some suggested capabilities to better reach the objectives.
-                  </p>
-                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground italic h-6 flex items-center">Waiting for your input...</p>
@@ -377,77 +282,38 @@ export default function NewRequestPage() {
           </div>
         </div>
 
-        <div className="pt-4 border-t space-y-4">
-          
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Assigned to:</span>
-              <span className="text-sm font-medium">
-                {targetType === "agent" && targetAgentId 
-                  ? agents.find(a => a.id === targetAgentId)?.name || "Agent"
-                  : targetType === "role" && targetRole 
-                    ? roles.find(r => r.id === targetRole)?.name || "Role"
-                    : "Auto-assign"}
-              </span>
-              <button 
-                onClick={() => setShowAdvancedTarget(!showAdvancedTarget)}
-                className="text-xs text-primary hover:underline ml-1"
-              >
-                Change
-              </button>
-            </div>
+        {/* Title and Capability Fields */}
+        {(title || suggestedCapability || selectedCapabilityInfo) && (
+          <div className="space-y-4 pt-4 border-t animate-in fade-in">
+            {title && (
+              <div className="space-y-2">
+                <Label htmlFor="title" className="text-sm font-medium">Request Title</Label>
+                <Input
+                  id="title"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setHasUserEditedTitle(true);
+                  }}
+                  placeholder="Request Title"
+                />
+              </div>
+            )}
+            
+            {(suggestedCapability || selectedCapabilityInfo) && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {selectedCapabilityInfo ? "Selected Capability:" : "Matched Capability:"}
+                </span>
+                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+                  {selectedCapabilityInfo ? selectedCapabilityInfo.identifier : suggestedCapability}
+                </span>
+              </div>
+            )}
           </div>
+        )}
 
-          {showAdvancedTarget && (
-            <div className="flex gap-4 animate-in slide-in-from-top-2 p-3 bg-muted/20 rounded-md border">
-              <select
-                className="flex h-9 w-40 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background"
-                value={targetType}
-                onChange={e => setTargetType(e.target.value as any)}
-              >
-                <option value="anyone">Anyone (Auto-assign)</option>
-                <option value="agent">Specific Agent</option>
-                <option value="role">Specific Role</option>
-              </select>
 
-              {targetType === "agent" && (
-                <select
-                  className="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background"
-                  value={targetAgentId}
-                  onChange={e => setTargetAgentId(e.target.value)}
-                >
-                  <option value="" disabled>Select an Agent</option>
-                  {agents.map(a => (
-                    <option key={a.id} value={a.id}>{a.name} ({a.type.replace('_', ' ')})</option>
-                  ))}
-                </select>
-              )}
-
-              {targetType === "role" && (
-                <select
-                  className="flex h-9 flex-1 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background"
-                  value={targetRole}
-                  onChange={e => setTargetRole(e.target.value)}
-                >
-                  <option value="" disabled>Select a Role</option>
-                  {roles.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Suggested Capabilities</Label>
-            <SmartCapabilitySelect 
-              value={requestCapabilities}
-              onChange={setRequestCapabilities}
-              availableCapabilities={capabilities}
-            />
-          </div>
-
-        </div>
 
         <div className="flex items-center justify-between pt-6 border-t">
           <Button 

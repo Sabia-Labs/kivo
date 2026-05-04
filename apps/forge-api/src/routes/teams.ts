@@ -16,6 +16,8 @@ import {
 import { provisionTenant } from "../lib/rabbitmq";
 import { requestsRouter } from "./requests";
 import { activitiesRouter } from "./activities";
+import { getTeamById } from "../controllers/teamsController";
+import { getAgentsByTeam } from "../controllers/agentsController";
 
 export const teamsRouter = Router();
 
@@ -46,11 +48,7 @@ teamsRouter.get("/mine", authMiddleware, async (req: Request, res: Response, nex
     // 3. For each team, load its agents.
     const result = await Promise.all(
       userTeams.map(async (team) => {
-        const teamAgents = await db
-          .select()
-          .from(agents)
-          .where(eq(agents.teamId, team.id))
-          .orderBy(agents.createdAt);
+        const teamAgents = await getAgentsByTeam(team.id);
         return { ...team, agents: teamAgents, workspace };
       })
     );
@@ -119,11 +117,9 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
             teamId: team.id,
             name: cap.name,
             identifier: cap.identifier,
-            triggers: cap.triggers,
             instructions: cap.instructions,
             inputsDescription: cap.inputsDescription,
             expectedOutputsDescription: cap.expectedOutputsDescription,
-            expectedEventsOutput: cap.expectedEventsOutput,
             suggestedNextCapabilities: cap.suggestedNextCapabilities,
           }))
         );
@@ -199,7 +195,7 @@ teamsRouter.get("/", async (_req: Request, res: Response, next: NextFunction) =>
 
 teamsRouter.get("/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const [team] = await db.select().from(teams).where(eq(teams.id, String(req.params.id)));
+    const team = await getTeamById(String(req.params.id));
 
     if (!team) {
       res.status(404).json(failure("Team not found"));
@@ -257,33 +253,11 @@ teamsRouter.delete("/:id", async (req: Request, res: Response, next: NextFunctio
 
 
 
-// ── GET /teams/:id/events ──────────────────────────────────────────────────
-teamsRouter.get("/:id/events", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { teamEvents } = await import("../db/schema");
-    const rows = await db.select().from(teamEvents).where(eq(teamEvents.teamId, String(req.params.id)));
-    res.json(success(rows));
-  } catch (err) { next(err); }
-});
-
-// Helper to upsert events
-async function upsertEvents(teamId: string, events: string[] | null) {
-  if (!events || events.length === 0) return;
-  const { teamEvents } = await import("../db/schema");
-  const cleanEvents = events.map(e => e.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '')).filter(Boolean);
-  if (cleanEvents.length === 0) return;
-  for (const ev of cleanEvents) {
-    await db.insert(teamEvents)
-      .values({ teamId, identifier: ev })
-      .onConflictDoNothing({ target: [teamEvents.teamId, teamEvents.identifier] });
-  }
-}
-
 // ── GET /teams/:id/capabilities ─────────────────────────────────────────────
 teamsRouter.get("/:id/capabilities", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { teamCapabilities } = await import("../db/schema");
-    const rows = await db.select().from(teamCapabilities).where(eq(teamCapabilities.teamId, String(req.params.id)));
+    const { getCapabilitiesByTeam } = await import("../controllers/capabilitiesController");
+    const rows = await getCapabilitiesByTeam(String(req.params.id));
     res.json(success(rows));
   } catch (err) { next(err); }
 });
@@ -308,17 +282,8 @@ teamsRouter.post("/:id/capabilities", authMiddleware, async (req: Request, res: 
       isEnabled: Boolean(req.body.isEnabled ?? true),
       isFavorite: Boolean(req.body.isFavorite ?? false),
       scheduleConfig: req.body.scheduleConfig || null,
-      triggers: req.body.triggers || null,
-      expectedEventsOutput: req.body.expectedEventsOutput || null,
       suggestedNextCapabilities: req.body.suggestedNextCapabilities || null
     }).returning();
-    
-    // Upsert any new events provided
-    const allEvents = [
-      ...(req.body.triggers || []),
-      ...(req.body.expectedEventsOutput || [])
-    ];
-    await upsertEvents(String(req.params.id), allEvents);
     
     // Sync K8s CronJob
     const { workspaces, teams } = await import("../db/schema");
@@ -357,8 +322,6 @@ teamsRouter.put("/:id/capabilities/:capId", authMiddleware, async (req: Request,
     if (req.body.expectedOutputsDescription !== undefined) updateData.expectedOutputsDescription = req.body.expectedOutputsDescription ? String(req.body.expectedOutputsDescription) : null;
     if (req.body.assignedAgentId !== undefined) updateData.assignedAgentId = req.body.assignedAgentId ? String(req.body.assignedAgentId) : null;
     if (req.body.assignedRole !== undefined) updateData.assignedRole = req.body.assignedRole ? String(req.body.assignedRole) : null;
-    if (req.body.triggers !== undefined) updateData.triggers = req.body.triggers;
-    if (req.body.expectedEventsOutput !== undefined) updateData.expectedEventsOutput = req.body.expectedEventsOutput;
     if (req.body.suggestedNextCapabilities !== undefined) updateData.suggestedNextCapabilities = req.body.suggestedNextCapabilities;
     
     const [updated] = await db.update(teamCapabilities)
@@ -391,13 +354,6 @@ teamsRouter.put("/:id/capabilities/:capId", authMiddleware, async (req: Request,
         await upsertCapabilityCronJob(updated, String(req.params.id), workspace.k8sNamespace);
       }
     }
-      
-    // Upsert any new events provided
-    const allEvents = [
-      ...(req.body.triggers || []),
-      ...(req.body.expectedEventsOutput || [])
-    ];
-    await upsertEvents(String(req.params.id), allEvents);
       
     res.json(success(updated));
   } catch (err) { next(err); }
@@ -442,7 +398,7 @@ teamsRouter.put("/:id/integrations/:provider", authMiddleware, async (req: Reque
     }
     
     // ── Sync to agents & Restart K8s Pods ──
-    const teamAgents = await db.select().from(agents).where(eq(agents.teamId, teamId));
+    const teamAgents = await getAgentsByTeam(teamId);
     const [team] = await db.select().from(teamsSchema).where(eq(teamsSchema.id, teamId));
     const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
     

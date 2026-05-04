@@ -5,12 +5,21 @@ import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Loader2, Trash2, Plus, Wand2, Check, Briefcase, 
   GitBranch, FileText, Globe, LayoutTemplate, Send, ChevronDown, CheckCircle2,
-  X, Search, Edit2, Info, Star
+  X, Search, Edit2, Info, Star, Filter
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
@@ -41,9 +50,9 @@ interface Integration {
 }
 
 interface Capability {
-  id: string; name: string; identifier: string; instructions: string; triggers: string[] | null;
+  id: string; name: string; identifier: string; instructions: string;
   inputsDescription: string | null; expectedOutputsDescription: string | null;
-  expectedEventsOutput: string[] | null; suggestedNextCapabilities: string[] | null; isEnabled: boolean; scheduleConfig: Record<string, any> | null;
+  suggestedNextCapabilities: string[] | null; isEnabled: boolean; scheduleConfig: Record<string, any> | null;
   assignedAgentId: string | null; assignedRole: string | null; isFavorite: boolean;
 }
 
@@ -217,8 +226,8 @@ export default function TeamSettingsPage() {
   const [capabilities, setCapabilities] = useState<Capability[]>([]);
   const [agents, setAgents] = useState<{id: string, name: string, type: string}[]>([]);
 
-  const [teamEvents, setTeamEvents] = useState<{identifier: string}[]>([]);
-  const [capFilter, setCapFilter] = useState<"all" | "scheduled" | "not_scheduled" | "enabled" | "disabled">("all");
+  const [showOnlyEnabled, setShowOnlyEnabled] = useState(false);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [capSearch, setCapSearch] = useState("");
   
 
@@ -232,12 +241,11 @@ export default function TeamSettingsPage() {
     if (!token) return;
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [teamRes, capRes, intRes, agentsRes, evRes] = await Promise.all([
+      const [teamRes, capRes, intRes, agentsRes] = await Promise.all([
         fetch(`${API_BASE}/teams/${teamId}`, { headers }),
         fetch(`${API_BASE}/teams/${teamId}/capabilities`, { headers }),
         fetch(`${API_BASE}/teams/${teamId}/integrations`, { headers }),
-        fetch(`${API_BASE}/agents?teamId=${teamId}`, { headers }),
-        fetch(`${API_BASE}/teams/${teamId}/events`, { headers })
+        fetch(`${API_BASE}/agents?teamId=${teamId}`, { headers })
       ]);
 
       if (teamRes.ok) {
@@ -252,7 +260,6 @@ export default function TeamSettingsPage() {
       if (capRes.ok) setCapabilities((await capRes.json()).data || []);
 
       if (agentsRes.ok) setAgents((await agentsRes.json()).data || []);
-      if (evRes.ok) setTeamEvents((await evRes.json()).data || []);
       if (intRes.ok) {
         const ints = (await intRes.json()).data || [];
         setIntegrations(ints);
@@ -337,10 +344,9 @@ export default function TeamSettingsPage() {
     const matchesSearch = c.name.toLowerCase().includes(capSearch.toLowerCase()) || c.instructions.toLowerCase().includes(capSearch.toLowerCase());
     if (!matchesSearch) return false;
     
-    if (capFilter === "enabled") return c.isEnabled;
-    if (capFilter === "disabled") return !c.isEnabled;
-    if (capFilter === "scheduled") return c.scheduleConfig !== null;
-    if (capFilter === "not_scheduled") return c.scheduleConfig === null;
+    if (showOnlyEnabled && !c.isEnabled) return false;
+    if (showOnlyFavorites && !c.isFavorite) return false;
+
     return true;
   });
 
@@ -435,22 +441,33 @@ export default function TeamSettingsPage() {
                   </Link>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row justify-between gap-4">
-                  <div className="relative w-full sm:max-w-[180px]">
-                    <select
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring appearance-none"
-                      value={capFilter}
-                      onChange={(e) => setCapFilter(e.target.value as any)}
-                    >
-                      <option value="all">All</option>
-                      <option value="scheduled">Scheduled</option>
-                      <option value="not_scheduled">Not Scheduled</option>
-                      <option value="enabled">Enabled</option>
-                      <option value="disabled">Disabled</option>
-                    </select>
-                    <ChevronDown className="absolute right-3 top-2.5 h-4 w-4 opacity-50 pointer-events-none" />
-                  </div>
-                  <div className="relative w-full sm:max-w-xs">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" className="h-9 gap-2 text-muted-foreground w-full sm:w-auto justify-start shadow-sm">
+                        <Filter className="size-3.5" />
+                        Filters
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-56">
+                      <DropdownMenuLabel>Status</DropdownMenuLabel>
+                      <DropdownMenuCheckboxItem 
+                        checked={showOnlyEnabled} 
+                        onCheckedChange={setShowOnlyEnabled}
+                      >
+                        Only enabled capabilities
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel>Favorites</DropdownMenuLabel>
+                      <DropdownMenuCheckboxItem 
+                        checked={showOnlyFavorites} 
+                        onCheckedChange={setShowOnlyFavorites}
+                      >
+                        Only favorites
+                      </DropdownMenuCheckboxItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <div className="relative w-full sm:max-w-xs sm:ml-auto">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                     <Input placeholder="Search capabilities..." className="pl-8 h-9" value={capSearch} onChange={e => setCapSearch(e.target.value)} />
                   </div>
@@ -471,7 +488,6 @@ export default function TeamSettingsPage() {
                             <Star className={cn("size-4", cap.isFavorite ? "fill-amber-500 text-amber-500" : "")} />
                           </button>
                           <span className="font-medium text-sm text-foreground">{cap.name}</span>
-                          {cap.scheduleConfig && <span className="text-[9px] uppercase tracking-wider bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">Scheduled</span>}
                         </div>
                         <span className="text-xs text-muted-foreground truncate max-w-lg">{cap.instructions}</span>
                       </div>

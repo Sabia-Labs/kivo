@@ -202,6 +202,16 @@ export default function TeamDetailPage() {
     } catch {}
   };
 
+  const fetchRequests = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/teams/${teamId}/requests?parentRequestId=null`, { headers });
+      if (res.ok) {
+        const d = await res.json();
+        setRequests(d.data ?? []);
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!token) { router.replace("/login"); return; }
@@ -235,6 +245,7 @@ export default function TeamDetailPage() {
     const intervalId = setInterval(() => {
       fetchAgents();
       fetchActivities();
+      fetchRequests();
     }, 5000);
     return () => clearInterval(intervalId);
   }, [authLoading]);
@@ -336,12 +347,45 @@ export default function TeamDetailPage() {
                 <span className="font-medium text-foreground">{alert.title}</span>
                 {alert.content && <span className="text-muted-foreground">{alert.content}</span>}
                 {alert.relatedEntityType === "request" && alert.relatedEntityId && (
-                  <Link 
-                    href={`/teams/${teamId}/requests/${alert.relatedEntityId}`}
-                    className="mt-1 text-xs font-semibold text-primary hover:underline"
-                  >
-                    View Request
-                  </Link>
+                  <div className="mt-1 flex items-center gap-3">
+                    <Link 
+                      href={`/teams/${teamId}/requests/${alert.relatedEntityId}`}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      View Request
+                    </Link>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+                          const res = await fetch(`${API_BASE}/teams/${teamId}/requests/${alert.relatedEntityId}`, {
+                            method: "PATCH",
+                            headers,
+                            body: JSON.stringify({ status: "cancelled" }),
+                          });
+                          if (!res.ok) throw new Error("Failed to cancel request");
+                          
+                          await fetch(`${API_BASE}/notifications/${alert.id}/read`, {
+                            method: "PATCH",
+                            headers,
+                          });
+                          
+                          setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
+                          setRequests(prev => prev.map(r => 
+                            (r.identifier === alert.relatedEntityId || r.id === alert.relatedEntityId) 
+                              ? { ...r, status: "cancelled" } 
+                              : r
+                          ));
+                          toast.success("Request cancelled");
+                        } catch (e) {
+                          toast.error("Failed to cancel request");
+                        }
+                      }}
+                      className="text-xs font-semibold text-destructive hover:underline"
+                    >
+                      Cancel Request
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
