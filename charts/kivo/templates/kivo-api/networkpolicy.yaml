@@ -15,17 +15,16 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      {{- include "kivo.api.selectorLabels" . | nindent 6 }}
+      {{- include "kivo.kivoApi.selectorLabels" . | nindent 8 }}
   policyTypes:
     - Ingress
     - Egress
 
   ingress:
-    # Only the web pod can call the API
     - from:
         - podSelector:
             matchLabels:
-              {{- include "kivo.web.selectorLabels" . | nindent 14 }}
+              {{- include "kivo.kivoWeb.selectorLabels" . | nindent 14 }}
       ports:
         - protocol: TCP
           port: {{ .Values.kivoApi.port }}

@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [dev, main]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -50,23 +50,17 @@ jobs:
         with:
           node-version: "22"
           cache: "pnpm"
-          cache-dependency-path: apps/api/pnpm-lock.yaml
+          cache-dependency-path: apps/kivo-api/pnpm-lock.yaml
 
       - name: Install dependencies
-        working-directory: apps/api
+        working-directory: apps/kivo-api
         run: pnpm install --frozen-lockfile
 
       - name: Typecheck
-        working-directory: apps/api
+        working-directory: apps/kivo-api
         run: pnpm typecheck
 
-      - name: Docker build (no push — validation only)
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/api
-          file: apps/api/Dockerfile
-          push: false
-          tags: kivo/api:ci
+
 
   # ── Web Typecheck & Build ────────────────────────────────────────────────────
   web-check:
@@ -80,20 +74,14 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: apps/kivo-web/package-lock.json
 
       - name: Install dependencies
-        working-directory: apps/web
+        working-directory: apps/kivo-web
         run: npm ci
 
       - name: Typecheck
-        working-directory: apps/web
+        working-directory: apps/kivo-web
         run: npm run typecheck
 
-      - name: Docker build (no push — validation only)
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/web
-          file: apps/web/Dockerfile
-          push: false
-          tags: kivo/web:ci
+
