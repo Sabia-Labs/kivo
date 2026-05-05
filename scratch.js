@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-let code = fs.readFileSync('apps/forge-web/app/teams/[id]/requests/[requestId]/page.tsx', 'utf8');
+let code = fs.readFileSync('apps/kivo-web/app/teams/[id]/requests/[requestId]/page.tsx', 'utf8');
 
 // replace suggestedCapabilities with requestCapabilities
 code = code.replace(/suggestedCapabilities/g, 'requestCapabilities');
@@ -22,4 +22,4 @@ code = code.replace(/request\.status === "responded"/g, 'request.status === "com
 code = code.replace(/handleUpdateDraft\("created"\)/g, 'handleUpdateDraft("open")');
 code = code.replace(/status === "created"/g, 'status === "open"');
 
-fs.writeFileSync('apps/forge-web/app/teams/[id]/requests/[requestId]/page.tsx', code);
+fs.writeFileSync('apps/kivo-web/app/teams/[id]/requests/[requestId]/page.tsx', code);

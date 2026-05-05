@@ -1,0 +1,43 @@
+{{- if .Values.kivoWeb.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kivo-web
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+    {{- include "kivo.kivoWeb.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.kivoWeb.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kivo.kivoWeb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kivo.kivoWeb.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: web
+          image: "{{ .Values.kivoWeb.image.repository }}:{{ .Values.kivoWeb.image.tag }}"
+          imagePullPolicy: {{ .Values.kivoWeb.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.kivoWeb.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.kivoWeb.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.kivoWeb.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.kivoWeb.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.kivoWeb.resources | nindent 12 }}
+{{- end }}

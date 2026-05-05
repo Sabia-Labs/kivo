@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	forgev1alpha1 "github.com/ltreven/forge/controller/api/v1alpha1"
+	kivov1alpha1 "github.com/ltreven/kivo/controller/api/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -22,13 +22,13 @@ const (
 	qaBusPort = int32(43123)
 )
 
-// AgentDeployment builds the Deployment for a ForgeAgent CR.
+// AgentDeployment builds the Deployment for a KivoAgent CR.
 //
 // agentImage is the full image reference (repo:tag) passed from the controller config.
 // pullPolicy is the ImagePullPolicy string (Always|IfNotPresent|Never).
-// consumerImage/consumerPolicy identify the forge-consumer sidecar image.
+// consumerImage/consumerPolicy identify the kivo-consumer sidecar image.
 // If the CR spec overrides agent image, the CR values take precedence.
-func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, agentImage, pullPolicy, consumerImage, consumerPolicy string) *appsv1.Deployment {
+func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, agentImage, pullPolicy, consumerImage, consumerPolicy string) *appsv1.Deployment {
 	image, policy := resolveImage(cr, agentImage, pullPolicy)
 	fullImage := image
 	if consumerPolicy == "" {
@@ -101,7 +101,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 	}
 
 	// RabbitMQ env vars for the consumer sidecar — sourced from the workspace-scoped Secret.
-	// The Secret "rabbitmq-credentials" is created by the Forge API when the first agent
+	// The Secret "rabbitmq-credentials" is created by the Kivo API when the first agent
 	// in the workspace is provisioned (provisioner.applyRabbitMQCredentialsSecret).
 	const rabbitSecret = "rabbitmq-credentials"
 	rabbitEnv := []corev1.EnvVar{
@@ -143,7 +143,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 		{Name: "tmp", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "node-home", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		// RabbitMQ credentials secret — workspace-scoped, shared by all agents in the namespace.
-		// Created by forge-api (provisioner.applyRabbitMQCredentialsSecret) on first agent provisioning.
+		// Created by kivo-api (provisioner.applyRabbitMQCredentialsSecret) on first agent provisioning.
 		{
 			Name: "rabbitmq-credentials",
 			VolumeSource: corev1.VolumeSource{
@@ -187,7 +187,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
 			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"forge.ai/agent-id": cr.Name},
+				MatchLabels: map[string]string{"kivo.ai/agent-id": cr.Name},
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
@@ -206,7 +206,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 					},
 					InitContainers: []corev1.Container{
 						{
-							Name:            "bootstrap-forge",
+							Name:            "bootstrap-kivo",
 							Image:           fullImage,
 							ImagePullPolicy: policy,
 							Command:         []string{"sh", "/bootstrap/bootstrap.sh"},
@@ -225,7 +225,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 					},
 					Containers: []corev1.Container{
 						{
-							Name:            "forge",
+							Name:            "kivo",
 							Image:           fullImage,
 							ImagePullPolicy: policy,
 							Command:         []string{"node", "/app/dist/index.js", "gateway", "run"},
@@ -264,7 +264,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 		},
 	}
 
-	// ── forge-consumer sidecar (conditional) ──────────────────────────────────
+	// ── kivo-consumer sidecar (conditional) ──────────────────────────────────
 	// Only injected when consumerImage is explicitly set.
 	// Bridges RabbitMQ↔openclaw and exposes the agent-to-agent send API (18780).
 	// Kept conditional so the core agent pod starts even if the consumer image
@@ -273,7 +273,7 @@ func AgentDeployment(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference, a
 		deploy.Spec.Template.Spec.Containers = append(
 			deploy.Spec.Template.Spec.Containers,
 			corev1.Container{
-				Name:            "forge-consumer",
+				Name:            "kivo-consumer",
 				Image:           consumerImage,
 				ImagePullPolicy: corev1.PullPolicy(consumerPolicy),
 				Env:             rabbitEnv,
@@ -338,7 +338,7 @@ func dnsHostname(name string) string {
 	}
 	return s
 }
-func resolveImage(cr *forgev1alpha1.Agent, defaultImage, defaultPullPolicy string) (string, corev1.PullPolicy) {
+func resolveImage(cr *kivov1alpha1.Agent, defaultImage, defaultPullPolicy string) (string, corev1.PullPolicy) {
 	img := defaultImage
 	policy := corev1.PullPolicy(defaultPullPolicy)
 	if policy == "" {

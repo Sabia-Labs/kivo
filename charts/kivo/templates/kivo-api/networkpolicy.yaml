@@ -1,0 +1,56 @@
+{{- if and .Values.kivoApi.enabled .Values.networkPolicy.enabled }}
+# NetworkPolicy — API
+# The API pod:
+#   - Accepts ingress ONLY from the web pod (within the same namespace)
+#   - Egress ONLY to the postgresql pod and DNS (kube-dns)
+# This makes the API unreachable from outside the cluster even if an Ingress is
+# accidentally created — defence in depth on top of having no Ingress rule.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kivo-api-netpol
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "kivo.api.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # Only the web pod can call the API
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "kivo.web.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.kivoApi.port }}
+
+  egress:
+    # Allow DNS resolution
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    {{- if .Values.postgresql.embedded }}
+    # Allow connection to embedded PostgreSQL
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "kivo.postgresql.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: {{ .Values.postgresql.port }}
+    {{- else }}
+    # Allow outbound to managed external database (any IP, port 5432)
+    - ports:
+        - protocol: TCP
+          port: 5432
+    {{- end }}
+{{- end }}

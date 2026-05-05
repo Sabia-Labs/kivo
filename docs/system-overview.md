@@ -1,8 +1,8 @@
-# Forge System Overview
+# Kivo System Overview
 
 ## System Summary
 
-**Forge**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with structured roles, governed workflows, and real-time health visibility.
+**Kivo**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with structured roles, governed workflows, and real-time health visibility.
 
 The architecture is designed to work across environments:
 - start with a local, web-based agent team
@@ -11,27 +11,27 @@ The architecture is designed to work across environments:
 
 ## Architectural Model
 
-Forge separates the platform into two distinct planes, enabling a **Cell-based Architecture** for infinite scalability and data isolation:
+Kivo separates the platform into two distinct planes, enabling a **Cell-based Architecture** for infinite scalability and data isolation:
 
 ### 1. Control Plane (Admin/Global)
 The **Control Plane** manages global state, user identities, and marketing. It is the entry point for administrative operations.
-- **Frontend:** `admin-web` (www.forge.com) - Marketing, Docs, Login, Signup.
+- **Frontend:** `admin-web` (www.kivo.com) - Marketing, Docs, Login, Signup.
 - **Backend:** `admin-api` (Port 4001) - Global registry.
-- **Database:** `forge_admin` (Global).
-- **Namespace:** `forge-admin`.
+- **Database:** `kivo_admin` (Global).
+- **Namespace:** `kivo-admin`.
 
 ### 2. Application Plane (App/Regional)
 The **Application Plane** manages the actual execution of agent teams. These "cells" can be deployed in different regions to stay close to customer data.
-- **Frontend:** `forge-web` (app.forge.com or customer.forge.com) - Client Portal.
+- **Frontend:** `kivo-web` (app.kivo.com or customer.kivo.com) - Client Portal.
 - **Backend:** `api` (Port 4000) - Team & Task logic.
-- **Database:** `forge` (Tenant-specific).
-- **Namespace:** `forge`.
+- **Database:** `kivo` (Tenant-specific).
+- **Namespace:** `kivo`.
 
 ## Core Concepts
 
 ### Team
 
-A **team** is the central unit in Forge. Every team has:
+A **team** is the central unit in Kivo. Every team has:
 - a **template** that defines its starting structure (Starter, Engineering, Customer Support)
 - a **Team Lead** — the minimum ownership role, always required
 - zero or more additional agents with scoped roles
@@ -41,7 +41,7 @@ Teams live inside a **workspace**, which represents the customer or organization
 
 ### Team Lead
 
-The **Team Lead** is the universal ownership primitive in Forge. Every team — regardless of template or domain — must have at least one Team Lead responsible for coordination, routing, and escalation.
+The **Team Lead** is the universal ownership primitive in Kivo. Every team — regardless of template or domain — must have at least one Team Lead responsible for coordination, routing, and escalation.
 
 ### Agent
 

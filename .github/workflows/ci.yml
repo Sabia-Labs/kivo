@@ -22,16 +22,16 @@ jobs:
           version: "v3.17.3"
 
       - name: Lint chart (local values)
-        run: helm lint charts/forge -f charts/forge/values-local.yaml
+        run: helm lint charts/kivo -f charts/kivo/values-local.yaml
 
       - name: Lint chart (UAT values)
-        run: helm lint charts/forge -f charts/forge/values-uat.yaml --set api.image.tag=test --set web.image.tag=test
+        run: helm lint charts/kivo -f charts/kivo/values-uat.yaml --set api.image.tag=test --set web.image.tag=test
 
       - name: Lint chart (prod values)
-        run: helm lint charts/forge -f charts/forge/values-prod.yaml --set api.image.tag=test --set web.image.tag=test
+        run: helm lint charts/kivo -f charts/kivo/values-prod.yaml --set api.image.tag=test --set web.image.tag=test
 
       - name: Render templates (dry-run)
-        run: helm template forge charts/forge -f charts/forge/values-uat.yaml --set api.image.tag=test --set web.image.tag=test
+        run: helm template kivo charts/kivo -f charts/kivo/values-uat.yaml --set api.image.tag=test --set web.image.tag=test
 
   # ── API Typecheck & Build ────────────────────────────────────────────────────
   api-check:
@@ -66,7 +66,7 @@ jobs:
           context: apps/api
           file: apps/api/Dockerfile
           push: false
-          tags: forge/api:ci
+          tags: kivo/api:ci
 
   # ── Web Typecheck & Build ────────────────────────────────────────────────────
   web-check:
@@ -96,4 +96,4 @@ jobs:
           context: apps/web
           file: apps/web/Dockerfile
           push: false
-          tags: forge/web:ci
+          tags: kivo/web:ci

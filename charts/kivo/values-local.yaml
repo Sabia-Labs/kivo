@@ -1,0 +1,151 @@
+# ── Local Development Overrides (docker-desktop) ──────────────────────────────
+# Used by: tilt up, helm install ... -f values-local.yaml
+
+namespace: kivo
+
+# Tells Helm templates to skip resources that Tilt manages directly
+# (e.g. RabbitmqCluster CR, applied after Operator CRD is installed).
+tiltDeploy: true
+
+kivoApi:
+  replicaCount: 1
+  image:
+    repository: kivo/kivo-api
+    tag: local         # built by Tilt from apps/kivo-api/Dockerfile
+    pullPolicy: Never  # never pull — always use local image built by Tilt
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "200m"
+      memory: 256Mi
+  env:
+    NODE_ENV: development
+    PORT: "4000"
+    CORS_ORIGIN: "http://kivo.localhost,http://localhost:3000"
+    # JWT_SECRET inline for local dev only (not a real secret)
+    JWT_SECRET: "kivo-local-dev-secret-change-in-prod"
+    # RabbitMQ management API (used by kivo-api to provision tenants)
+    RABBITMQ_MANAGEMENT_URL: "http://kivo-rabbit.infra-messaging.svc.cluster.local:15672"
+    RABBITMQ_ADMIN_USER: "admin"
+    RABBITMQ_ADMIN_PASSWORD: "kivo_rabbit_local"
+    RABBITMQ_AMQP_HOST: "kivo-rabbit.infra-messaging.svc.cluster.local"
+    RABBITMQ_AMQP_PORT: "5672"
+  # No existingSecret in local — DATABASE_URL is built from embedded PostgreSQL
+  existingSecret: ""
+  # Disable migration init container until --migrate-only flag is implemented
+  runMigrations: false
+
+adminApi:
+  replicaCount: 1
+  image:
+    repository: kivo/admin-api
+    tag: local
+    pullPolicy: Never
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "200m"
+      memory: 256Mi
+  env:
+    NODE_ENV: development
+    ADMIN_PORT: "4001"
+    JWT_SECRET: "kivo-local-dev-secret-change-in-prod"
+  runMigrations: false
+
+kivoWeb:
+  replicaCount: 1
+  image:
+    repository: kivo/kivo-web
+    tag: local
+    pullPolicy: Never
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "200m"
+      memory: 256Mi
+  env:
+    NODE_ENV: development
+    PORT: "3000"
+    # Server-side: Next.js pod calls kivo-api via ClusterIP (pod-to-pod, internal)
+    API_INTERNAL_URL: "http://kivo-api:4000"
+    # Client-side: browser calls /api/* on the same origin → Next.js rewrites to API_INTERNAL_URL
+    NEXT_PUBLIC_API_URL: "/api"
+
+adminWeb:
+  replicaCount: 1
+  image:
+    repository: kivo/admin-web
+    tag: local
+    pullPolicy: Never
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: "200m"
+      memory: 256Mi
+  env:
+    NODE_ENV: development
+    PORT: "3001"
+    API_INTERNAL_URL: "http://kivo-admin-api.kivo-admin:4001"
+    NEXT_PUBLIC_API_URL: "/admin-api"
+
+
+ingress:
+  enabled: true
+  className: nginx
+  host: kivo.localhost
+  tls:
+    enabled: false
+
+postgresql:
+  embedded: true
+  password: kivo_local_only
+  persistence:
+    enabled: true
+    size: 2Gi
+
+networkPolicy:
+  # Disable NetworkPolicy locally — Docker Desktop doesn't enforce them well
+  enabled: false
+
+controller:
+  enabled: true
+  replicaCount: 1   # single replica locally (no need for HA)
+  image:
+    repository: kivo/controller
+    tag: local
+    pullPolicy: Never
+  # Image the controller will use for agent Pods.
+  # In local dev: built by Tilt with pullPolicy=Never.
+  # In prod: override with the published ghcr.io reference.
+  agentImage: "kivo/agent:local"
+  agentImagePullPolicy: "Never"
+  # Consumer sidecar image — built by Tilt locally.
+  # Set to empty string here; the kivo-consumer-image ConfigMap (applied by Tilt)
+  # overrides this when the build is ready. While the build is pending, the controller
+  # reads an empty string → skips sidecar injection → agents start as 1/1.
+  consumerImage: ""
+  consumerImagePullPolicy: "Never"
+
+# ── RabbitMQ local dev ──────────────────────────────────────────────────────────
+rabbitmq:
+  enabled: true
+  replicas: 1          # single node is fine for local dev
+  adminUser: admin
+  adminPassword: kivo_rabbit_local   # NOT a real secret — local only
+  persistence:
+    storage: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: "300m"
+      memory: 512Mi

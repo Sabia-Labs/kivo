@@ -91,7 +91,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── CHAOS vs FORGE WAY ───────────────────────────────────────── */}
+      {/* ─── CHAOS vs 灵巢 WAY ───────────────────────────────────────── */}
       <section id="about" className="bg-muted/30 px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center">
@@ -117,12 +117,12 @@ export default function HomePage() {
             <div className="flex flex-col rounded-xl bg-card border p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary"><Check className="size-4" /></div>
-                <span className="font-bold">{t.chaos.forgeWayTitle}</span>
+                <span className="font-bold">{t.chaos.kivoWayTitle}</span>
               </div>
               <ul className="flex flex-col gap-4">
                 {t.chaos.items.map((item, i) => (
                   <li key={i} className="flex gap-3 text-sm text-foreground">
-                    <Check className="size-4 shrink-0 text-primary mt-0.5" /> {item.forge}
+                    <Check className="size-4 shrink-0 text-primary mt-0.5" /> {item.kivo}
                   </li>
                 ))}
               </ul>
@@ -149,7 +149,19 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl grid gap-8 sm:grid-cols-4">
           <div className="sm:col-span-2">
             <div className="flex items-center gap-2 font-bold tracking-tight mb-4">
-              <Cpu className="size-5 text-primary" /> FORGE
+              <svg className="size-5" viewBox="0 0 24 24" fill="none">
+                <defs>
+                  <linearGradient id="kivoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#8b5cf6" />
+                  </linearGradient>
+                </defs>
+                <path d="M6 17 L12 6 L18 17 Z" stroke="url(#kivoGradient)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="6" cy="17" r="2" fill="url(#kivoGradient)" />
+                <circle cx="12" cy="6" r="2" fill="url(#kivoGradient)" />
+                <circle cx="18" cy="17" r="2" fill="url(#kivoGradient)" />
+              </svg>
+              Kivo
             </div>
             <p className="text-sm text-muted-foreground max-w-xs">{t.footer.tagline}</p>
           </div>

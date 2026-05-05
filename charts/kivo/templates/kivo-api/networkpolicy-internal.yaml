@@ -1,0 +1,41 @@
+{{- /*
+  NetworkPolicy for the Kivo API pod.
+  /internal/* is only reachable by the Agent Controller pod.
+  All other ingress rules are unchanged from the existing networkpolicy.yaml.
+*/ -}}
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kivo-api-internal
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: kivo-api
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: kivo-api
+  policyTypes:
+    - Ingress
+  ingress:
+    # ── Allow: web → api (normal traffic) ────────────────────────────────────
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-web
+      ports:
+        - protocol: TCP
+          port: {{ .Values.kivoApi.port }}
+    # ── Allow: controller → api (internal /internal/* routes only) ───────────
+    # The controller calls PATCH /internal/agents/:id/k8s-status to sync status.
+    # Only the controller pod (identified by its label) can reach the API on this port.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-agent-controller
+      ports:
+        - protocol: TCP
+          port: {{ .Values.kivoApi.port }}
+{{- end }}

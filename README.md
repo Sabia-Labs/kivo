@@ -1,21 +1,21 @@
-# Forge
+# Kivo
 
-**Forge**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
+**Kivo**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
 
-> *"Forge brings world-class team management discipline to autonomous AI agents — so your agent teams run like a well-managed human organization, at AI speed."*
+> *"Kivo brings world-class team management discipline to autonomous AI agents — so your agent teams run like a well-managed human organization, at AI speed."*
 
-Whether you are building software, running customer support, or coordinating any other team-based function, Forge gives you the infrastructure to deploy autonomous agents that operate like a well-managed organization.
+Whether you are building software, running customer support, or coordinating any other team-based function, Kivo gives you the infrastructure to deploy autonomous agents that operate like a well-managed organization.
 
 ---
 
 ## Architecture overview
 
 ```
-forge/
+kivo/
 ├── apps/
-│   ├── forge-web/        # Application Plane — Client Portal (port 3000)
+│   ├── kivo-web/        # Application Plane — Client Portal (port 3000)
 │   ├── admin-web/        # Control Plane — Marketing & Admin Portal (port 3001)
-│   ├── forge-api/        # Application Plane — Teams & Tasks (port 4000)
+│   ├── kivo-api/        # Application Plane — Teams & Tasks (port 4000)
 │   ├── admin-api/        # Control Plane — Users, Workspaces & Meta (port 4001)
 │   └── agents/           # Per-tenant agent runtime (Kubernetes workload)
 │       ├── profiles/     # Agent persona markdown files (IDENTITY, SOUL, PROCESS, …)
@@ -38,7 +38,7 @@ forge/
 └── .github/workflows/    # CI/CD pipelines
 ```
 
-> **Deployment convention:** each app that runs on Kubernetes will have its Dockerfile and Helm chart under a `deploy/` subfolder (e.g., `apps/web/deploy/`, `apps/forge-api/deploy/`). ArgoCD will point to those paths per environment.
+> **Deployment convention:** each app that runs on Kubernetes will have its Dockerfile and Helm chart under a `deploy/` subfolder (e.g., `apps/web/deploy/`, `apps/kivo-api/deploy/`). ArgoCD will point to those paths per environment.
 
 **Stack:**
 - **Frontend:** Next.js 16, Tailwind CSS, shadcn/ui, i18n (EN + ZH)
@@ -48,19 +48,19 @@ forge/
 
 ## Architecture overview
 
-Forge separates the platform into two distinct planes:
+Kivo separates the platform into two distinct planes:
 
-- **Control Plane (`admin-api` + `admin-web`):** Global SaaS layer. Manages users, workspaces, billing, and marketing. Runs in the `forge-admin` namespace.
-- **Application Plane (`forge-api` + `forge-web`):** Tenant execution layer. Manages teams, agents, and tasks for specific workspaces. Runs in the `forge` namespace.
+- **Control Plane (`admin-api` + `admin-web`):** Global SaaS layer. Manages users, workspaces, billing, and marketing. Runs in the `kivo-admin` namespace.
+- **Application Plane (`kivo-api` + `kivo-web`):** Tenant execution layer. Manages teams, agents, and tasks for specific workspaces. Runs in the `kivo` namespace.
 
 ---
 
 ## Multi-tenant model
 
-Forge uses a **Cell-based Architecture** for maximum tenant isolation:
+Kivo uses a **Cell-based Architecture** for maximum tenant isolation:
 
 - **Shared SaaS Layer:** Shared deployments of `apps/admin-web` and `apps/admin-api` (Control Plane).
-- **Tenant Cells:** Each workspace runs its own agent team in an isolated Kubernetes namespace (`forge-ws-*`), consuming the Application Plane (`forge-api` + `forge-web`).
+- **Tenant Cells:** Each workspace runs its own agent team in an isolated Kubernetes namespace (`kivo-ws-*`), consuming the Application Plane (`kivo-api` + `kivo-web`).
 - **Regional Scaling:** The Application Plane and agents can be deployed in different regions to stay close to the customer data.
 
 ---
@@ -69,7 +69,7 @@ Forge uses a **Cell-based Architecture** for maximum tenant isolation:
 
 | Template | Description |
 |---|---|
-| **Forge Starter** | Minimal team — Team Lead only. General-purpose or exploratory use. |
+| **Kivo Starter** | Minimal team — Team Lead only. General-purpose or exploratory use. |
 | **Engineering** | Full software delivery squad with SDLC discipline (Engineer, Architect, PM). |
 | **Customer Support** | *(Coming soon)* Automated support team. |
 
@@ -91,8 +91,8 @@ The entire stack (Web, API, PostgreSQL) runs inside local Kubernetes via **Tilt*
 
 ```bash
 # 1. Configure the API environment
-cp apps/forge-api/.env.example apps/forge-api/.env
-# Edit apps/forge-api/.env and set JWT_SECRET to any local secret
+cp apps/kivo-api/.env.example apps/kivo-api/.env
+# Edit apps/kivo-api/.env and set JWT_SECRET to any local secret
 ```
 
 ### Start the stack
@@ -121,8 +121,8 @@ Once the stack is running:
 1. **`/signup`** — Create an account (3 steps):
    - Step 1: Full name + work email + password
    - Step 2: Workspace name
-   - Step 3: Choose a team template (Forge Starter or Engineering)
-     - **Forge Starter:** Team name + Team Lead name → creates team → goes to `/teams`
+   - Step 3: Choose a team template (Kivo Starter or Engineering)
+     - **Kivo Starter:** Team name + Team Lead name → creates team → goes to `/teams`
      - **Engineering:** Team name + agent squad (Engineer / Architect / PM) → goes to `/teams`
 
 2. **`/teams`** — Your agent team dashboard after onboarding
@@ -136,15 +136,15 @@ Once the stack is running:
 ## Available make commands
 
 ```
-make forge-web      Start client portal (localhost:3000)
-make forge-web-install  Install dependencies
+make kivo-web      Start client portal (localhost:3000)
+make kivo-web-install  Install dependencies
 
 make admin-web      Start marketing/admin portal (localhost:3001)
 make admin-install  Install dependencies
 
-make forge-api      Start Forge API (localhost:4000)
-make forge-api-install  Install dependencies
-make db-migrate     Run Forge App Drizzle migrations
+make kivo-api      Start Kivo API (localhost:4000)
+make kivo-api-install  Install dependencies
+make db-migrate     Run Kivo App Drizzle migrations
 make db-seed        Seed the app database (requires WORKSPACE_ID)
 
 make admin-api      Start Admin API dev server (localhost:4001)
@@ -152,7 +152,7 @@ make admin-install  Install Admin API dependencies
 make admin-migrate  Run Admin Drizzle migrations
 make admin-seed     Seed the admin database (Users, Workspaces, Types)
 
-make docker-db      Start local PostgreSQL via Docker (forge & forge_admin)
+make docker-db      Start local PostgreSQL via Docker (kivo & kivo_admin)
 
 make agents-test    Run agent Helm test deployment (requires .env)
 make clean          Remove build artifacts
@@ -173,7 +173,7 @@ All responses use the envelope: `{ success, data, error }`.
 | `GET` | `/meta/team-types` | List available team templates |
 | `GET` | `/meta/agent-roles` | List available agent roles |
 
-### Application Plane (forge-forge-api:4000)
+### Application Plane (kivo-kivo-api:4000)
 
 | Method | Path | Description |
 |---|---|---|
@@ -194,11 +194,11 @@ All responses use the envelope: `{ success, data, error }`.
 
 **Team templates:** `starter` · `engineering` · `customer_support`
 
-### Environment variables (apps/forge-api/.env)
+### Environment variables (apps/kivo-api/.env)
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgres://forge:forge@localhost:5432/forge` | PostgreSQL connection string |
+| `DATABASE_URL` | `postgres://kivo:kivo@localhost:5432/kivo` | PostgreSQL connection string |
 | `PORT` | `4000` | HTTP port (loopback-bound) |
 | `JWT_SECRET` | — | **Required.** Secret for signing JWTs |
 | `CORS_ORIGIN` | `http://localhost:3000` | Allowed CORS origin |
@@ -230,7 +230,7 @@ helm version --short   # should show v3.x or v4.x
 kubectl config use-context docker-desktop
 
 # 2. Start everything (builds images, deploys to local k8s, opens dashboard)
-cd /path/to/forge
+cd /path/to/kivo
 tilt up
 
 # 3. Open the Tilt dashboard (auto-opens, or navigate manually)
@@ -248,19 +248,19 @@ Drizzle ships a local web GUI — **Drizzle Studio** — that lets you browse ta
 
 ```bash
 # Open Drizzle Studio (runs against the local k8s PostgreSQL via port-forward)
-cd apps/forge-api
+cd apps/kivo-api
 pnpm drizzle-kit studio
 ```
 
 This starts the studio at **https://local.drizzle.studio** and opens it in your browser automatically.
 
-> **Note:** The `DATABASE_URL` in `apps/forge-api/.env` must point to the running database. When using Tilt, PostgreSQL is port-forwarded to `localhost:5432` automatically, so no changes are needed.
+> **Note:** The `DATABASE_URL` in `apps/kivo-api/.env` must point to the running database. When using Tilt, PostgreSQL is port-forwarded to `localhost:5432` automatically, so no changes are needed.
 
 Alternatively, connect to the database directly via `psql`:
 
 ```bash
 # Interactive psql session inside the running pod
-kubectl exec -n forge statefulset/forge-postgresql -- psql -U forge -d forge
+kubectl exec -n kivo statefulset/kivo-postgresql -- psql -U kivo -d kivo
 ```
 
 ### What Tilt does automatically
@@ -268,52 +268,52 @@ kubectl exec -n forge statefulset/forge-postgresql -- psql -U forge -d forge
 | Step | What happens |
 |---|---|
 | Detects file changes | Syncs changed files directly into running pods (live_update) |
-| `apps/forge-api/src/**` changed | TypeScript recompiled inside pod → API restarts in ~3s |
+| `apps/kivo-api/src/**` changed | TypeScript recompiled inside pod → API restarts in ~3s |
 | `apps/web/app/**` changed | Files synced → Next.js HMR picks it up in ~2s |
-| `charts/forge/**` changed | Rerenders Helm templates → applies diff to cluster |
-| `apps/forge-api/Dockerfile` changed | Full image rebuild → redeploy |
+| `charts/kivo/**` changed | Rerenders Helm templates → applies diff to cluster |
+| `apps/kivo-api/Dockerfile` changed | Full image rebuild → redeploy |
 
 ### Accessing the services
 
 | Service | URL | Notes |
 |---|---|---|
-| **Web** | http://forge.localhost | via Ingress (NGINX) |
+| **Web** | http://kivo.localhost | via Ingress (NGINX) |
 | **Web** (direct) | http://localhost:3000 | via Tilt port-forward |
 | **API health** | http://localhost:4000/health | Application Plane |
 | **Admin API health** | http://localhost:4001/health | Control Plane |
-| **PostgreSQL** | `localhost:5432` | user: `forge` / DBs: `forge`, `forge_admin` |
+| **PostgreSQL** | `localhost:5432` | user: `kivo` / DBs: `kivo`, `kivo_admin` |
 | **Tilt dashboard** | http://localhost:10350 | logs, status, live_update |
 
 ### Troubleshooting commands
 
 ```bash
 # --- Pod status ---
-kubectl get pods -A | grep forge                     # list all forge pods across namespaces
+kubectl get pods -A | grep kivo                     # list all kivo pods across namespaces
 
 # --- Logs ---
-kubectl logs -n forge-admin deployment/forge-admin-api -f  # Admin API logs
-kubectl logs -n forge deployment/forge-api -f              # Forge API logs
-kubectl logs -n forge deployment/forge-web -f              # Web logs
-kubectl logs -n forge statefulset/forge-postgresql -f      # PostgreSQL logs
+kubectl logs -n kivo-admin deployment/kivo-admin-api -f  # Admin API logs
+kubectl logs -n kivo deployment/kivo-api -f              # Kivo API logs
+kubectl logs -n kivo deployment/kivo-web -f              # Web logs
+kubectl logs -n kivo statefulset/kivo-postgresql -f      # PostgreSQL logs
 
 # --- Connect to PostgreSQL (for manual queries) ---
-kubectl exec -n forge statefulset/forge-postgresql -- \
-  psql -U forge -d forge
-kubectl exec -n forge statefulset/forge-postgresql -- \
-  psql -U forge -d forge_admin
+kubectl exec -n kivo statefulset/kivo-postgresql -- \
+  psql -U kivo -d kivo
+kubectl exec -n kivo statefulset/kivo-postgresql -- \
+  psql -U kivo -d kivo_admin
 ```
 # --- Force a pod restart without full rebuild ---
-kubectl rollout restart -n forge deployment/forge-api
-kubectl rollout restart -n forge deployment/forge-web
+kubectl rollout restart -n kivo deployment/kivo-api
+kubectl rollout restart -n kivo deployment/kivo-web
 
 # --- Check ingress ---
-kubectl get ingress -n forge
+kubectl get ingress -n kivo
 kubectl get pods -n ingress-nginx
 
 # --- Nuclear option: full reset ---
 tilt down && tilt up
 # Or wipe the namespace entirely (DB data will be lost):
-kubectl delete namespace forge
+kubectl delete namespace kivo
 tilt up
 ```
 
@@ -327,7 +327,7 @@ make k8s-lint
 make k8s-render
 
 # Lint only
-helm lint charts/forge -f charts/forge/values-local.yaml
+helm lint charts/kivo -f charts/kivo/values-local.yaml
 ```
 
 ### Architecture in local mode
@@ -336,15 +336,15 @@ helm lint charts/forge -f charts/forge/values-local.yaml
 Your browser
      │
      ▼
-forge.localhost (port 80)
+kivo.localhost (port 80)
      │  NGINX Ingress (ingress-nginx namespace)
-     ├── /api/* ──▶ forge-web (proxy to forge-forge-api:4000)
-     └── /      ──▶ forge-web:3000
+     ├── /api/* ──▶ kivo-web (proxy to kivo-kivo-api:4000)
+     └── /      ──▶ kivo-web:3000
      
   (Development Port-forwards)
-  localhost:4000  ──▶ forge-api (Application Plane, forge ns)
-  localhost:4001  ──▶ forge-admin-api (Control Plane, forge-admin ns)
-  localhost:5432  ──▶ forge-postgresql (DB: forge, forge_admin)
+  localhost:4000  ──▶ kivo-api (Application Plane, kivo ns)
+  localhost:4001  ──▶ kivo-admin-api (Control Plane, kivo-admin ns)
+  localhost:5432  ──▶ kivo-postgresql (DB: kivo, kivo_admin)
 ```
 
 The API has **no Ingress rule** — it is only reachable from within the cluster (from the web pod). This mirrors the production security model.

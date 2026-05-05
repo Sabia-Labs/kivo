@@ -51,9 +51,17 @@ export function Navbar() {
           className="flex items-center gap-2 font-bold text-foreground transition-opacity hover:opacity-80"
         >
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Cpu className="size-4" />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              {/* connections */}
+              <path d="M6 17 L12 6 L18 17 Z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+
+              {/* nodes */}
+              <circle cx="6" cy="17" r="2" fill="currentColor" />
+              <circle cx="12" cy="6" r="2" fill="currentColor" />
+              <circle cx="18" cy="17" r="2" fill="currentColor" />
+            </svg>
           </span>
-          <span className="text-lg tracking-tight">FORGE</span>
+          <span className="text-lg tracking-tight">Kivo</span>
         </Link>
 
         {/* Desktop Nav Links — only show marketing links when not authenticated */}

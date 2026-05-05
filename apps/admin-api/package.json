@@ -1,8 +1,8 @@
 {
-  "name": "@forge/admin-api",
+  "name": "@kivo/admin-api",
   "version": "0.1.0",
   "private": true,
-  "description": "Forge Control Plane REST API — Admin & Meta",
+  "description": "Kivo Control Plane REST API — Admin & Meta",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --outDir dist",

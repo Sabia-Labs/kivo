@@ -1,5 +1,5 @@
 /**
- * Forge Admin API — Seed Script
+ * Kivo Admin API — Seed Script
  */
 
 import "dotenv/config";
@@ -8,13 +8,13 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL_ADMIN ?? "postgres://forge:forge@localhost:5432/forge_admin",
+  connectionString: process.env.DATABASE_URL_ADMIN ?? "postgres://kivo:kivo@localhost:5432/kivo_admin",
 });
 
 const db = drizzle(pool, { schema });
 
 async function main() {
-  console.log("🌱 Seeding Forge Admin API...\n");
+  console.log("🌱 Seeding Kivo Admin API...\n");
 
 
   // ── 3. Seed User & Workspace ───────────────────────────────────────────────
@@ -34,7 +34,7 @@ async function main() {
     const [workspace] = await db.insert(schema.workspaces).values({
       userId: user.id,
       name: "ACME",
-      k8sNamespace: `forge-ws-${user.id.substring(0, 8)}`,
+      k8sNamespace: `kivo-ws-${user.id.substring(0, 8)}`,
     }).returning();
     console.log(`  ✓ Workspace created: ${workspace.id} (Namespace: ${workspace.k8sNamespace})`);
     

@@ -1,6 +1,6 @@
 apiVersion: v2
-name: forge
-description: Helm chart for deploying the Forge OpenClaw-based agents
+name: kivo
+description: Helm chart for deploying the Kivo OpenClaw-based agents
 version: 0.1.0
 appVersion: "0.1.0"
 type: application

@@ -34,7 +34,7 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 const HOST = process.env.HOST ?? "127.0.0.1";
 
 app.listen(PORT, HOST, () => {
-  console.log(`🚀 Forge Admin API running on http://${HOST}:${PORT}`);
+  console.log(`🚀 Kivo Admin API running on http://${HOST}:${PORT}`);
 });
 
 export default app;

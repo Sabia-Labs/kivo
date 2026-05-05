@@ -1,0 +1,19 @@
+{{- if .Values.kivoWeb.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: kivo-web
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+    {{- include "kivo.kivoWeb.selectorLabels" . | nindent 4 }}
+spec:
+  type: {{ .Values.kivoWeb.service.type }}
+  ports:
+    - port: {{ .Values.kivoWeb.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "kivo.kivoWeb.selectorLabels" . | nindent 4 }}
+{{- end }}

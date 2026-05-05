@@ -1,8 +1,8 @@
-{{- define "forge.name" -}}
+{{- define "kivo.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "forge.fullname" -}}
+{{- define "kivo.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -15,6 +15,6 @@
 {{- end }}
 {{- end }}
 
-{{- define "forge.chart" -}}
+{{- define "kivo.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}

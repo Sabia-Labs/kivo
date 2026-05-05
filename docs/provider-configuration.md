@@ -1,6 +1,6 @@
 # Provider Configuration
 
-The Forge image delegates provider bootstrap to the OpenClaw CLI during container startup.
+The Kivo image delegates provider bootstrap to the OpenClaw CLI during container startup.
 
 ## Runtime contract
 

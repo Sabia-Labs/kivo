@@ -5,6 +5,6 @@ export default {
   out: "./migrations",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL_ADMIN ?? "postgres://forge:forge@localhost:5432/forge_admin",
+    url: process.env.DATABASE_URL_ADMIN ?? "postgres://kivo:kivo@localhost:5432/kivo_admin",
   },
 } satisfies Config;

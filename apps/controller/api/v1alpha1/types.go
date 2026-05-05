@@ -8,7 +8,7 @@ import (
 )
 
 // GroupVersion is group version used to register these objects.
-var GroupVersion = schema.GroupVersion{Group: "forge.ai", Version: "v1alpha1"}
+var GroupVersion = schema.GroupVersion{Group: "kivo.ai", Version: "v1alpha1"}
 
 // SchemeBuilder is used to add functions to this group's scheme.
 var SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
@@ -23,7 +23,7 @@ type AgentSpec struct {
 	// Human-readable name of the agent (e.g. "Alice").
 	AgentName string `json:"agentName"`
 
-	// Agent role profile. Maps to /opt/forge/profiles/{profile}/ inside the image.
+	// Agent role profile. Maps to /opt/kivo/profiles/{profile}/ inside the image.
 	// +kubebuilder:validation:Enum=software_engineer;product_manager;software_architect;team_lead
 	Profile string `json:"profile"`
 
@@ -56,7 +56,7 @@ type AgentSpec struct {
 	// +optional
 	Persistence *AgentPersistence `json:"persistence,omitempty"`
 
-	// Image allows overriding the default forge-agent image.
+	// Image allows overriding the default kivo-agent image.
 	// +optional
 	Image *AgentImage `json:"image,omitempty"`
 }
@@ -117,7 +117,7 @@ type AgentStatus struct {
 
 // ── Resource ───────────────────────────────────────────────────────────────────
 
-// Agent is the Schema for the agents.forge.ai API.
+// Agent is the Schema for the agents.kivo.ai API.
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase"

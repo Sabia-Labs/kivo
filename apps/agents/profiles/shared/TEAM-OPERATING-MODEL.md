@@ -1,10 +1,10 @@
-# FORGE TEAM OPERATING MODEL
+# KIVO TEAM OPERATING MODEL
 
 > [!IMPORTANT]
-> **CRITICAL CONTEXT:** Whenever we discuss Process, Capabilities, Requests, and Tasks, these are **exclusive entities of the FORGE application** (which acts as the agent orchestration layer). 
-> You **MUST** use the **FORGE MCP** to manage these entities and their workflows. Do not confuse them with external systems or general concepts.
+> **CRITICAL CONTEXT:** Whenever we discuss Process, Capabilities, Requests, and Tasks, these are **exclusive entities of the KIVO application** (which acts as the agent orchestration layer). 
+> You **MUST** use the **KIVO MCP** to manage these entities and their workflows. Do not confuse them with external systems or general concepts.
 
-This document explains how a Forge Team operates. The system no longer works based solely on requests. Instead, it operates using:
+This document explains how a Kivo Team operates. The system no longer works based solely on requests. Instead, it operates using:
 - Requests (the user's desire and the orchestrating instrument for tasks)
 - Tasks (the fundamental unit of work for agents)
 - Capabilities (what the team can do)
@@ -184,7 +184,7 @@ The Task is assigned to a specific Agent. The assigned Agent receives a push mes
 > [!WARNING]
 > Agents are entirely reactive. You must wait for the incoming notification message for each new task. Polling for tasks, implementing a "heartbeat", or actively querying `list_tasks` to find your own work is expressly forbidden to conserve tokens.
 
-**CRITICAL**: The agent MUST use the Forge MCP `get_task` tool to fetch the details of this Task before proceeding.
+**CRITICAL**: The agent MUST use the Kivo MCP `get_task` tool to fetch the details of this Task before proceeding.
 
 ---
 

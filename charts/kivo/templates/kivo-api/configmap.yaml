@@ -1,0 +1,18 @@
+{{- if .Values.kivoApi.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kivo-api-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+data:
+  # Non-sensitive configuration only.
+  # Secrets (DATABASE_URL, JWT_SECRET) are injected via the Secret referenced
+  # by api.existingSecret in values.yaml.
+  NODE_ENV: {{ .Values.kivoApi.env.NODE_ENV | quote }}
+  PORT: {{ .Values.kivoApi.env.PORT | quote }}
+{{- if index .Values.kivoApi.env "CORS_ORIGIN" }}
+  CORS_ORIGIN: {{ index .Values.kivoApi.env "CORS_ORIGIN" | quote }}
+{{- end }}
+{{- end }}

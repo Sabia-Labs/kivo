@@ -41,8 +41,8 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY }}/${{ env.ORG }}/forge-api
-            ${{ env.REGISTRY }}/${{ env.ORG }}/forge-web
+            ${{ env.REGISTRY }}/${{ env.ORG }}/kivo-api
+            ${{ env.REGISTRY }}/${{ env.ORG }}/kivo-web
           tags: |
             type=sha,format=short
             type=ref,event=branch
@@ -53,7 +53,7 @@ jobs:
           context: apps/api
           file: apps/api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/forge-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.ORG }}/forge-api:dev-latest
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.ORG }}/kivo-api:dev-latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -64,7 +64,7 @@ jobs:
           context: apps/web
           file: apps/web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/forge-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.ORG }}/forge-web:dev-latest
+          tags: ${{ env.REGISTRY }}/${{ env.ORG }}/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.ORG }}/kivo-web:dev-latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -92,10 +92,10 @@ jobs:
   #
   #     - name: Helm upgrade UAT
   #       run: |
-  #         helm upgrade --install forge charts/forge \
-  #           --namespace forge-uat \
+  #         helm upgrade --install kivo charts/kivo \
+  #           --namespace kivo-uat \
   #           --create-namespace \
-  #           -f charts/forge/values-uat.yaml \
+  #           -f charts/kivo/values-uat.yaml \
   #           --set api.image.tag=${{ github.sha }} \
   #           --set web.image.tag=${{ github.sha }} \
   #           --wait --timeout 5m

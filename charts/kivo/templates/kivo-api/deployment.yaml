@@ -1,0 +1,93 @@
+{{- if .Values.kivoApi.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kivo-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+    {{- include "kivo.kivoApi.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.kivoApi.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kivo.kivoApi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kivo.kivoApi.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: kivo-api
+      automountServiceAccountToken: true
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
+      {{- if .Values.kivoApi.runMigrations }}
+      initContainers:
+        - name: run-migrations
+          image: "{{ .Values.kivoApi.image.repository }}:{{ .Values.kivoApi.image.tag }}"
+          imagePullPolicy: {{ .Values.kivoApi.image.pullPolicy }}
+          command: ["node", "dist/index.js", "--migrate-only"]
+          env:
+            {{- range $key, $value := .Values.kivoApi.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.kivoApi.existingSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: JWT_SECRET
+            {{- else if .Values.postgresql.embedded }}
+            - name: DATABASE_URL
+              value: {{ include "kivo.postgresql.connectionString" . | quote }}
+            {{- end }}
+      {{- end }}
+
+      containers:
+        - name: api
+          image: "{{ .Values.kivoApi.image.repository }}:{{ .Values.kivoApi.image.tag }}"
+          imagePullPolicy: {{ .Values.kivoApi.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.kivoApi.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.kivoApi.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- if .Values.kivoApi.existingSecret }}
+            {{- /* UAT/Prod: credentials come from a pre-existing Kubernetes Secret */}}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: DATABASE_URL
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: JWT_SECRET
+            {{- else if .Values.postgresql.embedded }}
+            {{- /* Local: DATABASE_URL built from embedded PostgreSQL values */}}
+            {{- /* JWT_SECRET is already injected above via the env range loop */}}
+            - name: DATABASE_URL
+              value: {{ include "kivo.postgresql.connectionString" . | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.kivoApi.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.kivoApi.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.kivoApi.resources | nindent 12 }}
+{{- end }}
+

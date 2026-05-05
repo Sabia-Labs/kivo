@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * forge-consumer — RabbitMQ↔OpenClaw gateway bridge
+ * kivo-consumer — RabbitMQ↔OpenClaw gateway bridge
  *
  * Implements the full OpenClaw qa-channel bus protocol:
  *
@@ -40,7 +40,7 @@ const RABBITMQ_PORT     = Number(process.env.RABBITMQ_AMQP_PORT ?? "5672");
 const RABBITMQ_VHOST    = process.env.RABBITMQ_VHOST     ?? "/";
 const RABBITMQ_USER     = process.env.RABBITMQ_USERNAME  ?? "guest";
 const RABBITMQ_PASS     = process.env.RABBITMQ_PASSWORD  ?? "guest";
-const RABBITMQ_EXCHANGE = process.env.RABBITMQ_EXCHANGE  ?? "forge-exchange";
+const RABBITMQ_EXCHANGE = process.env.RABBITMQ_EXCHANGE  ?? "kivo-exchange";
 const AGENT_ID          = process.env.AGENT_ID           ?? "";
 const SEND_API_PORT     = Number(process.env.SEND_API_PORT   ?? "18780");
 
@@ -427,7 +427,7 @@ async function startConsumer(): Promise<void> {
         conversation: {
           id:    cmd.sessionKey,   // sessionKey becomes the conversation ID
           kind:  "direct",
-          title: "Forge Chat",
+          title: "Kivo Chat",
         },
         text:      userText,
         senderId:  cmd.sessionKey,    // sessionKey as user identifier
@@ -443,7 +443,7 @@ async function startConsumer(): Promise<void> {
       console.log(`[qa-bus] Queued inbound-message event (conversationId=${conversationId})`);
 
       // Ack immediately — we don't hold the RabbitMQ message.
-      // The reply is fire-and-forget via /v1/outbound/message → RabbitMQ publish.
+      // The reply is fire-and-kivot via /v1/outbound/message → RabbitMQ publish.
       ch.ack(msg);
 
     } catch (err: unknown) {
@@ -530,7 +530,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  console.log(`[consumer] Starting forge-consumer for agent: ${AGENT_ID}`);
+  console.log(`[consumer] Starting kivo-consumer for agent: ${AGENT_ID}`);
   await Promise.all([
     startConsumer(),
     startQaBusServer(),

@@ -12,7 +12,7 @@ At the beginning of each session:
 4. Read SAFETY.md (approval guardrails and hard stop conditions)
 5. Read TOOLS.md (available tools and usage rules)
 6. Read USER.md (operator context and preferences)
-7. Read TEAM-OPERATING-MODEL.md (Forge specific processes, capabilities, requests, tasks)
+7. Read TEAM-OPERATING-MODEL.md (Kivo specific processes, capabilities, requests, tasks)
 8. Scan recent files in memory/
 9. Read MEMORY.md for accumulated product knowledge
 

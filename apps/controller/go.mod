@@ -1,4 +1,4 @@
-module github.com/ltreven/forge/controller
+module github.com/ltreven/kivo/controller
 
 go 1.22
 

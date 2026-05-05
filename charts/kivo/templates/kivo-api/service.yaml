@@ -1,0 +1,21 @@
+{{- if .Values.kivoApi.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: kivo-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+    {{- include "kivo.kivoApi.selectorLabels" . | nindent 4 }}
+spec:
+  # ClusterIP only — the API is never exposed externally.
+  # Access from outside the cluster is blocked by design (no Ingress + NetworkPolicy).
+  type: {{ .Values.kivoApi.service.type }}
+  ports:
+    - port: {{ .Values.kivoApi.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "kivo.kivoApi.selectorLabels" . | nindent 4 }}
+{{- end }}

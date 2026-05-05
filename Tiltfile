@@ -1,10 +1,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Forge — Tiltfile
+# Kivo — Tiltfile
 #
 # Usage:
 #   tilt up             — start everything
 #   tilt down           — stop everything
-#   tilt up forge-api   — start only the API (and its dependencies)
+#   tilt up kivo-api   — start only the API (and its dependencies)
 #
 # Prerequisites:
 #   - Docker Desktop with Kubernetes enabled
@@ -37,18 +37,18 @@ PLATFORM_MODEL_PROVIDER = _env.get("PLATFORM_MODEL_PROVIDER", "openai")
 PLATFORM_MODEL_NAME     = _env.get("PLATFORM_MODEL_NAME",    "gpt-5.4")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
-NAMESPACE       = "forge"
-ADMIN_NAMESPACE = "forge-admin"
-HELM_CHART      = "charts/forge"
-VALUES_LOCAL   = "charts/forge/values-local.yaml"
-API_IMAGE        = settings.get("api_image",        "forge/api")
-ADMIN_API_IMAGE  = settings.get("admin_api_image",  "forge/admin-api")
-FORGE_WEB_IMAGE  = settings.get("forge_web_image",  "forge/web")
-ADMIN_WEB_IMAGE  = settings.get("admin_web_image",  "forge/admin-web")
-AGENT_IMAGE      = settings.get("agent_image",      "forge/agent:local")
-CONSUMER_IMAGE   = settings.get("consumer_image",   "forge/consumer:local")
-CONTROLLER_IMAGE = settings.get("controller_image", "forge/controller")
-TILT_HOST      = settings.get("host", "forge.localhost")
+NAMESPACE       = "kivo"
+ADMIN_NAMESPACE = "kivo-admin"
+HELM_CHART      = "charts/kivo"
+VALUES_LOCAL   = "charts/kivo/values-local.yaml"
+API_IMAGE        = settings.get("api_image",        "kivo/api")
+ADMIN_API_IMAGE  = settings.get("admin_api_image",  "kivo/admin-api")
+KIVO_WEB_IMAGE  = settings.get("kivo_web_image",  "kivo/web")
+ADMIN_WEB_IMAGE  = settings.get("admin_web_image",  "kivo/admin-web")
+AGENT_IMAGE      = settings.get("agent_image",      "kivo/agent:local")
+CONSUMER_IMAGE   = settings.get("consumer_image",   "kivo/consumer:local")
+CONTROLLER_IMAGE = settings.get("controller_image", "kivo/controller")
+TILT_HOST      = settings.get("host", "kivo.localhost")
 
 # ── 1. Install ingress-nginx via Helm (only if not already present) ────────────
 load('ext://helm_resource', 'helm_resource', 'helm_repo')
@@ -86,13 +86,13 @@ local_resource(
   deps=[],
 )
 
-# ── 2. Ensure the forge namespace exists ─────────────────────────────────────
+# ── 2. Ensure the kivo namespace exists ─────────────────────────────────────
 # For local mode, all credentials are injected via values-local.yaml (no Secret needed).
 # DATABASE_URL is built from embedded PostgreSQL, JWT_SECRET is inlined as an env var.
 
 local_resource(
   'ensure-namespace',
-  cmd='kubectl create namespace forge --dry-run=client -o yaml | kubectl apply -f - && kubectl create namespace forge-admin --dry-run=client -o yaml | kubectl apply -f -',
+  cmd='kubectl create namespace kivo --dry-run=client -o yaml | kubectl apply -f - && kubectl create namespace kivo-admin --dry-run=client -o yaml | kubectl apply -f -',
   labels=['setup'],
 )
 
@@ -102,16 +102,16 @@ local_resource(
 # Tilt re-runs this step whenever a new .sql file is added to migrations/.
 local_resource(
   'db-migrate',
-  cmd='cat apps/forge-api/migrations/[0-9]*.sql | kubectl exec -i -n forge forge-postgresql-0 -- psql -U forge -d forge -v ON_ERROR_STOP=0 2>&1 | grep -vE "already exists|^$" | grep -E "^(ERROR|FATAL)" || echo "✓ App DB migrations applied"',
-  resource_deps=['forge-postgresql'],
-  deps=['apps/forge-api/migrations'],
+  cmd='cat apps/kivo-api/migrations/[0-9]*.sql | kubectl exec -i -n kivo kivo-postgresql-0 -- psql -U kivo -d kivo -v ON_ERROR_STOP=0 2>&1 | grep -vE "already exists|^$" | grep -E "^(ERROR|FATAL)" || echo "✓ App DB migrations applied"',
+  resource_deps=['kivo-postgresql'],
+  deps=['apps/kivo-api/migrations'],
   labels=['setup'],
 )
 
 local_resource(
   'admin-db-migrate',
-  cmd='kubectl exec -i -n forge forge-postgresql-0 -- psql -U forge -d postgres -c "CREATE DATABASE forge_admin;" 2>/dev/null || true && cat apps/admin-api/migrations/[0-9]*.sql | kubectl exec -i -n forge forge-postgresql-0 -- psql -U forge -d forge_admin -v ON_ERROR_STOP=0 2>&1 | grep -vE "already exists|^$" | grep -E "^(ERROR|FATAL)" || echo "✓ Admin DB migrations applied"',
-  resource_deps=['forge-postgresql'],
+  cmd='kubectl exec -i -n kivo kivo-postgresql-0 -- psql -U kivo -d postgres -c "CREATE DATABASE kivo_admin;" 2>/dev/null || true && cat apps/admin-api/migrations/[0-9]*.sql | kubectl exec -i -n kivo kivo-postgresql-0 -- psql -U kivo -d kivo_admin -v ON_ERROR_STOP=0 2>&1 | grep -vE "already exists|^$" | grep -E "^(ERROR|FATAL)" || echo "✓ Admin DB migrations applied"',
+  resource_deps=['kivo-postgresql'],
   deps=['apps/admin-api/migrations'],
   labels=['setup'],
 )
@@ -125,16 +125,16 @@ local_resource(
 
 local_resource(
   'app-db-seed',
-  cmd='cd apps/forge-api && npm run db:seed',
+  cmd='cd apps/kivo-api && npm run db:seed',
   resource_deps=['db-migrate', 'admin-db-seed'],
   labels=['setup'],
 )
 
-# ── 3. Build Forge API image ──────────────────────────────────────────────────
+# ── 3. Build Kivo API image ──────────────────────────────────────────────────
 docker_build(
   API_IMAGE,
-  context='apps/forge-api',
-  dockerfile='apps/forge-api/Dockerfile',
+  context='apps/kivo-api',
+  dockerfile='apps/kivo-api/Dockerfile',
   # Only-changed files trigger a rebuild (faster)
   ignore=[
     'node_modules',
@@ -142,7 +142,7 @@ docker_build(
     '.env',
     '*.md',
   ],
-  # Note: live_update is disabled — the container runs as non-root (forge user)
+  # Note: live_update is disabled — the container runs as non-root (kivo user)
   # which cannot write to /app/src. Tilt does a fast Docker layer-cache rebuild instead.
 )
 
@@ -158,14 +158,14 @@ docker_build(
   ],
 )
 
-# ── 4a. Build Forge Web image ─────────────────────────────────────────────────
+# ── 4a. Build Kivo Web image ─────────────────────────────────────────────────
 docker_build(
-  FORGE_WEB_IMAGE,
-  context='apps/forge-web',
-  dockerfile='apps/forge-web/Dockerfile',
+  KIVO_WEB_IMAGE,
+  context='apps/kivo-web',
+  dockerfile='apps/kivo-web/Dockerfile',
   build_args={
     'NEXT_PUBLIC_API_URL': '/api',
-    'API_INTERNAL_URL': 'http://forge-api:4000',
+    'API_INTERNAL_URL': 'http://kivo-api:4000',
   },
   ignore=['node_modules', '.next', '*.md'],
 )
@@ -174,15 +174,15 @@ docker_build(
 docker_build(
   ADMIN_WEB_IMAGE,
   context='apps/admin-web',
-  dockerfile='apps/forge-web/Dockerfile', # Reuse same generic Dockerfile
+  dockerfile='apps/kivo-web/Dockerfile', # Reuse same generic Dockerfile
   build_args={
     'NEXT_PUBLIC_API_URL': '/admin-api',
-    'API_INTERNAL_URL': 'http://forge-admin-api.forge-admin:4001',
+    'API_INTERNAL_URL': 'http://kivo-admin-api.kivo-admin:4001',
   },
   ignore=['node_modules', '.next', '*.md'],
 )
 
-# ── 5a. Build forge-agent image ──────────────────────────────────────────────
+# ── 5a. Build kivo-agent image ──────────────────────────────────────────────
 # Root cause of stale-image problem:
 #   `docker build` writes to containerd's "default" namespace.
 #   Docker Desktop Kubernetes reads from the "k8s.io" namespace.
@@ -193,17 +193,17 @@ docker_build(
 #
 # Solution:
 #   1. docker_build so Tilt builds and loads the image into k8s.io containerd.
-#   2. A 0-replica Deployment ("preloader") with forge/agent:local — Tilt
+#   2. A 0-replica Deployment ("preloader") with kivo/agent:local — Tilt
 #      substitutes this with the tilt-tagged digest and loads it into k8s.io.
 #   3. local_resource reads the substituted tag from the preloader and patches
-#      forge-agent-image ConfigMap → controller uses the exact loaded digest.
+#      kivo-agent-image ConfigMap → controller uses the exact loaded digest.
 docker_build(
   AGENT_IMAGE,
   context='apps/agents',
   dockerfile='apps/agents/Dockerfile',
 )
 
-# 1-replica preloader: forces Tilt to load forge/agent into k8s.io containerd.
+# 1-replica preloader: forces Tilt to load kivo/agent into k8s.io containerd.
 # replicas:0 makes Tilt substitute the tag but does NOT trigger k8s.io loading
 # (no pod needs to run). With replicas:1 + a trivial sleep command, Tilt sees
 # a real pod that needs the image and loads it into k8s.io.
@@ -213,19 +213,19 @@ k8s_yaml(blob("""
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: forge-agent-preloader
-  namespace: forge
+  name: kivo-agent-preloader
+  namespace: kivo
   labels:
     app.kubernetes.io/managed-by: tilt
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: forge-agent-preloader
+      app: kivo-agent-preloader
   template:
     metadata:
       labels:
-        app: forge-agent-preloader
+        app: kivo-agent-preloader
     spec:
       containers:
       - name: agent-preloader
@@ -234,30 +234,30 @@ spec:
         command: ["/bin/sh", "-c", "while true; do sleep 3600; done"]
 """.format(image=AGENT_IMAGE)))
 
-k8s_resource('forge-agent-preloader', pod_readiness='ignore', labels=['images'])
+k8s_resource('kivo-agent-preloader', pod_readiness='ignore', labels=['images'])
 
 # Sync the tilt-substituted image tag into the ConfigMap the controller reads.
 local_resource(
-  'forge-agent-configmap-sync',
+  'kivo-agent-configmap-sync',
   cmd="""
-    IMG=$(kubectl get deployment forge-agent-preloader -n forge \\
+    IMG=$(kubectl get deployment kivo-agent-preloader -n kivo \\
       -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
     if [ -z "$IMG" ]; then echo "==> preloader not ready, skipping"; exit 0; fi
-    kubectl patch configmap forge-agent-image -n forge \\
+    kubectl patch configmap kivo-agent-image -n kivo \\
       -p '{"data":{"image":"'"$IMG"'","pullPolicy":"IfNotPresent"}}'
-    echo "==> forge-agent-image ConfigMap => $IMG"
+    echo "==> kivo-agent-image ConfigMap => $IMG"
   """,
-  resource_deps=['forge-agent-preloader'],
+  resource_deps=['kivo-agent-preloader'],
   labels=['images'],
 )
 
-# Initial placeholder ConfigMap — value is overwritten by forge-agent-configmap-sync.
+# Initial placeholder ConfigMap — value is overwritten by kivo-agent-configmap-sync.
 k8s_yaml(blob("""
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: forge-agent-image
-  namespace: forge
+  name: kivo-agent-image
+  namespace: kivo
   labels:
     app.kubernetes.io/managed-by: tilt
 data:
@@ -267,8 +267,8 @@ data:
 
 
 
-# ── 5b. Build forge-consumer image ────────────────────────────────────────────────
-# The same pattern as forge-agent: a 1-replica preloader Deployment forces Tilt
+# ── 5b. Build kivo-consumer image ────────────────────────────────────────────────
+# The same pattern as kivo-agent: a 1-replica preloader Deployment forces Tilt
 # to build and load the image into k8s.io containerd (Docker Desktop Kubernetes).
 # Tilt only builds images it sees in a k8s container spec — a ConfigMap value alone
 # is not enough. The preloader is a stub pod that keeps the image reference alive.
@@ -279,24 +279,24 @@ docker_build(
   ignore=['node_modules', 'dist'],
 )
 
-# Preloader: forces Tilt to load forge/consumer:local into k8s.io containerd.
+# Preloader: forces Tilt to load kivo/consumer:local into k8s.io containerd.
 k8s_yaml(blob("""
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: forge-consumer-preloader
-  namespace: forge
+  name: kivo-consumer-preloader
+  namespace: kivo
   labels:
     app.kubernetes.io/managed-by: tilt
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: forge-consumer-preloader
+      app: kivo-consumer-preloader
   template:
     metadata:
       labels:
-        app: forge-consumer-preloader
+        app: kivo-consumer-preloader
     spec:
       containers:
       - name: consumer-preloader
@@ -305,32 +305,32 @@ spec:
         command: ["/bin/sh", "-c", "while true; do sleep 3600; done"]
 """.format(image=CONSUMER_IMAGE)))
 
-k8s_resource('forge-consumer-preloader', pod_readiness='ignore', labels=['images'])
+k8s_resource('kivo-consumer-preloader', pod_readiness='ignore', labels=['images'])
 
 local_resource(
-  'forge-consumer-configmap-sync',
+  'kivo-consumer-configmap-sync',
   cmd="""
-    IMG=$(kubectl get deployment forge-consumer-preloader -n forge \\
+    IMG=$(kubectl get deployment kivo-consumer-preloader -n kivo \\
       -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
     if [ -z "$IMG" ]; then echo "==> preloader not ready, skipping"; exit 0; fi
-    kubectl patch configmap forge-consumer-image -n forge \\
+    kubectl patch configmap kivo-consumer-image -n kivo \\
       -p '{"data":{"image":"'"$IMG"'","pullPolicy":"IfNotPresent"}}'
-    echo "==> forge-consumer-image ConfigMap => $IMG"
+    echo "==> kivo-consumer-image ConfigMap => $IMG"
   """,
-  resource_deps=['forge-consumer-preloader'],
+  resource_deps=['kivo-consumer-preloader'],
   labels=['images'],
 )
 
-# forge-consumer-image ConfigMap — enables the RabbitMQ↔openclaw sidecar.
+# kivo-consumer-image ConfigMap — enables the RabbitMQ↔openclaw sidecar.
 # image is set to CONSUMER_IMAGE to activate sidecar injection in agent pods.
 # The controller reads this ConfigMap and attaches the sidecar container to each
-# ForgeAgent pod when provisioning. Set image: "" to disable sidecar injection.
+# KivoAgent pod when provisioning. Set image: "" to disable sidecar injection.
 k8s_yaml(blob("""
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: forge-consumer-image
-  namespace: forge
+  name: kivo-consumer-image
+  namespace: kivo
   labels:
     app.kubernetes.io/managed-by: tilt
 data:
@@ -342,17 +342,17 @@ data:
 # ── RabbitmqCluster CR ───────────────────────────────────────────────────────────────
 # Applied DIRECTLY here (not in Helm) because Tilt can't load CRD-backed resources
 # from helm template before the Operator installs the CRD.
-# Tilt sees this as a known resource named 'forge-rabbit' and applies it in the
+# Tilt sees this as a known resource named 'kivo-rabbit' and applies it in the
 # correct order via resource_deps=['rabbitmq-operator'].
 k8s_yaml(blob("""
 apiVersion: rabbitmq.com/v1beta1
 kind: RabbitmqCluster
 metadata:
-  name: forge-rabbit
+  name: kivo-rabbit
   namespace: infra-messaging
   labels:
     app.kubernetes.io/managed-by: tilt
-    forge.ai/component: message-bus
+    kivo.ai/component: message-bus
 spec:
   replicas: 1
   persistence:
@@ -365,9 +365,9 @@ spec:
       default_vhost = /
       log.console = true
       default_user = admin
-      default_pass = forge_rabbit_local
+      default_pass = kivo_rabbit_local
   # Pin to a stable management image — avoids EOF errors when pulling bleeding-edge tags.
-  # The management plugin tag is required for the HTTP API used by forge-api.
+  # The management plugin tag is required for the HTTP API used by kivo-api.
   image: rabbitmq:3.13-management
   resources:
     requests:
@@ -404,7 +404,7 @@ spec:
 """))
 
 
-# ── 5b. Build forge-controller (Go) ─────────────────────────────────────────
+# ── 5b. Build kivo-controller (Go) ─────────────────────────────────────────
 docker_build(
   CONTROLLER_IMAGE,
   context='apps/controller',
@@ -412,33 +412,33 @@ docker_build(
   ignore=['vendor'],
 )
 
-# ── 5. Deploy the forge Helm chart ────────────────────────────────────────────
+# ── 5. Deploy the kivo Helm chart ────────────────────────────────────────────
 # Note: Tilt passes --include-crds to helm template automatically, so CRDs in
-# charts/forge/crds/ (ForgeAgent CRD) are applied as part of this step.
+# charts/kivo/crds/ (KivoAgent CRD) are applied as part of this step.
 # No separate kubectl apply step is needed, even on a zero-km cluster.
 k8s_yaml(
   helm(
     HELM_CHART,
-    name='forge',
+    name='kivo',
     namespace=NAMESPACE,
     values=[VALUES_LOCAL],
     set=[
-      'forgeApi.image.repository=' + API_IMAGE,
-      'forgeApi.image.tag=local',
+      'kivoApi.image.repository=' + API_IMAGE,
+      'kivoApi.image.tag=local',
       'adminApi.image.repository=' + ADMIN_API_IMAGE,
       'adminApi.image.tag=local',
-      'forgeWeb.image.repository=' + FORGE_WEB_IMAGE,
-      'forgeWeb.image.tag=local',
+      'kivoWeb.image.repository=' + KIVO_WEB_IMAGE,
+      'kivoWeb.image.tag=local',
       'adminWeb.image.repository=' + ADMIN_WEB_IMAGE,
       'adminWeb.image.tag=local',
       'controller.image.repository=' + CONTROLLER_IMAGE,
       'controller.image.tag=local',
       'ingress.host=' + TILT_HOST,
       # Platform AI credentials — read from .env (gitignored)
-      'forgeApi.env.PLATFORM_OPENAI_API_KEY=' + PLATFORM_OPENAI_KEY,
-      'forgeApi.env.PLATFORM_MODEL_PROVIDER=' + PLATFORM_MODEL_PROVIDER,
-      'forgeApi.env.PLATFORM_MODEL_NAME=' + PLATFORM_MODEL_NAME,
-      'adminApi.env.FORGE_API_INTERNAL_URL=http://forge-api.forge:4000',
+      'kivoApi.env.PLATFORM_OPENAI_API_KEY=' + PLATFORM_OPENAI_KEY,
+      'kivoApi.env.PLATFORM_MODEL_PROVIDER=' + PLATFORM_MODEL_PROVIDER,
+      'kivoApi.env.PLATFORM_MODEL_NAME=' + PLATFORM_MODEL_NAME,
+      'adminApi.env.KIVO_API_INTERNAL_URL=http://kivo-api.kivo:4000',
     ],
   )
 )
@@ -447,7 +447,7 @@ k8s_yaml(
 
 # PostgreSQL must be ready before the API starts
 k8s_resource(
-  'forge-postgresql',
+  'kivo-postgresql',
   labels=['database'],
   port_forwards=['5432:5432'],
 )
@@ -455,18 +455,18 @@ k8s_resource(
 # RabbitMQ cluster — the RabbitmqCluster CR is a non-workload CRD resource.
 # Tilt requires the objects= syntax to reference it by name.
 # Port-forwards to the management UI are done separately by targeting the
-# Service created by the Operator (forge-rabbit-management, port 15672).
+# Service created by the Operator (kivo-rabbit-management, port 15672).
 k8s_resource(
-  objects=['forge-rabbit:RabbitmqCluster:infra-messaging'],
-  new_name='forge-rabbit',
+  objects=['kivo-rabbit:RabbitmqCluster:infra-messaging'],
+  new_name='kivo-rabbit',
   resource_deps=['rabbitmq-operator'],
   labels=['infra'],
 )
 
 # API depends on PostgreSQL only at startup; RabbitMQ connection is lazy in the app
 k8s_resource(
-  'forge-api',
-  resource_deps=['forge-postgresql', 'db-migrate', 'ensure-namespace'],
+  'kivo-api',
+  resource_deps=['kivo-postgresql', 'db-migrate', 'ensure-namespace'],
   labels=['app'],
   port_forwards=['4000:4000'],
   links=[
@@ -475,12 +475,12 @@ k8s_resource(
 )
 
 k8s_resource(
-  'forge-admin-api',
-  resource_deps=['forge-postgresql', 'admin-db-migrate', 'ensure-namespace'],
+  'kivo-admin-api',
+  resource_deps=['kivo-postgresql', 'admin-db-migrate', 'ensure-namespace'],
   labels=['app'],
   port_forwards=['4001:4001'],
   extra_pod_selectors=[
-    {'app.kubernetes.io/name': 'forge-admin-api'},
+    {'app.kubernetes.io/name': 'kivo-admin-api'},
   ],
   links=[
     link('http://localhost:4001/health', 'Admin API Health'),
@@ -489,22 +489,22 @@ k8s_resource(
 
 # Web depends on the API
 k8s_resource(
-  'forge-web',
-  resource_deps=['forge-api'],
+  'kivo-web',
+  resource_deps=['kivo-api'],
   labels=['app'],
   port_forwards=['3000:3000'],
   links=[
-    link('http://localhost:3000', 'Forge Web (Client Portal)'),
+    link('http://localhost:3000', 'Kivo Web (Client Portal)'),
   ],
 )
 
 k8s_resource(
-  'forge-admin-web',
-  resource_deps=['forge-admin-api'],
+  'kivo-admin-web',
+  resource_deps=['kivo-admin-api'],
   labels=['app'],
   port_forwards=['3001:3001'],
   extra_pod_selectors=[
-    {'app.kubernetes.io/name': 'forge-admin-web'},
+    {'app.kubernetes.io/name': 'kivo-admin-web'},
   ],
   links=[
     link('http://localhost:3001', 'Admin/Marketing Portal'),
@@ -523,25 +523,25 @@ k8s_resource(
 
 local_resource(
   'helm-lint',
-  cmd='helm lint charts/forge -f charts/forge/values-local.yaml',
-  deps=['charts/forge'],
+  cmd='helm lint charts/kivo -f charts/kivo/values-local.yaml',
+  deps=['charts/kivo'],
   labels=['validation'],
   auto_init=True,
   trigger_mode=TRIGGER_MODE_MANUAL,
 )
 
 local_resource(
-  'forge-api-typecheck',
-  cmd='cd apps/forge-api && npx tsc --noEmit',
-  deps=['apps/forge-api/src', 'apps/forge-api/tsconfig.json'],
+  'kivo-api-typecheck',
+  cmd='cd apps/kivo-api && npx tsc --noEmit',
+  deps=['apps/kivo-api/src', 'apps/kivo-api/tsconfig.json'],
   labels=['validation'],
   auto_init=False,
 )
 
 local_resource(
-  'forge-web-typecheck',
-  cmd='cd apps/forge-web && npx tsc --noEmit',
-  deps=['apps/forge-web/app', 'apps/forge-web/components', 'apps/forge-web/tsconfig.json'],
+  'kivo-web-typecheck',
+  cmd='cd apps/kivo-web && npx tsc --noEmit',
+  deps=['apps/kivo-web/app', 'apps/kivo-web/components', 'apps/kivo-web/tsconfig.json'],
   labels=['validation'],
   auto_init=False,
 )

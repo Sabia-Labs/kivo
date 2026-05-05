@@ -28,8 +28,8 @@ COPY --from=builder /app/dist ./dist
 RUN apk add --no-cache curl
 
 # Run as non-root user
-RUN addgroup -S forge && adduser -S forge -G forge
-USER forge
+RUN addgroup -S kivo && adduser -S kivo -G kivo
+USER kivo
 
 EXPOSE 4001
 

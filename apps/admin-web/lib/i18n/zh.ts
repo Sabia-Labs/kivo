@@ -15,7 +15,7 @@ export const zh: Dictionary = {
     badge: "AI智能体团队，以最佳实践管理",
     headline: "您的智能体团队，\n像顶尖组织一样运转。",
     subheadline:
-      "Forge 以世界级的组织管理纪律部署自主AI智能体团队——无论您从事哪个领域，都能让您的智能体团队像管理良好的人类组织一样在AI速度下交付成果。",
+      "灵巢 以世界级的组织管理纪律部署自主AI智能体团队——无论您从事哪个领域，都能让您的智能体团队像管理良好的人类组织一样在AI速度下交付成果。",
     ctaPrimary: "立即开始",
     ctaSecondary: "联系销售",
   },
@@ -28,49 +28,49 @@ export const zh: Dictionary = {
     ],
   },
   chaos: {
-    sectionBadge: "传统方式 vs Forge 方式",
+    sectionBadge: "传统方式 vs 灵巢 方式",
     sectionTitle: "停止管理混乱，开始运营团队。",
     sectionSubtitle:
-      "大多数部署AI智能体的组织最终陷入临时工具、职责不清和不可预期结果的困境。Forge 以受治理、结构化、可量化的执行层取而代之。",
+      "大多数部署AI智能体的组织最终陷入临时工具、职责不清和不可预期结果的困境。灵巢 以受治理、结构化、可量化的执行层取而代之。",
     oldWayTitle: "临时部署智能体",
-    forgeWayTitle: "Forge 方式",
+    kivoWayTitle: "灵巢 方式",
     items: [
       {
         old: "智能体没有明确角色或归属",
-        forge: "每个团队都有组长——从第一天起就有清晰的归属",
+        kivo: "每个团队都有组长——从第一天起就有清晰的归属",
       },
       {
         old: "会话结束后知识随之消失",
-        forge: "所有决策与上下文持久化至Git，零知识流失",
+        kivo: "所有决策与上下文持久化至Git，零知识流失",
       },
       {
         old: "不知道智能体在做什么",
-        forge: "实时健康评分——持续追踪速度、阻塞项和活动",
+        kivo: "实时健康评分——持续追踪速度、阻塞项和活动",
       },
       {
         old: "智能体在无监督无审批的情况下自主行动",
-        forge: "多级审批护栏——智能体未经授权绝不对外行动",
+        kivo: "多级审批护栏——智能体未经授权绝不对外行动",
       },
       {
         old: "产出不可预期，质量参差不齐",
-        forge: "结构化工作流与角色专属纪律贯穿每项任务",
+        kivo: "结构化工作流与角色专属纪律贯穿每项任务",
       },
       {
         old: "难以复现，无法扩展",
-        forge: "可重复的部署模式——相同的团队结构，适用于任何环境",
+        kivo: "可重复的部署模式——相同的团队结构，适用于任何环境",
       },
     ],
   },
   pillars: {
-    sectionBadge: "为什么选择 Forge",
+    sectionBadge: "为什么选择 灵巢",
     sectionTitle: "托管执行层，\n而非另一个AI工具。",
     sectionSubtitle:
-      "与单一AI助手或对话工具不同，Forge 是一个将智能体团队视为受管理的治理组织单元的运营系统。",
+      "与单一AI助手或对话工具不同，灵巢 是一个将智能体团队视为受管理的治理组织单元的运营系统。",
     items: [
       {
         title: "结构化归属",
         description:
-          "每个 Forge 团队都有明确的角色结构。无论涉及哪个领域，组长都能确保问责制、协调能力和一致的产出。",
+          "每个 灵巢 团队都有明确的角色结构。无论涉及哪个领域，组长都能确保问责制、协调能力和一致的产出。",
         icon: "TrendingUp",
       },
       {
@@ -88,7 +88,7 @@ export const zh: Dictionary = {
       {
         title: "流程纪律",
         description:
-          "Forge 对每项任务强制执行最佳实践工作流：明确摄取、就绪定义、规划、执行与交付。没有捷径，没有意外。",
+          "灵巢 对每项任务强制执行最佳实践工作流：明确摄取、就绪定义、规划、执行与交付。没有捷径，没有意外。",
         icon: "GitMerge",
       },
     ],
@@ -102,7 +102,7 @@ export const zh: Dictionary = {
       {
         key: "starter",
         icon: "🧩",
-        title: "Forge Starter",
+        title: "灵巢 Starter",
         description: "最简单的团队——仅一名组长即可开始。适合通用或探索性用途。",
         badge: "",
         cta: "立即开始",
@@ -129,7 +129,7 @@ export const zh: Dictionary = {
     sectionBadge: "控制平面",
     sectionTitle: "您的团队绩效驾驶舱。",
     sectionSubtitle:
-      "Forge 控制平面为领导者提供统一界面，用于配置智能体团队、设定护栏、监控健康状况，并对AI员工保持完全主权。",
+      "灵巢 控制平面为领导者提供统一界面，用于配置智能体团队、设定护栏、监控健康状况，并对AI员工保持完全主权。",
     features: [
       "按智能体和操作类型设置多级审批规则",
       "实时团队健康评分与活动日志",
@@ -147,7 +147,7 @@ export const zh: Dictionary = {
         number: "01",
         title: "选择您的团队模板",
         description:
-          "选择起始结构——Forge Starter 简单灵活，Engineering 适合软件交付，Customer Support 专为服务团队设计。",
+          "选择起始结构——灵巢 Starter 简单灵活，Engineering 适合软件交付，Customer Support 专为服务团队设计。",
       },
       {
         number: "02",
@@ -184,11 +184,11 @@ export const zh: Dictionary = {
       careers: "加入我们",
       contact: "联系我们",
     },
-    copyright: "© 2026 Forge。保留所有权利。",
+    copyright: "© 2026 灵巢。保留所有权利。",
   },
   login: {
     title: "欢迎回来",
-    subtitle: "登录您的 Forge 账户",
+    subtitle: "登录您的 灵巢 账户",
     emailLabel: "电子邮件",
     emailPlaceholder: "you@company.com",
     passwordLabel: "密码",
@@ -234,7 +234,7 @@ export const zh: Dictionary = {
       templates: {
         starter: {
           icon: "🧩",
-          title: "Forge Starter",
+          title: "灵巢 Starter",
           description: "仅一名组长即可开始。简单灵活。",
         },
         engineering: {
@@ -253,7 +253,7 @@ export const zh: Dictionary = {
       back: "返回",
     },
     step4Starter: {
-      title: "配置您的 Forge Starter 团队",
+      title: "配置您的 灵巢 Starter 团队",
       subtitle: "为您的团队命名并指定一位领导者。",
       teamNameLabel: "团队名称",
       teamNamePlaceholder: "例如：运营、研究、战略…",
@@ -281,8 +281,8 @@ export const zh: Dictionary = {
         },
       },
       pmFixedBadge: "必须保留",
-      forgePmTitle: "Forge 组长",
-      forgePmHint: "您团队的协调者和负责人。每个团队有且仅有一名组长。",
+      kivoPmTitle: "灵巢 组长",
+      kivoPmHint: "您团队的协调者和负责人。每个团队有且仅有一名组长。",
       agentNamePlaceholder: "智能体名称",
       launch: "创建团队",
       back: "返回",

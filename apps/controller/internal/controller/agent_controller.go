@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	forgev1alpha1 "github.com/ltreven/forge/controller/api/v1alpha1"
-	"github.com/ltreven/forge/controller/internal/controller/resources"
-	"github.com/ltreven/forge/controller/internal/sync"
+	kivov1alpha1 "github.com/ltreven/kivo/controller/api/v1alpha1"
+	"github.com/ltreven/kivo/controller/internal/controller/resources"
+	"github.com/ltreven/kivo/controller/internal/sync"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -21,30 +21,30 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// AgentReconciler reconciles ForgeAgent CRs across all namespaces.
+// AgentReconciler reconciles KivoAgent CRs across all namespaces.
 type AgentReconciler struct {
 	client.Client
 	Scheme                    *runtime.Scheme
-	APIBaseURL                string // e.g. "http://forge-api:4000"
+	APIBaseURL                string // e.g. "http://kivo-api:4000"
 	AgentImage                string // full image ref: repo:tag
 	AgentImagePullPolicy      string // Always | IfNotPresent | Never
-	ConsumerImage             string // forge-consumer sidecar image ref
+	ConsumerImage             string // kivo-consumer sidecar image ref
 	ConsumerImagePullPolicy   string // Always | IfNotPresent | Never
 }
 
 // SetupWithManager registers the reconciler with the controller-runtime Manager.
 // .Owns() causes the manager to also watch child resources (Deployment, PVC, ConfigMap)
-// and re-reconcile the parent ForgeAgent CR when they change (e.g. pod crash).
+// and re-reconcile the parent KivoAgent CR when they change (e.g. pod crash).
 func (r *AgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&forgev1alpha1.Agent{}).
+		For(&kivov1alpha1.Agent{}).
 		Owns(&appsv1.Deployment{}).
 		Owns(&corev1.PersistentVolumeClaim{}).
 		Owns(&corev1.ConfigMap{}).
 		Complete(r)
 }
 
-// Reconcile is called whenever a ForgeAgent CR or one of its owned resources changes.
+// Reconcile is called whenever a KivoAgent CR or one of its owned resources changes.
 // It drives the cluster toward the desired state defined in the CR spec.
 //
 // Invariants:
@@ -54,8 +54,8 @@ func (r *AgentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithValues("agent", req.NamespacedName)
 
-	// ── Fetch the ForgeAgent CR ───────────────────────────────────────────────
-	var cr forgev1alpha1.Agent
+	// ── Fetch the KivoAgent CR ───────────────────────────────────────────────
+	var cr kivov1alpha1.Agent
 	if err := r.Get(ctx, req.NamespacedName, &cr); err != nil {
 		// Not found = CR was deleted; K8s GC handles child resources via ownerRef.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -63,7 +63,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	// Skip if already reconciled for this generation (no spec change).
 	if cr.Status.ObservedGeneration == cr.Generation &&
-		cr.Status.Phase == forgev1alpha1.AgentPhaseRunning {
+		cr.Status.Phase == kivov1alpha1.AgentPhaseRunning {
 		return ctrl.Result{}, nil
 	}
 
@@ -102,15 +102,15 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
 
-	// ── 5. Sync phase back to postgres via Forge API ─────────────────────────
+	// ── 5. Sync phase back to postgres via Kivo API ─────────────────────────
 	apiPhase := strings.ToLower(string(phase))
 	if err := sync.PatchAgentStatus(ctx, r.APIBaseURL, cr.Name, apiPhase); err != nil {
-		logger.Error(err, "failed to sync status to Forge API — will retry")
+		logger.Error(err, "failed to sync status to Kivo API — will retry")
 		return ctrl.Result{RequeueAfter: 15 * time.Second}, nil
 	}
 
 	// Requeue while the agent is still provisioning to pick up Deployment readiness.
-	if phase == forgev1alpha1.AgentPhaseProvisioning {
+	if phase == kivov1alpha1.AgentPhaseProvisioning {
 		return ctrl.Result{RequeueAfter: 20 * time.Second}, nil
 	}
 
@@ -172,10 +172,10 @@ func (r *AgentReconciler) createOrUpdateDeployment(ctx context.Context, desired 
 func (r *AgentReconciler) observePhase(
 	ctx context.Context,
 	deploy *appsv1.Deployment,
-) (forgev1alpha1.AgentPhase, string) {
+) (kivov1alpha1.AgentPhase, string) {
 	existing := &appsv1.Deployment{}
 	if err := r.Get(ctx, client.ObjectKeyFromObject(deploy), existing); err != nil {
-		return forgev1alpha1.AgentPhaseProvisioning, ""
+		return kivov1alpha1.AgentPhaseProvisioning, ""
 	}
 
 	for _, c := range existing.Status.Conditions {
@@ -193,17 +193,17 @@ func (r *AgentReconciler) observePhase(
 					break
 				}
 			}
-			return forgev1alpha1.AgentPhaseRunning, podName
+			return kivov1alpha1.AgentPhaseRunning, podName
 		}
 	}
 
-	return forgev1alpha1.AgentPhaseProvisioning, ""
+	return kivov1alpha1.AgentPhaseProvisioning, ""
 }
 
 func (r *AgentReconciler) patchStatus(
 	ctx context.Context,
-	cr *forgev1alpha1.Agent,
-	phase forgev1alpha1.AgentPhase,
+	cr *kivov1alpha1.Agent,
+	phase kivov1alpha1.AgentPhase,
 	podName string,
 ) error {
 	now := metav1.Now()
@@ -212,7 +212,7 @@ func (r *AgentReconciler) patchStatus(
 	condReason := "Provisioning"
 	condMsg := "Agent workload is being reconciled"
 
-	if phase == forgev1alpha1.AgentPhaseRunning {
+	if phase == kivov1alpha1.AgentPhaseRunning {
 		condStatus = metav1.ConditionTrue
 		condReason = "DeploymentAvailable"
 		condMsg = "Agent Deployment is available and at least one pod is running"
@@ -236,14 +236,14 @@ func (r *AgentReconciler) patchStatus(
 
 func (r *AgentReconciler) failWith(
 	ctx context.Context,
-	cr *forgev1alpha1.Agent,
+	cr *kivov1alpha1.Agent,
 	reason string,
 	err error,
 ) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Error(err, "reconciliation error", "reason", reason)
 
-	_ = r.patchStatus(ctx, cr, forgev1alpha1.AgentPhaseFailed, "")
+	_ = r.patchStatus(ctx, cr, kivov1alpha1.AgentPhaseFailed, "")
 	_ = sync.PatchAgentStatus(ctx, r.APIBaseURL, cr.Name, "failed")
 
 	return ctrl.Result{}, fmt.Errorf("%s: %w", reason, err)
@@ -251,7 +251,7 @@ func (r *AgentReconciler) failWith(
 
 // ── Owner reference helper ─────────────────────────────────────────────────────
 
-func buildOwnerRef(cr *forgev1alpha1.Agent, scheme *runtime.Scheme) *metav1.OwnerReference {
+func buildOwnerRef(cr *kivov1alpha1.Agent, scheme *runtime.Scheme) *metav1.OwnerReference {
 	gvks, _, _ := scheme.ObjectKinds(cr)
 	gvk := gvks[0]
 	return &metav1.OwnerReference{
@@ -268,8 +268,8 @@ func buildOwnerRef(cr *forgev1alpha1.Agent, scheme *runtime.Scheme) *metav1.Owne
 
 // resolveAgentImage returns the image ref and pull policy to use for agent pods.
 //
-// In local development (Tilt), it reads the "forge-agent-image" ConfigMap in the
-// forge namespace. Tilt manages this ConfigMap and substitutes the "image" field
+// In local development (Tilt), it reads the "kivo-agent-image" ConfigMap in the
+// kivo namespace. Tilt manages this ConfigMap and substitutes the "image" field
 // with the actual tilt-tagged digest it has loaded into the k8s containerd store.
 // This ensures agent pods always use an image that IS present in containerd.
 //
@@ -284,8 +284,8 @@ func (r *AgentReconciler) resolveAgentImage(ctx context.Context) (image, pullPol
 
 	var cm corev1.ConfigMap
 	err := r.Get(ctx, types.NamespacedName{
-		Namespace: "forge",
-		Name:      "forge-agent-image",
+		Namespace: "kivo",
+		Name:      "kivo-agent-image",
 	}, &cm)
 	if err != nil {
 		// ConfigMap not found (production or Tilt not running) — use flag values.
@@ -300,10 +300,10 @@ func (r *AgentReconciler) resolveAgentImage(ctx context.Context) (image, pullPol
 	return
 }
 
-// resolveConsumerImage returns the forge-consumer sidecar image ref and pull policy.
+// resolveConsumerImage returns the kivo-consumer sidecar image ref and pull policy.
 //
 // Follows the same pattern as resolveAgentImage: in local Tilt dev, reads the
-// "forge-consumer-image" ConfigMap (managed by Tilt, contains the tilt-tagged digest).
+// "kivo-consumer-image" ConfigMap (managed by Tilt, contains the tilt-tagged digest).
 // In production, falls back to r.ConsumerImage / r.ConsumerImagePullPolicy flags.
 func (r *AgentReconciler) resolveConsumerImage(ctx context.Context) (image, pullPolicy string) {
 	image = r.ConsumerImage
@@ -314,8 +314,8 @@ func (r *AgentReconciler) resolveConsumerImage(ctx context.Context) (image, pull
 
 	var cm corev1.ConfigMap
 	err := r.Get(ctx, types.NamespacedName{
-		Namespace: "forge",
-		Name:      "forge-consumer-image",
+		Namespace: "kivo",
+		Name:      "kivo-consumer-image",
 	}, &cm)
 	if err != nil {
 		return

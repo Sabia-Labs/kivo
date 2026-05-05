@@ -1,6 +1,6 @@
 #!/bin/sh
 # ─────────────────────────────────────────────────────────────────────────────
-# forge-agent bootstrap.sh
+# kivo-agent bootstrap.sh
 #
 # Runs as an initContainer on FIRST BOOT ONLY (guarded by .bootstrapped flag).
 # On subsequent pod restarts, the PVC already has .bootstrapped → script exits.
@@ -9,7 +9,7 @@
 #   1. Run openclaw non-interactive onboarding
 #   2. Configure Telegram channel
 #   3. Configure MCP servers (Linear, GitHub) — paths baked into image
-#   4. Seed profile files from /opt/forge/profiles/{AGENT_PROFILE}/ to PVC
+#   4. Seed profile files from /opt/kivo/profiles/{AGENT_PROFILE}/ to PVC
 #      ↳ Files evolve on the PVC after first boot; never overwritten here.
 #   5. Touch .bootstrapped to prevent re-seeding on restart
 # ─────────────────────────────────────────────────────────────────────────────
@@ -186,20 +186,20 @@ Use these tools for repository discovery, issue triage, and pull-request workflo
 SKILL_EOF
   fi
 
-  # ── Forge API MCP ─────────────────────────────────────────────────────────
-  echo "==> Configuring Forge API MCP"
-  FORGE_API_URL="http://forge-api.forge.svc.cluster.local:4000/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
-  FORGE_JSON_ARG="{\"type\":\"sse\",\"url\":\"$FORGE_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
-  openclaw mcp set forge "$FORGE_JSON_ARG"
+  # ── Kivo API MCP ─────────────────────────────────────────────────────────
+  echo "==> Configuring Kivo API MCP"
+  KIVO_API_URL="http://kivo-api.kivo.svc.cluster.local:4000/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
+  KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
+  openclaw mcp set kivo "$KIVO_JSON_ARG"
 
   # ── Seed profile files (FIRST BOOT ONLY) ─────────────────────────────────
-  # Source: /opt/forge/profiles/{AGENT_PROFILE}/ (baked into the image)
+  # Source: /opt/kivo/profiles/{AGENT_PROFILE}/ (baked into the image)
   # Destination: $OPENCLAW_CONFIG_DIR/workspace/
   #
   # IMPORTANT: These files will evolve over time on the PVC.
   # This block runs ONCE. The .bootstrapped flag prevents re-seeding on restart.
   # DO NOT add logic here that overwrites existing workspace files.
-  PROFILE_SRC="/opt/forge/profiles/${AGENT_PROFILE:-}"
+  PROFILE_SRC="/opt/kivo/profiles/${AGENT_PROFILE:-}"
   if [ -d "$PROFILE_SRC" ]; then
     echo "==> Seeding profile files from $PROFILE_SRC (first boot only)"
     for f in AGENTS.md IDENTITY.md SOUL.md USER.md PROCESS.MD MEMORY.md HEARTBEAT.md SAFETY.md TOOLS.md; do
@@ -208,8 +208,8 @@ SKILL_EOF
       fi
     done
 
-    if [ -f "/opt/forge/profiles/shared/TEAM-OPERATING-MODEL.md" ]; then
-      render_profile_file "/opt/forge/profiles/shared/TEAM-OPERATING-MODEL.md" "$OPENCLAW_CONFIG_DIR/workspace/TEAM-OPERATING-MODEL.md"
+    if [ -f "/opt/kivo/profiles/shared/TEAM-OPERATING-MODEL.md" ]; then
+      render_profile_file "/opt/kivo/profiles/shared/TEAM-OPERATING-MODEL.md" "$OPENCLAW_CONFIG_DIR/workspace/TEAM-OPERATING-MODEL.md"
     fi
   else
     echo "==> No profile directory found at $PROFILE_SRC; writing minimal fallback"
@@ -233,7 +233,7 @@ fi
 
 # ── Seed shared skills (EVERY BOOT) ──────────────────────────────────────
 # Sync new shared skills to existing workspaces without overwriting current ones
-SHARED_SKILLS_SRC="/opt/forge/profiles/shared/skills"
+SHARED_SKILLS_SRC="/opt/kivo/profiles/shared/skills"
 if [ -d "$SHARED_SKILLS_SRC" ]; then
   echo "==> Syncing shared skills from $SHARED_SKILLS_SRC"
   mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills"

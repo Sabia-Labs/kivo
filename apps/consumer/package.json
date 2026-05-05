@@ -1,8 +1,8 @@
 {
-  "name": "@forge/consumer",
+  "name": "@kivo/consumer",
   "version": "0.1.0",
   "private": true,
-  "description": "Forge agent consumer — RabbitMQ↔openclaw gateway bridge (sidecar)",
+  "description": "Kivo agent consumer — RabbitMQ↔openclaw gateway bridge (sidecar)",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc --outDir dist",

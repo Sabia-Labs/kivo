@@ -91,10 +91,10 @@ export default function LoginPage() {
                   <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
                     <GalleryVerticalEnd className="size-5" />
                   </div>
-                  <span className="sr-only">Forge</span>
+                  <span className="sr-only">Kivo</span>
                 </a>
                 
-                <h1 className="text-xl font-bold">Welcome back to Forge</h1>
+                <h1 className="text-xl font-bold">Welcome back to Kivo</h1>
                 <FieldDescription>
                   Don't have an account? <Link href="/signup" className="hover:text-primary underline underline-offset-4">Sign up</Link>
                 </FieldDescription>

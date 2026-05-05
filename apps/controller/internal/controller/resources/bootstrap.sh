@@ -1,6 +1,6 @@
 #!/bin/sh
 # ─────────────────────────────────────────────────────────────────────────────
-# forge-agent bootstrap.sh
+# kivo-agent bootstrap.sh
 #
 # Runs as an initContainer on FIRST BOOT ONLY (guarded by .bootstrapped flag).
 # On subsequent pod restarts, the PVC already has .bootstrapped → script exits.
@@ -9,7 +9,7 @@
 #   1. Run openclaw non-interactive onboarding
 #   2. Configure Telegram channel
 #   3. Configure MCP servers (Linear, GitHub) — paths baked into image
-#   4. Seed profile files from /opt/forge/profiles/{AGENT_PROFILE}/ to PVC
+#   4. Seed profile files from /opt/kivo/profiles/{AGENT_PROFILE}/ to PVC
 #      ↳ Files evolve on the PVC after first boot; never overwritten here.
 #   5. Touch .bootstrapped to prevent re-seeding on restart
 # ─────────────────────────────────────────────────────────────────────────────
@@ -99,8 +99,8 @@ if [ ! -f "$OPENCLAW_CONFIG_DIR/.bootstrapped" ]; then
   "channels": {
     "qa-channel": {
       "baseUrl": "http://127.0.0.1:43123",
-      "botUserId": "forge",
-      "botDisplayName": "Forge QA",
+      "botUserId": "kivo",
+      "botDisplayName": "Kivo QA",
       "allowFrom": ["*"],
       "pollTimeoutMs": 5000
     }
@@ -119,13 +119,13 @@ if [ ! -f "$OPENCLAW_CONFIG_DIR/.bootstrapped" ]; then
 EOF
 
   # ── Seed profile files (FIRST BOOT ONLY) ─────────────────────────────────
-  # Source: /opt/forge/profiles/{AGENT_PROFILE}/ (baked into the image)
+  # Source: /opt/kivo/profiles/{AGENT_PROFILE}/ (baked into the image)
   # Destination: $OPENCLAW_CONFIG_DIR/workspace/
   #
   # IMPORTANT: These files will evolve over time on the PVC.
   # This block runs ONCE. The .bootstrapped flag prevents re-seeding on restart.
   # DO NOT add logic here that overwrites existing workspace files.
-  PROFILE_SRC="/opt/forge/profiles/${AGENT_PROFILE:-}"
+  PROFILE_SRC="/opt/kivo/profiles/${AGENT_PROFILE:-}"
   if [ -d "$PROFILE_SRC" ]; then
     echo "==> Seeding profile files from $PROFILE_SRC (first boot only)"
     for f in AGENTS.md IDENTITY.md SOUL.md USER.md PROCESS.MD MEMORY.md HEARTBEAT.md SAFETY.md TOOLS.md; do
@@ -145,7 +145,7 @@ EOF
   fi
 
   # ── Seed shared skills (FIRST BOOT ONLY) ─────────────────────────────────
-  SHARED_SKILLS_SRC="/opt/forge/profiles/shared/skills"
+  SHARED_SKILLS_SRC="/opt/kivo/profiles/shared/skills"
   if [ -d "$SHARED_SKILLS_SRC" ]; then
     echo "==> Seeding shared skills from $SHARED_SKILLS_SRC (first boot only)"
     mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills"
@@ -232,17 +232,17 @@ Use these tools for repository discovery, issue triage, and pull-request workflo
 SKILL_EOF
 fi
 
-# ── Forge API MCP ─────────────────────────────────────────────────────────
+# ── Kivo API MCP ─────────────────────────────────────────────────────────
 # Runs every boot
-echo "==> Configuring Forge API MCP"
-FORGE_API_URL="http://forge-api.forge.svc.cluster.local:4000/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
-FORGE_JSON_ARG="{\"type\":\"sse\",\"url\":\"$FORGE_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
-openclaw mcp set forge "$FORGE_JSON_ARG"
+echo "==> Configuring Kivo API MCP"
+KIVO_API_URL="http://kivo-api.kivo.svc.cluster.local:4000/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
+KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
+openclaw mcp set kivo "$KIVO_JSON_ARG"
 
 # ── Telegram channel (runs every boot) ───────────────────────────────────────────
 #
 # Runs outside the .bootstrapped gate so a new TELEGRAM_BOT_TOKEN (updated
-# via the Forge UI and injected into the K8s Secret) is picked up on every
+# via the Kivo UI and injected into the K8s Secret) is picked up on every
 # pod start without requiring PVC manipulation.
 #
 # `openclaw channels add` is idempotent: calling it again with the same or a

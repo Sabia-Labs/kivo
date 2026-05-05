@@ -1,0 +1,12 @@
+{{- if .Values.rabbitmq.enabled }}
+# ── RabbitMQ Namespace ────────────────────────────────────────────────────────
+# Shared infra namespace for the RabbitMQ cluster.
+# Intentionally separate from kivo-app so it can be shared across environments.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: infra-messaging
+  labels:
+    app.kubernetes.io/managed-by: kivo
+    kivo.ai/component: message-bus
+{{- end }}

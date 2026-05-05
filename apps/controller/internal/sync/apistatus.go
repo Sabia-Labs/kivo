@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// PatchAgentStatus notifies the Forge API to update the agent's k8sStatus in postgres.
+// PatchAgentStatus notifies the Kivo API to update the agent's k8sStatus in postgres.
 // Called by the reconciler after every successful status change.
 // The API's /internal route is protected by NetworkPolicy — only reachable from within the cluster.
 func PatchAgentStatus(ctx context.Context, apiBaseURL, agentID, phase string) error {

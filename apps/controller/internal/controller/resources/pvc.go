@@ -1,7 +1,7 @@
 package resources
 
 import (
-	forgev1alpha1 "github.com/ltreven/forge/controller/api/v1alpha1"
+	kivov1alpha1 "github.com/ltreven/kivo/controller/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,10 +16,10 @@ import (
 //   - .bootstrapped (idempotency flag — prevents re-seeding on restart)
 //   - mcp-packages/ (now pre-installed in image, but old agents may still use this)
 //
-// ownerRef → ForgeAgent CR; K8s GC deletes the PVC when the CR is deleted.
+// ownerRef → KivoAgent CR; K8s GC deletes the PVC when the CR is deleted.
 // WARNING: PVC deletion is permanent. Agent state (including evolved profile files)
 // will be lost. This is intentional — agent deletion = full decommission.
-func StatePVC(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.PersistentVolumeClaim {
+func StatePVC(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.PersistentVolumeClaim {
 	size := "10Gi"
 	if cr.Spec.Persistence != nil && cr.Spec.Persistence.Size != "" {
 		size = cr.Spec.Persistence.Size
@@ -57,13 +57,13 @@ func StatePVC(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.
 }
 
 // agentLabels returns the standard label set applied to all resources
-// owned by a ForgeAgent CR. Centralised here to avoid repetition.
-func agentLabels(cr *forgev1alpha1.Agent) map[string]string {
+// owned by a KivoAgent CR. Centralised here to avoid repetition.
+func agentLabels(cr *kivov1alpha1.Agent) map[string]string {
 	return map[string]string{
-		"app.kubernetes.io/managed-by": "forge-agent-controller",
-		"app.kubernetes.io/name":       "forge-agent",
+		"app.kubernetes.io/managed-by": "kivo-agent-controller",
+		"app.kubernetes.io/name":       "kivo-agent",
 		"app.kubernetes.io/instance":   cr.Name,
-		"forge.ai/agent-id":            cr.Name,
-		"forge.ai/profile":             cr.Spec.Profile,
+		"kivo.ai/agent-id":            cr.Name,
+		"kivo.ai/profile":             cr.Spec.Profile,
 	}
 }

@@ -30,12 +30,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Rehydrate from localStorage on mount.
   useEffect(() => {
     try {
-      // 1. Check for logout query param from forge-web
+      // 1. Check for logout query param from kivo-web
       const params = new URLSearchParams(window.location.search);
       if (params.get("logout") === "true") {
-        localStorage.removeItem("forge_token");
-        localStorage.removeItem("forge_user");
-        localStorage.removeItem("forge_workspace_id");
+        localStorage.removeItem("kivo_token");
+        localStorage.removeItem("kivo_user");
+        localStorage.removeItem("kivo_workspace_id");
         
         // Clean up URL to avoid redirect loops or messy sharing links
         const url = new URL(window.location.href);
@@ -43,9 +43,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         window.history.replaceState({}, "", url.pathname);
       } else {
         // 2. Load from storage
-        const storedToken = localStorage.getItem("forge_token");
-        const storedUser = localStorage.getItem("forge_user");
-        const storedWorkspaceId = localStorage.getItem("forge_workspace_id");
+        const storedToken = localStorage.getItem("kivo_token");
+        const storedUser = localStorage.getItem("kivo_user");
+        const storedWorkspaceId = localStorage.getItem("kivo_workspace_id");
         if (storedToken && storedUser) {
           setToken(storedToken);
           setUser(JSON.parse(storedUser) as AuthUser);
@@ -60,18 +60,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = (newToken: string, newUser: AuthUser, newWorkspaceId?: string | null) => {
-    localStorage.setItem("forge_token", newToken);
-    localStorage.setItem("forge_user", JSON.stringify(newUser));
-    if (newWorkspaceId) localStorage.setItem("forge_workspace_id", newWorkspaceId);
+    localStorage.setItem("kivo_token", newToken);
+    localStorage.setItem("kivo_user", JSON.stringify(newUser));
+    if (newWorkspaceId) localStorage.setItem("kivo_workspace_id", newWorkspaceId);
     setToken(newToken);
     setUser(newUser);
     if (newWorkspaceId !== undefined) setWorkspaceId(newWorkspaceId ?? null);
   };
 
   const logout = () => {
-    localStorage.removeItem("forge_token");
-    localStorage.removeItem("forge_user");
-    localStorage.removeItem("forge_workspace_id");
+    localStorage.removeItem("kivo_token");
+    localStorage.removeItem("kivo_user");
+    localStorage.removeItem("kivo_workspace_id");
     setToken(null);
     setUser(null);
     setWorkspaceId(null);

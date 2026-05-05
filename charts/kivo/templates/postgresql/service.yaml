@@ -1,0 +1,19 @@
+{{- if .Values.postgresql.embedded }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: kivo-postgresql
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+    {{- include "kivo.postgresql.selectorLabels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.postgresql.port }}
+      targetPort: postgres
+      protocol: TCP
+      name: postgres
+  selector:
+    {{- include "kivo.postgresql.selectorLabels" . | nindent 4 }}
+{{- end }}

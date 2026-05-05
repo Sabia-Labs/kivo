@@ -68,17 +68,17 @@ authRouter.post("/signup", async (req, res, next) => {
       // Update with deterministic namespace
       const [updatedWorkspace] = await tx
         .update(workspaces)
-        .set({ k8sNamespace: `forge-ws-${workspace.id.substring(0, 8)}` })
+        .set({ k8sNamespace: `kivo-ws-${workspace.id.substring(0, 8)}` })
         .where(eq(workspaces.id, workspace.id))
         .returning();
 
       return { user, workspace: updatedWorkspace };
     });
 
-    // ── Synchronization with Application Plane (forge-api) ───────────────────
-    const FORGE_API_INTERNAL_URL = process.env.FORGE_API_INTERNAL_URL ?? "http://forge-api.forge:4000";
+    // ── Synchronization with Application Plane (kivo-api) ───────────────────
+    const KIVO_API_INTERNAL_URL = process.env.KIVO_API_INTERNAL_URL ?? "http://kivo-api.kivo:4000";
     try {
-      await fetch(`${FORGE_API_INTERNAL_URL}/internal/provision-workspace`, {
+      await fetch(`${KIVO_API_INTERNAL_URL}/internal/provision-workspace`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -89,9 +89,9 @@ authRouter.post("/signup", async (req, res, next) => {
           workspaceName: result.workspace.name,
         }),
       });
-      console.log(`[admin-api] Synced workspace ${result.workspace.id} to forge-api`);
+      console.log(`[admin-api] Synced workspace ${result.workspace.id} to kivo-api`);
     } catch (err) {
-      console.error("[admin-api] Critical: Failed to sync with forge-api:", err);
+      console.error("[admin-api] Critical: Failed to sync with kivo-api:", err);
       // In production, you might want to retry or rollback, but for now we log it.
     }
 

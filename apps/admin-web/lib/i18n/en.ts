@@ -13,7 +13,7 @@ export const en = {
     badge: "AI Agent Teams, Managed with Best Practices",
     headline: "Teams excellence\non demand.",
     subheadline:
-      "Forge deploys autonomous AI agent teams with the structure, discipline, and governance of a world-class organization — so every team delivers, no matter the domain.",
+      "Kivo deploys autonomous AI agent teams with the structure, discipline, and governance of a world-class organization — so every team delivers, no matter the domain.",
     ctaPrimary: "Get Started",
     ctaSecondary: "Contact Sales",
   },
@@ -26,49 +26,49 @@ export const en = {
     ],
   },
   chaos: {
-    sectionBadge: "The Old Way vs The Forge Way",
+    sectionBadge: "The Old Way vs The Kivo Way",
     sectionTitle: "Stop managing chaos. Start running teams.",
     sectionSubtitle:
-      "Most organizations deploying AI agents end up with ad hoc tools, unclear ownership, and unpredictable results. Forge replaces that with a governed, structured, measurable execution layer.",
+      "Most organizations deploying AI agents end up with ad hoc tools, unclear ownership, and unpredictable results. Kivo replaces that with a governed, structured, measurable execution layer.",
     oldWayTitle: "Ad Hoc Agents",
-    forgeWayTitle: "The Forge Way",
+    kivoWayTitle: "The Kivo Way",
     items: [
       {
         old: "Agents with no defined roles or ownership",
-        forge: "Every team has a Team Lead — clear ownership from day one",
+        kivo: "Every team has a Team Lead — clear ownership from day one",
       },
       {
         old: "Knowledge disappears when a session ends",
-        forge: "Every decision and context persisted in Git — zero knowledge loss",
+        kivo: "Every decision and context persisted in Git — zero knowledge loss",
       },
       {
         old: "No visibility into what agents are doing",
-        forge: "Real-time Health Score — velocity, blockers, and activity tracked continuously",
+        kivo: "Real-time Health Score — velocity, blockers, and activity tracked continuously",
       },
       {
         old: "Agents act without oversight or approval",
-        forge: "Multi-level approval guardrails — agents never act externally without your sign-off",
+        kivo: "Multi-level approval guardrails — agents never act externally without your sign-off",
       },
       {
         old: "Unpredictable output and inconsistent quality",
-        forge: "Structured workflows and role-specific discipline on every task",
+        kivo: "Structured workflows and role-specific discipline on every task",
       },
       {
         old: "Hard to reproduce, impossible to scale",
-        forge: "Repeatable deployment patterns — same team structure anywhere, any environment",
+        kivo: "Repeatable deployment patterns — same team structure anywhere, any environment",
       },
     ],
   },
   pillars: {
-    sectionBadge: "Why Forge",
+    sectionBadge: "Why Kivo",
     sectionTitle: "A managed execution layer,\nnot just another AI tool.",
     sectionSubtitle:
-      "Unlike standalone AI assistants or chat tools, Forge is an operational system that treats your agent teams as a managed, governed organizational unit.",
+      "Unlike standalone AI assistants or chat tools, Kivo is an operational system that treats your agent teams as a managed, governed organizational unit.",
     items: [
       {
         title: "Structured Ownership",
         description:
-          "Every Forge team has a defined structure with clear roles. The Team Lead ensures accountability, coordination, and consistent output — no matter the domain.",
+          "Every Kivo team has a defined structure with clear roles. The Team Lead ensures accountability, coordination, and consistent output — no matter the domain.",
         icon: "TrendingUp",
       },
       {
@@ -86,7 +86,7 @@ export const en = {
       {
         title: "Process Discipline",
         description:
-          "Forge enforces best-practice workflows on every task: clear intake, definition of ready, planning, execution, and delivery. No shortcuts, no surprises.",
+          "Kivo enforces best-practice workflows on every task: clear intake, definition of ready, planning, execution, and delivery. No shortcuts, no surprises.",
         icon: "GitMerge",
       },
     ],
@@ -100,7 +100,7 @@ export const en = {
       {
         key: "starter",
         icon: "🧩",
-        title: "Forge Starter",
+        title: "Kivo Starter",
         description: "The simplest possible team — just a Team Lead to get you going. Perfect for general-purpose or exploratory use.",
         badge: "",
         cta: "Get Started",
@@ -127,7 +127,7 @@ export const en = {
     sectionBadge: "Control Plane",
     sectionTitle: "Your cockpit for team performance.",
     sectionSubtitle:
-      "The Forge Control Plane gives leaders a single interface to configure agent teams, set guardrails, monitor health, and maintain full sovereignty over your AI workforce.",
+      "The Kivo Control Plane gives leaders a single interface to configure agent teams, set guardrails, monitor health, and maintain full sovereignty over your AI workforce.",
     features: [
       "Multi-level approval rules per agent and action type",
       "Real-time team health score and activity log",
@@ -145,7 +145,7 @@ export const en = {
         number: "01",
         title: "Choose your team template",
         description:
-          "Pick a starting structure — Forge Starter for simplicity, Engineering for software delivery, or Customer Support for service teams.",
+          "Pick a starting structure — Kivo Starter for simplicity, Engineering for software delivery, or Customer Support for service teams.",
       },
       {
         number: "02",
@@ -182,11 +182,11 @@ export const en = {
       careers: "Careers",
       contact: "Contact",
     },
-    copyright: "© 2026 Forge. All rights reserved.",
+    copyright: "© 2026 Kivo. All rights reserved.",
   },
   login: {
     title: "Welcome back",
-    subtitle: "Sign in to your Forge account",
+    subtitle: "Sign in to your Kivo account",
     emailLabel: "Email address",
     emailPlaceholder: "you@company.com",
     passwordLabel: "Password",
@@ -232,7 +232,7 @@ export const en = {
       templates: {
         starter: {
           icon: "🧩",
-          title: "Forge Starter",
+          title: "Kivo Starter",
           description: "Just a Team Lead to get you going. Simple and flexible.",
         },
         engineering: {
@@ -251,7 +251,7 @@ export const en = {
       back: "Back",
     },
     step4Starter: {
-      title: "Set up your Forge Starter team",
+      title: "Set up your Kivo Starter team",
       subtitle: "Let's give your team a name and a leader.",
       teamNameLabel: "Team name",
       teamNamePlaceholder: "e.g. Operations, Research, Strategy…",
@@ -279,8 +279,8 @@ export const en = {
         },
       },
       pmFixedBadge: "Required",
-      forgePmTitle: "Team Lead",
-      forgePmHint: "Your team's coordinator and owner. Every team has exactly one Team Lead.",
+      kivoPmTitle: "Team Lead",
+      kivoPmHint: "Your team's coordinator and owner. Every team has exactly one Team Lead.",
       agentNamePlaceholder: "Agent name",
       launch: "Create Team",
       back: "Back",

@@ -1,23 +1,23 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "forge.fullname" . }}
+  name: {{ include "kivo.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: {{ include "forge.name" . }}
-    helm.sh/chart: {{ include "forge.chart" . }}
+    app.kubernetes.io/name: {{ include "kivo.name" . }}
+    helm.sh/chart: {{ include "kivo.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ include "forge.name" . }}
+      app.kubernetes.io/name: {{ include "kivo.name" . }}
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ include "forge.name" . }}
+        app.kubernetes.io/name: {{ include "kivo.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       automountServiceAccountToken: false
@@ -27,7 +27,7 @@ spec:
           type: RuntimeDefault
 
       initContainers:
-        - name: bootstrap-forge
+        - name: bootstrap-kivo
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
@@ -136,7 +136,7 @@ spec:
                 - ALL
 
       containers:
-        - name: forge
+        - name: kivo
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command:
@@ -258,10 +258,10 @@ spec:
       volumes:
         - name: openclaw-home
           persistentVolumeClaim:
-            claimName: {{ include "forge.fullname" . }}-state
+            claimName: {{ include "kivo.fullname" . }}-state
         - name: bootstrap
           configMap:
-            name: {{ include "forge.fullname" . }}-bootstrap
+            name: {{ include "kivo.fullname" . }}-bootstrap
             defaultMode: 0755
         {{- if .Values.profile.configMapName }}
         - name: profile-files

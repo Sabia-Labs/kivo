@@ -1,16 +1,16 @@
-# Forge Product Vision
+# Kivo Product Vision
 
 ## Overview
 
-**Forge**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
+**Kivo**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
 
-The core insight is simple: the same management practices that make great human organizations work — defined roles, process discipline, approval guardrails, measurable output — can now be applied to teams of AI agents. Forge makes that easy.
+The core insight is simple: the same management practices that make great human organizations work — defined roles, process discipline, approval guardrails, measurable output — can now be applied to teams of AI agents. Kivo makes that easy.
 
-Forge does not impose a domain. Whether you are building software, running customer support, or coordinating any other team-based function, Forge gives you the infrastructure to deploy autonomous agents that operate like a well-managed organization.
+Kivo does not impose a domain. Whether you are building software, running customer support, or coordinating any other team-based function, Kivo gives you the infrastructure to deploy autonomous agents that operate like a well-managed organization.
 
 ## Core Idea
 
-Forge is a **deployable agent team platform**.
+Kivo is a **deployable agent team platform**.
 
 It can be installed into environments controlled by the operator or by the customer. The system makes it easy to:
 - define a team structure with clear roles and ownership
@@ -21,9 +21,9 @@ It can be installed into environments controlled by the operator or by the custo
 
 ## Unique Selling Proposition
 
-> *"Forge brings world-class team management discipline to autonomous AI agents — structured roles, clear ownership, approval workflows, and real-time health visibility — so your agent teams run like a well-managed human organization, at AI speed."*
+> *"Kivo brings world-class team management discipline to autonomous AI agents — structured roles, clear ownership, approval workflows, and real-time health visibility — so your agent teams run like a well-managed human organization, at AI speed."*
 
-Unlike general-purpose AI tools, Forge is an **operational system**. It treats agent teams as managed entities, not raw tools. Every team has:
+Unlike general-purpose AI tools, Kivo is an **operational system**. It treats agent teams as managed entities, not raw tools. Every team has:
 - a defined **Team Lead** responsible for coordination and ownership
 - role-specific agents with scoped responsibilities
 - configurable approval workflows before any consequential action
@@ -32,13 +32,13 @@ Unlike general-purpose AI tools, Forge is an **operational system**. It treats a
 
 ## Team Templates
 
-Forge uses templates to give teams a strong starting structure without sacrificing flexibility.
+Kivo uses templates to give teams a strong starting structure without sacrificing flexibility.
 
 ### Current Templates
 
 | Template | Description |
 |---|---|
-| **Forge Starter** | The simplest possible team — just a Team Lead to coordinate work. Ideal for general-purpose or exploratory use. |
+| **Kivo Starter** | The simplest possible team — just a Team Lead to coordinate work. Ideal for general-purpose or exploratory use. |
 | **Engineering** | A full software delivery squad with SDLC discipline: ticket ingestion, technical planning, implementation, testing, and PR submission. |
 | **Customer Support** | *(Coming soon)* An automated support team for handling tickets, routing issues, and maintaining customer SLAs. |
 
@@ -69,7 +69,7 @@ There is a gap between a useful AI agent and a deployable, governed agent team t
 
 ## Value Proposition
 
-Forge bridges that gap by providing:
+Kivo bridges that gap by providing:
 - a clear **team structure model** with defined roles and a required Team Lead
 - **repeatable deployment patterns** for any agent team
 - **approval-aware workflows** — agents never act externally without explicit sign-off
@@ -79,7 +79,7 @@ Forge bridges that gap by providing:
 
 ## Strategic Positioning
 
-Forge is an **agent team management platform**, not just a single AI developer container.
+Kivo is an **agent team management platform**, not just a single AI developer container.
 
 Its differentiation comes from treating agent teams as operational units that can be:
 - provisioned with a defined structure
@@ -107,12 +107,12 @@ Its differentiation comes from treating agent teams as operational units that ca
    - Helm charts, Terraform, scripts, and future operators are first-class product components.
 
 6. **Domain-agnostic by default, vertical-ready by design**
-   - Forge works for any team type out of the box. Vertical templates (Engineering, Customer Support) provide opinionated starting points without limiting the platform's scope.
+   - Kivo works for any team type out of the box. Vertical templates (Engineering, Customer Support) provide opinionated starting points without limiting the platform's scope.
 
 ## Product Direction
 
 ### Near term
-- Support Forge Starter, Engineering, and Customer Support templates
+- Support Kivo Starter, Engineering, and Customer Support templates
 - Simplify onboarding so any team can get started in minutes
 - Establish the Team Lead as the universal ownership primitive
 - Document the operating model and approval expectations
@@ -129,9 +129,9 @@ Its differentiation comes from treating agent teams as operational units that ca
 - Support multi-customer deployment patterns
 - Extend the template library with new verticals
 
-## What Forge Is Not
+## What Kivo Is Not
 
-At least for now, Forge is not:
+At least for now, Kivo is not:
 - a generic chatbot product
 - a hosted multi-tenant SaaS
 - a replacement for human leadership

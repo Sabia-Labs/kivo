@@ -7,7 +7,7 @@ const nextConfig = {
   // Proxy /api/* requests to the backend API service.
   //
   // In Kubernetes: the Next.js server (inside the pod) forwards requests to
-  //   forge-api:4000 via ClusterIP — the API is never exposed externally.
+  //   kivo-api:4000 via ClusterIP — the API is never exposed externally.
   // In local bare-metal dev (make web): falls back to localhost:4000.
   //
   // The browser always calls /api/* on the same origin — no CORS issues,

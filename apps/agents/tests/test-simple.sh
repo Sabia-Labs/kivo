@@ -3,7 +3,7 @@
 set -e
 
 echo "============================================"
-echo " starting Forge Kubernetes integration test "
+echo " starting Kivo Kubernetes integration test "
 echo "============================================"
 
 echo "[test] Loading .env file..."
@@ -11,7 +11,7 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
 export $(grep -v '^#' "$REPO_ROOT/.env" | xargs)
 
-NAMESPACE="forge-test"
+NAMESPACE="kivo-test"
 echo "[test] Creating namespace: $NAMESPACE"
 kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | \
   kubectl apply -f -
@@ -63,7 +63,7 @@ fi
 
 echo "[test] Installing Helm chart for software engineer..."
 
-helm install "$RELEASE_NAME" "$REPO_ROOT/src/k8s/helm/forge" \
+helm install "$RELEASE_NAME" "$REPO_ROOT/src/k8s/helm/kivo" \
   --namespace "$NAMESPACE" \
   --set image.pullPolicy=IfNotPresent \
   --set profile.agentName="${ENGINEER_AGENT_NAME}" \

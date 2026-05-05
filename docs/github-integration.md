@@ -1,6 +1,6 @@
-# GitHub Integration for Forge (OpenClaw MCP)
+# GitHub Integration for Kivo (OpenClaw MCP)
 
-This guide mirrors the existing Linear integration pattern and wires GitHub into Forge through OpenClaw MCP registration at bootstrap time.
+This guide mirrors the existing Linear integration pattern and wires GitHub into Kivo through OpenClaw MCP registration at bootstrap time.
 
 ## What this implementation does
 
@@ -16,12 +16,12 @@ The integration uses **PAT remote mode** by default:
 
 ## Why this approach
 
-Following the Linear pattern, Forge configures integrations at startup via `openclaw mcp set ...`.
+Following the Linear pattern, Kivo configures integrations at startup via `openclaw mcp set ...`.
 This keeps integration definitions in OpenClaw-managed config rather than manually editing internal files.
 
 ## Recommended server/library choices
 
-For GitHub MCP in Forge, use this priority order:
+For GitHub MCP in Kivo, use this priority order:
 
 1. **GitHub official remote MCP server** (`api.githubcopilot.com/mcp`) for managed hosting and fast setup.
 2. **GitHub official local MCP server** (`github/github-mcp-server`) when you need self-hosted/local-only execution controls.
@@ -48,7 +48,7 @@ Important notes:
 
 - GitHub Apps are generally preferred for enterprise/org automation.
 - A GitHub App requires app creation, private key management, and installation per org/repo scope.
-- In app mode, Forge configures MCP as a local stdio server with env vars:
+- In app mode, Kivo configures MCP as a local stdio server with env vars:
   - `GITHUB_APP_ID`
   - `GITHUB_INSTALLATION_ID`
   - `GITHUB_APP_PRIVATE_KEY`
@@ -62,7 +62,7 @@ github:
   enabled: true
   authMode: pat
   mcpUrl: "https://api.githubcopilot.com/mcp/"
-  secretName: forge-github
+  secretName: kivo-github
   credentials:
     tokenKey: GITHUB_PERSONAL_ACCESS_TOKEN
 ```
@@ -74,7 +74,7 @@ github:
   enabled: true
   authMode: app
   app:
-    secretName: forge-github-app
+    secretName: kivo-github-app
     idKey: GITHUB_APP_ID
     installationIdKey: GITHUB_INSTALLATION_ID
     privateKeyKey: GITHUB_APP_PRIVATE_KEY
@@ -88,13 +88,13 @@ Create a Kubernetes Secret before deploying:
 
 **PAT mode:**
 ```sh
-kubectl create secret generic forge-github \
+kubectl create secret generic kivo-github \
   --from-literal=GITHUB_PERSONAL_ACCESS_TOKEN=<your-pat>
 ```
 
 **App mode:**
 ```sh
-kubectl create secret generic forge-github-app \
+kubectl create secret generic kivo-github-app \
   --from-literal=GITHUB_APP_ID=<app-id> \
   --from-literal=GITHUB_INSTALLATION_ID=<installation-id> \
   --from-literal=GITHUB_APP_PRIVATE_KEY="$(cat path/to/private-key.pem)"
@@ -112,4 +112,4 @@ After deploy:
 ## Next hardening steps
 
 - Add optional org/repo allowlist policy in agent instructions.
-- Add smoke test for MCP registration in `src/test/test-forge.sh`.
+- Add smoke test for MCP registration in `src/test/test-kivo.sh`.

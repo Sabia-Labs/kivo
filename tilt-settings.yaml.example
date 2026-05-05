@@ -6,11 +6,11 @@
 # Usage: cp tilt-settings.yaml.example tilt-settings.yaml
 
 # Custom image names (useful if using a local registry like kind or k3d)
-# api_image: localhost:5000/forge-api
-# web_image: localhost:5000/forge-web
+# api_image: localhost:5000/kivo-api
+# web_image: localhost:5000/kivo-web
 
 # Override the local hostname for the Ingress
-# host: forge.localhost
+# host: kivo.localhost
 
 # To use a different kubeconfig context:
 # allow_k8s_contexts: ["docker-desktop", "my-dev-cluster"]

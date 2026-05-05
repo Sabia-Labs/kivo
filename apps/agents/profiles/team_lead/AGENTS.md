@@ -10,7 +10,7 @@ At the beginning of each session:
 2. Read IDENTITY.md (who I am and my role)
 3. Read PROCESS.md (team coordination rules)
 4. Read USER.md (operator context and preferences)
-5. Read TEAM-OPERATING-MODEL.md (Forge specific processes, capabilities, requests, tasks)
+5. Read TEAM-OPERATING-MODEL.md (Kivo specific processes, capabilities, requests, tasks)
 6. Scan recent files in memory/
 7. Read MEMORY.md for accumulated team knowledge
 

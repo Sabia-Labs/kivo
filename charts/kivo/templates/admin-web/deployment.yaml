@@ -1,0 +1,43 @@
+{{- if .Values.adminWeb.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kivo-admin-web
+  namespace: {{ .Values.adminNamespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+    {{- include "kivo.adminWeb.selectorLabels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.adminWeb.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "kivo.adminWeb.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "kivo.adminWeb.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: admin-web
+          image: "{{ .Values.adminWeb.image.repository }}:{{ .Values.adminWeb.image.tag }}"
+          imagePullPolicy: {{ .Values.adminWeb.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.adminWeb.port }}
+              protocol: TCP
+          env:
+            {{- range $key, $value := .Values.adminWeb.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          livenessProbe:
+            {{- toYaml .Values.adminWeb.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.adminWeb.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.adminWeb.resources | nindent 12 }}
+{{- end }}

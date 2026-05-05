@@ -13,8 +13,8 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
-const FORGE_WEB_URL = process.env.NEXT_PUBLIC_FORGE_WEB_URL ?? "http://localhost:3000";
-const FORGE_API_URL = process.env.NEXT_PUBLIC_FORGE_API_URL ?? "http://localhost:4000";
+const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
+const KIVO_API_URL = process.env.NEXT_PUBLIC_KIVO_API_URL ?? "http://localhost:4000";
 
 function GoogleIcon() {
   return (
@@ -72,7 +72,7 @@ export default function SignupPage() {
     
     const timeout = setTimeout(() => {
       setIsCheckingWorkspace(false);
-      const takenWorkspaces = ["admin", "forge", "test"];
+      const takenWorkspaces = ["admin", "kivo", "test"];
       setWorkspaceAvailable(!takenWorkspaces.includes(workspaceName.toLowerCase()));
     }, 600);
     
@@ -112,9 +112,9 @@ export default function SignupPage() {
       
       toast.success("Account created!");
       
-      // Redirect to forge-web for team creation
+      // Redirect to kivo-web for team creation
       const workspaceId = data.data.workspace.id;
-      window.location.href = `${FORGE_WEB_URL}/newteam?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
+      window.location.href = `${KIVO_WEB_URL}/newteam?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
     } catch {
       toast.error("Network error");
     } finally {
@@ -142,12 +142,12 @@ export default function SignupPage() {
                   <div className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
                     <GalleryVerticalEnd className="size-5" />
                   </div>
-                  <span className="sr-only">Forge</span>
+                  <span className="sr-only">Kivo</span>
                 </a>
                 
                 {step === 1 && (
                   <>
-                    <h1 className="text-xl font-bold">Welcome to Forge</h1>
+                    <h1 className="text-xl font-bold">Welcome to Kivo</h1>
                     <FieldDescription>
                       Already have an account? <Link href="/login" className="hover:text-primary underline underline-offset-4">Sign in</Link>
                     </FieldDescription>

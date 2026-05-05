@@ -3,7 +3,7 @@ package resources
 import (
 	_ "embed"
 
-	forgev1alpha1 "github.com/ltreven/forge/controller/api/v1alpha1"
+	kivov1alpha1 "github.com/ltreven/kivo/controller/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -13,7 +13,7 @@ import (
 // (Go binary, fast), not the heavy agent Docker image.
 //
 // The script is the single source of truth — both the controller (ConfigMap)
-// and the agent image copy at /opt/forge/bootstrap.sh should stay in sync.
+// and the agent image copy at /opt/kivo/bootstrap.sh should stay in sync.
 //
 //go:embed bootstrap.sh
 var bootstrapScript string
@@ -24,9 +24,9 @@ var bootstrapScript string
 // By embedding the script here, the controller always injects the latest
 // bootstrap.sh on every reconcile — no image rebuild needed for script updates.
 //
-// ownerRef ties this ConfigMap's lifecycle to the ForgeAgent CR —
+// ownerRef ties this ConfigMap's lifecycle to the KivoAgent CR —
 // when the CR is deleted, K8s GC deletes this ConfigMap automatically.
-func BootstrapConfigMap(cr *forgev1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.ConfigMap {
+func BootstrapConfigMap(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            cr.Name + "-bootstrap",
