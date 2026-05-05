@@ -2,7 +2,7 @@
 
 ## Overview
 
-**Forge** is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
+**Forge**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
 
 The core insight is simple: the same management practices that make great human organizations work — defined roles, process discipline, approval guardrails, measurable output — can now be applied to teams of AI agents. Forge makes that easy.
 
@@ -47,7 +47,7 @@ Templates are a starting point. Teams can always evolve their composition over t
 ## Who It Is For
 
 ### Current user
-- Lourenço, acting as the initial operator, architect, and consultant
+- Sabia Labs team, acting as the initial operator, architect, and consultant
 
 ### Future users
 - Consultants deploying agent systems for clients
@@ -124,7 +124,7 @@ Its differentiation comes from treating agent teams as operational units that ca
 - Add deeper integration options per vertical
 
 ### Long term
-- Provision infrastructure automatically with Terraform
+- Provision infrastructure automatically with Terraform (managed entirely in the `sabia-infra` repository)
 - Add Kubernetes operators for health monitoring and team performance insights
 - Support multi-customer deployment patterns
 - Extend the template library with new verticals

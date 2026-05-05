@@ -1,6 +1,6 @@
 # Forge
 
-**Forge** is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
+**Forge**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with world-class management discipline — structured roles, clear ownership, governed workflows, and real-time health visibility.
 
 > *"Forge brings world-class team management discipline to autonomous AI agents — so your agent teams run like a well-managed human organization, at AI speed."*
 
@@ -30,11 +30,10 @@ forge/
 ├── Makefile              # Top-level dev commands
 └── .env.example          # Root environment variable reference
 
-# Coming soon
-├── infra/                # Cross-cutting infrastructure
-│   ├── argocd/           # ArgoCD App-of-Apps + ApplicationSets
-│   ├── terraform/        # Cloud provider IaC (AWS, GCP, Azure)
-│   └── environments/     # Per-environment Helm values (dev, uat, prod)
+# Note:
+# Cloud provider IaC (Terraform for GCP, Networking, IAM, Billing)
+# has been moved to the `sabia-infra` repository. This repository
+# focuses exclusively on application logic and Helm manifests.
 ├── e2e/                  # Cross-system end-to-end tests
 └── .github/workflows/    # CI/CD pipelines
 ```

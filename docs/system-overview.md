@@ -2,7 +2,7 @@
 
 ## System Summary
 
-Forge is a platform for deploying and operating autonomous AI agent teams with structured roles, governed workflows, and real-time health visibility.
+**Forge**, by **Sabia Labs**, is a platform for deploying and operating autonomous AI agent teams with structured roles, governed workflows, and real-time health visibility.
 
 The architecture is designed to work across environments:
 - start with a local, web-based agent team
@@ -106,7 +106,8 @@ After the local MVP, the next target is Kubernetes:
 - deployment portability across environments
 
 ### 6. Infrastructure Provisioning Layer
-Terraform is the planned mechanism for provisioning infrastructure:
+All infrastructure provisioning is managed in the separate `sabia-infra` repository using Terraform. The `sabia-infra` repository is the single source of truth for the cloud lifecycle (GCP, WIF, Networking, IAM, Billing).
+This includes:
 - Kubernetes clusters and node pools
 - identity and access bindings
 - secret management dependencies
@@ -130,7 +131,7 @@ Longer-term additions may include Kubernetes operators or controllers for:
 6. Monitor team health in real time.
 
 ### Future customer workflow
-1. Provision infrastructure with Terraform.
+1. Provision infrastructure with Terraform (via `sabia-infra` repo).
 2. Deploy a customer-specific agent team with Helm.
 3. Configure integrations using customer-provided values.
 4. Operate the agents through approved workflows.

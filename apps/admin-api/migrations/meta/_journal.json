@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1776940344155,
-      "tag": "0000_real_harry_osborn",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1776956565253,
-      "tag": "0001_hard_joystick",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1776962635558,
-      "tag": "0002_gifted_krista_starr",
+      "when": 1777976528952,
+      "tag": "0000_medical_cerebro",
       "breakpoints": true
     }
   ]

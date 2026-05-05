@@ -1,23 +1,5 @@
-CREATE TABLE "agent_roles" (
-	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
-	"description" text,
-	"emoji" text NOT NULL,
-	"background_color" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "team_types" (
-	"id" text PRIMARY KEY NOT NULL,
-	"name" text NOT NULL,
-	"description" text,
-	"featured" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"name" text NOT NULL,
 	"email" text NOT NULL,
 	"password_hash" text NOT NULL,
 	"is_admin" boolean DEFAULT false NOT NULL,
