@@ -69,11 +69,9 @@ export const changeTypeEnum = pgEnum("change_type", ["data", "status", "relation
 
 export const notificationPriorityEnum = pgEnum("notification_priority", ["info", "normal", "high", "alert"]);
 
-export const capabilityNatureEnum = pgEnum("capability_nature", [
-  "inquiry", 
-  "analysis", 
-  "execution", 
-  "project"
+export const capabilityTypeEnum = pgEnum("capability_type", [
+  "task_template", 
+  "workflow"
 ]);
 
 
@@ -370,8 +368,8 @@ export const teamMetaCapabilities = pgTable("team_meta_capabilities", {
   instructions: text("instructions").notNull(),
   inputsDescription: text("inputs_description"),
   expectedOutputsDescription: text("expected_outputs_description"),
-  suggestedNextCapabilities: jsonb("suggested_next_capabilities"), // Array of string identifiers
-  nature: capabilityNatureEnum("nature"),
+  tasksWorkflow: jsonb("tasks_workflow"), // Array of string identifiers
+  type: capabilityTypeEnum("type").notNull().default("task_template"),
   isCandidate: boolean("is_candidate").notNull().default(false),
   isFavorite: boolean("is_favorite").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -391,8 +389,8 @@ export const teamCapabilities = pgTable("team_capabilities", {
   instructions: text("instructions").notNull(),
   inputsDescription: text("inputs_description"),
   expectedOutputsDescription: text("expected_outputs_description"),
-  suggestedNextCapabilities: jsonb("suggested_next_capabilities"),
-  nature: capabilityNatureEnum("nature"),
+  tasksWorkflow: jsonb("tasks_workflow"),
+  type: capabilityTypeEnum("type").notNull().default("task_template"),
   isCandidate: boolean("is_candidate").notNull().default(false),
   isEnabled: boolean("is_enabled").notNull().default(true),
   isFavorite: boolean("is_favorite").notNull().default(false),

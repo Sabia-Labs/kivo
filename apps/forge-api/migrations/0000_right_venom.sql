@@ -2,13 +2,16 @@ CREATE TYPE "public"."actor_type" AS ENUM('human', 'agent');--> statement-breakp
 CREATE TYPE "public"."agent_availability" AS ENUM('available', 'busy', 'blocked');--> statement-breakpoint
 CREATE TYPE "public"."agent_k8s_status" AS ENUM('pending', 'provisioning', 'running', 'failed', 'terminated');--> statement-breakpoint
 CREATE TYPE "public"."agent_type" AS ENUM('team_lead', 'software_engineer', 'product_manager', 'software_architect');--> statement-breakpoint
+CREATE TYPE "public"."capability_type" AS ENUM('task_template', 'workflow');--> statement-breakpoint
 CREATE TYPE "public"."change_type" AS ENUM('data', 'status', 'relationship', 'creation', 'deletion');--> statement-breakpoint
 CREATE TYPE "public"."counterpart_type" AS ENUM('human', 'agent', 'external');--> statement-breakpoint
 CREATE TYPE "public"."integration_provider" AS ENUM('linear', 'jira', 'trello', 'github');--> statement-breakpoint
 CREATE TYPE "public"."message_role" AS ENUM('user', 'assistant');--> statement-breakpoint
+CREATE TYPE "public"."notification_priority" AS ENUM('info', 'normal', 'high', 'alert');--> statement-breakpoint
 CREATE TYPE "public"."request_resolution" AS ENUM('success', 'failed');--> statement-breakpoint
-CREATE TYPE "public"."request_scope" AS ENUM('external', 'internal');--> statement-breakpoint
 CREATE TYPE "public"."request_status" AS ENUM('draft', 'open', 'in_progress', 'waiting_user', 'completed', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."task_resolution" AS ENUM('success', 'failed');--> statement-breakpoint
+CREATE TYPE "public"."task_status" AS ENUM('open', 'in_progress', 'waiting_user', 'completed', 'cancelled');--> statement-breakpoint
 CREATE TABLE "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
@@ -16,7 +19,6 @@ CREATE TABLE "activities" (
 	"task_id" uuid,
 	"actor_id" uuid NOT NULL,
 	"actor_type" "actor_type" NOT NULL,
-	"externally_visible" boolean DEFAULT false NOT NULL,
 	"change_type" "change_type" NOT NULL,
 	"old_state" jsonb,
 	"new_state" jsonb,
@@ -89,45 +91,62 @@ CREATE TABLE "messages" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "notifications" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"team_id" uuid NOT NULL,
+	"recipient_id" uuid NOT NULL,
+	"recipient_type" "actor_type" NOT NULL,
+	"title" text NOT NULL,
+	"content" text,
+	"priority" "notification_priority" DEFAULT 'normal' NOT NULL,
+	"is_read" boolean DEFAULT false NOT NULL,
+	"related_entity_id" uuid,
+	"related_entity_type" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "requests" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
+	"number" integer NOT NULL,
+	"identifier" text NOT NULL,
 	"requester_user_id" uuid,
 	"requester_agent_id" uuid,
-	"request_scope" "request_scope" DEFAULT 'external' NOT NULL,
 	"parent_request_id" uuid,
 	"title" text DEFAULT 'New Request' NOT NULL,
 	"request_details" text,
-	"instructions" text,
 	"priority" integer DEFAULT 0 NOT NULL,
 	"target_role" text,
 	"target_agent_id" uuid,
-	"assigned_agent_id" uuid,
-	"response_contract" text,
-	"request_capabilities" jsonb,
+	"capabilities_workflow" jsonb,
+	"state" jsonb,
 	"status" "request_status" DEFAULT 'open' NOT NULL,
 	"resolution" "request_resolution",
 	"response" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"completed_at" timestamp with time zone
+	"completed_at" timestamp with time zone,
+	CONSTRAINT "requests_team_id_number_unique" UNIQUE("team_id","number"),
+	CONSTRAINT "requests_team_id_identifier_unique" UNIQUE("team_id","identifier")
 );
 --> statement-breakpoint
 CREATE TABLE "tasks" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
 	"request_id" uuid,
-	"number" integer NOT NULL,
-	"identifier" text NOT NULL,
 	"title" text NOT NULL,
-	"short_summary" text,
-	"description_markdown" text,
-	"description_rich_text" jsonb,
+	"prompt" text,
+	"instructions" text,
+	"plan" text,
+	"task_list" text,
+	"work_summary" text,
+	"result" text,
 	"assigned_to_id" uuid,
+	"status" "task_status" DEFAULT 'open' NOT NULL,
+	"resolution" "task_resolution",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "tasks_team_id_number_unique" UNIQUE("team_id","number"),
-	CONSTRAINT "tasks_team_id_identifier_unique" UNIQUE("team_id","identifier")
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "team_capabilities" (
@@ -135,12 +154,12 @@ CREATE TABLE "team_capabilities" (
 	"team_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"identifier" text NOT NULL,
-	"triggers" jsonb,
 	"instructions" text NOT NULL,
 	"inputs_description" text,
 	"expected_outputs_description" text,
-	"expected_events_output" jsonb,
-	"suggested_next_capabilities" jsonb,
+	"tasks_workflow" jsonb,
+	"type" "capability_type" DEFAULT 'task_template' NOT NULL,
+	"is_candidate" boolean DEFAULT false NOT NULL,
 	"is_enabled" boolean DEFAULT true NOT NULL,
 	"is_favorite" boolean DEFAULT false NOT NULL,
 	"schedule_config" jsonb,
@@ -151,25 +170,17 @@ CREATE TABLE "team_capabilities" (
 	CONSTRAINT "team_capabilities_team_id_identifier_unique" UNIQUE("team_id","identifier")
 );
 --> statement-breakpoint
-CREATE TABLE "team_events" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"team_id" uuid NOT NULL,
-	"identifier" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "team_events_team_id_identifier_unique" UNIQUE("team_id","identifier")
-);
---> statement-breakpoint
 CREATE TABLE "team_meta_capabilities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_type_id" text NOT NULL,
 	"name" text NOT NULL,
 	"identifier" text NOT NULL,
-	"triggers" jsonb,
 	"instructions" text NOT NULL,
 	"inputs_description" text,
 	"expected_outputs_description" text,
-	"expected_events_output" jsonb,
-	"suggested_next_capabilities" jsonb,
+	"tasks_workflow" jsonb,
+	"type" "capability_type" DEFAULT 'task_template' NOT NULL,
+	"is_candidate" boolean DEFAULT false NOT NULL,
 	"is_favorite" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
@@ -232,17 +243,16 @@ ALTER TABLE "comments" ADD CONSTRAINT "comments_request_id_requests_id_fk" FOREI
 ALTER TABLE "conversations" ADD CONSTRAINT "conversations_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "integrations" ADD CONSTRAINT "integrations_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_conversations_id_fk" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "notifications" ADD CONSTRAINT "notifications_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_requester_user_id_users_id_fk" FOREIGN KEY ("requester_user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_requester_agent_id_agents_id_fk" FOREIGN KEY ("requester_agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_parent_request_id_requests_id_fk" FOREIGN KEY ("parent_request_id") REFERENCES "public"."requests"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_target_agent_id_agents_id_fk" FOREIGN KEY ("target_agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "requests" ADD CONSTRAINT "requests_assigned_agent_id_agents_id_fk" FOREIGN KEY ("assigned_agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tasks" ADD CONSTRAINT "tasks_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "tasks" ADD CONSTRAINT "tasks_request_id_requests_id_fk" FOREIGN KEY ("request_id") REFERENCES "public"."requests"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_capabilities" ADD CONSTRAINT "team_capabilities_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_capabilities" ADD CONSTRAINT "team_capabilities_assigned_agent_id_agents_id_fk" FOREIGN KEY ("assigned_agent_id") REFERENCES "public"."agents"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "team_events" ADD CONSTRAINT "team_events_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_meta_capabilities" ADD CONSTRAINT "team_meta_capabilities_team_type_id_team_types_id_fk" FOREIGN KEY ("team_type_id") REFERENCES "public"."team_types"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_type_roles" ADD CONSTRAINT "team_type_roles_team_type_id_team_types_id_fk" FOREIGN KEY ("team_type_id") REFERENCES "public"."team_types"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "team_type_roles" ADD CONSTRAINT "team_type_roles_agent_role_id_agent_roles_id_fk" FOREIGN KEY ("agent_role_id") REFERENCES "public"."agent_roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

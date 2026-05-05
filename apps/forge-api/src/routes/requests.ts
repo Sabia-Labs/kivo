@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "../db/client";
 import { users, requests, tasks, agents, workspaces, teams, comments, conversations, messages, notifications } from "../db/schema";
-import { eq, and, desc, or, sql, isNull } from "drizzle-orm";
+import { eq, and, desc, asc, or, sql, isNull } from "drizzle-orm";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { z } from "zod";
 import { logActivity } from "../lib/activity-logger";
@@ -65,24 +65,28 @@ requestsRouter.post("/", authMiddleware, async (req, res) => {
         }
       }
 
+      const insertValues = {
+        teamId,
+        number: nextNumber,
+        identifier,
+        title: body.title,
+        requesterUserId: actorType === "human" ? actorId : undefined,
+        requesterAgentId: actorType === "agent" ? actorId : undefined,
+        targetAgentId: body.targetAgentId,
+        targetRole: body.targetRole,
+        
+        requestDetails: body.requestDetails,
+        capabilitiesWorkflow: body.capabilitiesWorkflow,
+        state: body.state,
+        status: body.status || "open",
+        parentRequestId: resolvedParentRequestId,
+      };
+
+      console.log("[DEBUG] Inserting new request with values:", insertValues);
+
       const [reqRecord] = await tx
         .insert(requests)
-        .values({
-          teamId,
-          number: nextNumber,
-          identifier,
-          title: body.title,
-          requesterUserId: actorType === "human" ? actorId : undefined,
-          requesterAgentId: actorType === "agent" ? actorId : undefined,
-          targetAgentId: body.targetAgentId,
-          targetRole: body.targetRole,
-          
-          requestDetails: body.requestDetails,
-          capabilitiesWorkflow: body.capabilitiesWorkflow,
-          state: body.state,
-          status: body.status || "open",
-          parentRequestId: resolvedParentRequestId,
-        })
+        .values(insertValues)
         .returning();
 
       return reqRecord;
@@ -212,7 +216,7 @@ requestsRouter.get("/:requestId/tasks", authMiddleware, async (req, res) => {
       .select()
       .from(tasks)
       .where(and(eq(tasks.teamId, teamId), eq(tasks.requestId, request.id)))
-      .orderBy(desc(tasks.createdAt));
+      .orderBy(asc(tasks.createdAt));
 
     if (request.id) {
       const [reqRec] = await db.select({ state: requests.state }).from(requests).where(eq(requests.id, request.id));

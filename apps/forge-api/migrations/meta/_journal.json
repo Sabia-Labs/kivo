@@ -5,43 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1777275242103,
-      "tag": "0000_rainy_leper_queen",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1777278094365,
-      "tag": "0001_curly_true_believers",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1777313247379,
-      "tag": "0002_nice_thunderbolt_ross",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1777313264915,
-      "tag": "0003_unique_black_knight",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1777390639741,
-      "tag": "0004_familiar_longshot",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1777867863662,
-      "tag": "0005_lonely_archangel",
+      "when": 1777951853268,
+      "tag": "0000_right_venom",
       "breakpoints": true
     }
   ]

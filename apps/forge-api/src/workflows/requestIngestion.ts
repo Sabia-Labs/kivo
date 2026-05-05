@@ -115,8 +115,7 @@ const classificationSchema = z.object({
   isForgeRelated: z.boolean().describe("Whether the request is related to Forge or the teams in the workspace."),
   isOtherTeamRelated: z.boolean().describe("Whether the request is meant for a team other than the current one."),
   isTeamRelated: z.boolean().describe("Whether the request is meant for the current team."),
-  otherTeamIdentifier: z.string().optional().nullable().describe("If isOtherTeamRelated is true, provide the prefix or name of the other team."),
-  nature: z.enum(["inquiry", "analysis", "execution", "project"]).optional().nullable().describe("If isTeamRelated is true, classify the nature of the request.")
+  otherTeamIdentifier: z.string().optional().nullable().describe("If isOtherTeamRelated is true, provide the prefix or name of the other team.")
 });
 
 async function classifyRequestNode(state: typeof IngestionState.State) {
@@ -166,8 +165,7 @@ const capabilityMatchSchema = z.object({
   newCapabilityInstructions: z.string().optional().nullable().describe("If createNew is true, the instructions for the capability."),
   newCapabilityInputsDescription: z.string().optional().nullable().describe("If createNew is true, what inputs are required to execute this capability."),
   newCapabilityExpectedOutputs: z.string().optional().nullable().describe("If createNew is true, what is the Definition of Done or the expected outputs/artifacts."),
-  newCapabilityAssignedRole: z.string().optional().nullable().describe("If createNew is true, which agent role from the team is best suited to execute this capability."),
-  nature: z.enum(["inquiry", "analysis", "execution", "project"]).optional().nullable()
+  newCapabilityAssignedRole: z.string().optional().nullable().describe("If createNew is true, which agent role from the team is best suited to execute this capability.")
 });
 
 async function getTeamCapabilityNode(state: typeof IngestionState.State) {
@@ -175,8 +173,16 @@ async function getTeamCapabilityNode(state: typeof IngestionState.State) {
 
   if (state.request.capabilitiesWorkflow && Array.isArray(state.request.capabilitiesWorkflow) && state.request.capabilitiesWorkflow.length > 0) {
     const capabilityIdentifier = state.request.capabilitiesWorkflow[0];
-    const capability = await getCapabilityByIdentifier(state.teamId, capabilityIdentifier);
+    let capability = await getCapabilityByIdentifier(state.teamId, capabilityIdentifier);
     if (capability) {
+      if (capability.type === "workflow") {
+        const tasksWorkflow = capability.tasksWorkflow as string[] || [];
+        await updateRequest(state.requestId, { capabilitiesWorkflow: tasksWorkflow });
+        if (tasksWorkflow.length > 0) {
+          const firstTask = await getCapabilityByIdentifier(state.teamId, tasksWorkflow[0]);
+          if (firstTask) capability = firstTask;
+        }
+      }
       console.log(`[request-ingestion] Request already has capability: ${capability.identifier}`);
       return { capability };
     }
@@ -215,7 +221,7 @@ async function getTeamCapabilityNode(state: typeof IngestionState.State) {
       result.newCapabilityName || "New Capability",
       result.newCapabilityIdentifier,
       result.newCapabilityInstructions || "",
-      result.nature || state.classification.nature || "execution",
+      "task_template",
       result.newCapabilityInputsDescription || "",
       result.newCapabilityExpectedOutputs || "",
       result.newCapabilityAssignedRole || ""
@@ -223,7 +229,6 @@ async function getTeamCapabilityNode(state: typeof IngestionState.State) {
   } else if (result.matchedCapabilityIdentifier) {
     const matchedCapability = await getCapabilityByIdentifier(state.teamId, result.matchedCapabilityIdentifier);
     if (matchedCapability) {
-      await updateRequest(state.requestId, { capabilitiesWorkflow: [matchedCapability.identifier] });
       capability = matchedCapability;
     }
   }
@@ -233,6 +238,19 @@ async function getTeamCapabilityNode(state: typeof IngestionState.State) {
     const caps = await getCapabilitiesByTeam(state.teamId);
     if (caps.length > 0) {
       capability = caps[0];
+    }
+  }
+
+  if (capability) {
+    if (capability.type === "workflow") {
+      const tasksWorkflow = capability.tasksWorkflow as string[] || [];
+      await updateRequest(state.requestId, { capabilitiesWorkflow: tasksWorkflow });
+      if (tasksWorkflow.length > 0) {
+        const firstTask = await getCapabilityByIdentifier(state.teamId, tasksWorkflow[0]);
+        if (firstTask) capability = firstTask;
+      }
+    } else {
+      await updateRequest(state.requestId, { capabilitiesWorkflow: [capability.identifier] });
     }
   }
 
@@ -307,7 +325,7 @@ You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
 2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. If simple, provide a brief rationale in the 'plan' field.
 3. RESULT: Summarize your actions in the 'workSummary' field. Provide the final deliverable (fulfilling the acceptance criteria) in the 'result' field.
-4. COMPLETION: It is absolutely critical that you update the task 'status' to 'completed' when you finish the work.`;
+4. COMPLETION: It is absolutely critical that you update the task 'status' to 'completed' when you finish the work and also the resolution field MUST be set to 'success' or 'failed' accordingly.`;
 
   const finalInstructions = `${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 

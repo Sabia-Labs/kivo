@@ -7,6 +7,7 @@ import { authMiddleware } from "../middleware/authMiddleware";
 import { createTaskSchema, updateTaskSchema, createCommentSchema, updateCommentSchema } from "../schemas/task-management.schema";
 import { z } from "zod";
 import { updateRequest } from "../controllers/requestsController";
+import { runRequestContinuation } from "../workflows/requestContinuation";
 
 export const tasksRouter = Router();
 
@@ -179,17 +180,9 @@ tasksRouter.put("/:id", authMiddleware, async (req: Request, res: Response, next
     });
 
     if (result.status === "completed" && result.requestId) {
-      const resolution = result.resolution === "failed" ? "failed" : "success";
-      await updateRequest(
-        result.requestId,
-        {
-          status: "completed",
-          resolution,
-          response: result.result || "Task completed."
-        },
-        req.actor!.id,
-        req.actor!.type
-      );
+      runRequestContinuation(result.id, result.requestId, result.teamId).catch(err => {
+        console.error(`[request-continuation] Workflow failed for task ${result.id}:`, err);
+      });
     }
 
     res.json(success(result));

@@ -82,6 +82,9 @@ forge-api:
 forge-api-install:
 	cd apps/forge-api && pnpm install
 
+db-generate:
+	cd apps/forge-api && pnpm db:generate
+
 db-migrate:
 	cd apps/forge-api && pnpm db:migrate
 

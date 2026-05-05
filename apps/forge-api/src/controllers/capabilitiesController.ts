@@ -16,7 +16,7 @@ export async function createCandidateCapability(
   name: string,
   identifier: string,
   instructions: string,
-  nature: "inquiry" | "analysis" | "execution" | "project",
+  type: "task_template" | "workflow",
   inputsDescription: string,
   expectedOutputsDescription: string,
   assignedRole: string
@@ -27,7 +27,7 @@ export async function createCandidateCapability(
     identifier,
     instructions,
     isCandidate: true,
-    nature,
+    type,
     inputsDescription,
     expectedOutputsDescription,
     assignedRole

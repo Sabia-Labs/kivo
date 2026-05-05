@@ -52,7 +52,7 @@ interface Integration {
 interface Capability {
   id: string; name: string; identifier: string; instructions: string;
   inputsDescription: string | null; expectedOutputsDescription: string | null;
-  suggestedNextCapabilities: string[] | null; isEnabled: boolean; scheduleConfig: Record<string, any> | null;
+  tasksWorkflow: string[] | null; isEnabled: boolean; scheduleConfig: Record<string, any> | null;
   assignedAgentId: string | null; assignedRole: string | null; isFavorite: boolean;
 }
 
@@ -200,6 +200,110 @@ function AIInsightsChat({ field, value, onApply, onClose }: { field: string, val
   );
 }
 
+function IntegrationConfig({ providerKey, integration, onSave }: { providerKey: string, integration?: Integration, onSave: (data: Partial<Integration>) => Promise<void> }) {
+  const isConfigured = providerKey === "github" ? !!integration?.metadata?.appId : !!integration?.apiKey;
+  const [isEditing, setIsEditing] = useState(!isConfigured);
+  
+  const [appId, setAppId] = useState(integration?.metadata?.appId || "");
+  const [installationId, setInstallationId] = useState(integration?.metadata?.installationId || "");
+  const [apiKey, setApiKey] = useState(integration?.apiKey || "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    if (providerKey === "github") {
+      await onSave({ apiKey, metadata: { ...integration?.metadata, appId, installationId } });
+    } else {
+      await onSave({ apiKey });
+    }
+    setIsSaving(false);
+    setIsEditing(false);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setAppId(integration?.metadata?.appId || "");
+    setInstallationId(integration?.metadata?.installationId || "");
+    setApiKey(integration?.apiKey || "");
+  };
+
+  if (providerKey === "github") {
+    if (!isEditing && isConfigured) {
+      return (
+        <div className="flex items-center">
+          <Button variant="link" size="sm" onClick={() => setIsEditing(true)} className="h-auto p-0 text-primary">
+            <Edit2 className="size-3 mr-1" /> Edit GitHub Configuration
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">App ID</label>
+          <Input value={appId} onChange={e => setAppId(e.target.value)} placeholder="123456" autoComplete="off" className="font-mono" />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Installation ID</label>
+          <Input value={installationId} onChange={e => setInstallationId(e.target.value)} placeholder="78901234" autoComplete="off" className="font-mono" />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Private Key (PEM)</label>
+          <textarea value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="-----BEGIN RSA PRIVATE KEY-----..." className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]" autoComplete="off" />
+        </div>
+        <div className="sm:col-span-2 flex justify-start gap-2 mt-2">
+          <Button onClick={handleSave} disabled={isSaving} size="sm">
+            {isSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+            Save Configuration
+          </Button>
+          {isConfigured && (
+            <Button variant="ghost" onClick={handleCancel} size="sm">
+              Cancel
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!isEditing && isConfigured) {
+    return (
+      <div className="flex items-center">
+        <Button variant="link" size="sm" onClick={() => { setApiKey(""); setIsEditing(true); }} className="h-auto p-0 text-primary">
+          <Edit2 className="size-3 mr-1" /> Change Key
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 max-w-md">
+      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">API Token / Key</label>
+      <div className="flex gap-2 items-start">
+        <Input 
+          type="text" 
+          placeholder="Enter token to authenticate..." 
+          value={apiKey} 
+          onChange={e => setApiKey(e.target.value)} 
+          autoComplete="off"
+          data-1p-ignore
+          className="flex-1 font-mono"
+        />
+        <Button onClick={handleSave} disabled={isSaving || !apiKey} size="default" className="shrink-0">
+          {isSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+          Save
+        </Button>
+        {isConfigured && (
+          <Button variant="ghost" onClick={handleCancel} size="default" className="shrink-0">
+            Cancel
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Main Component ───────────────────────────────────────────────────────────
 
 export default function TeamSettingsPage() {
@@ -326,7 +430,9 @@ export default function TeamSettingsPage() {
           if (exists) return prev.map(i => i.provider === provider ? updated.data : i);
           return [...prev, updated.data];
         });
-        toast.success(`${provider} integration saved`);
+        toast.success("Integration saved", {
+          description: "The integration has been configured and the agents are being notified so they can use the integration accordingly. It should be ready in a minute."
+        });
       }
     } catch (e) { toast.error(`Failed to save integration`); }
   };
@@ -434,7 +540,7 @@ export default function TeamSettingsPage() {
                     <h2 className="text-lg font-semibold">What this team can do</h2>
                     <p className="text-sm text-muted-foreground">Manage the active capabilities of your agents.</p>
                   </div>
-                  <Link href={`/teams/${teamId}/settings/capabilities/new`}>
+                  <Link href={`/teams/${teamId}/settings/capabilities/wizard`}>
                     <Button>
                       <Plus className="size-4 mr-2" /> New Capability
                     </Button>
@@ -549,30 +655,13 @@ export default function TeamSettingsPage() {
 
                               {isToggledOn && (
                                 <div className="mt-5 pt-5 border-t animate-in slide-in-from-top-2 duration-200">
-                                  {provider.key === "github" ? (
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">App ID</label>
-                                        <Input defaultValue={integration?.metadata?.appId || ""} onBlur={e => saveIntegration(provider.key, { metadata: { ...integration?.metadata, appId: e.target.value } })} placeholder="123456" />
-                                      </div>
-                                      <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Installation ID</label>
-                                        <Input defaultValue={integration?.metadata?.installationId || ""} onBlur={e => saveIntegration(provider.key, { metadata: { ...integration?.metadata, appId: integration?.metadata?.appId, installationId: e.target.value } })} placeholder="78901234" />
-                                      </div>
-                                      <div className="space-y-1.5 sm:col-span-2">
-                                        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Private Key (PEM)</label>
-                                        <textarea defaultValue={integration?.apiKey ? "••••••••••••••••" : ""} onFocus={e => { if(e.target.value === "••••••••••••••••") e.target.value = ""; }} onBlur={e => { if(e.target.value && e.target.value !== "••••••••••••••••") { saveIntegration(provider.key, { apiKey: e.target.value, metadata: integration?.metadata }); e.target.value = "••••••••••••••••"; } }} placeholder="-----BEGIN RSA PRIVATE KEY-----..." className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]" />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-1.5 max-w-md">
-                                      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">API Token / Key</label>
-                                      <div className="flex gap-2">
-                                        <Input type="password" placeholder="Enter token to authenticate..." defaultValue={integration?.apiKey ? "••••••••••••••••" : ""} onFocus={e => { if(e.target.value === "••••••••••••••••") e.target.value = ""; }} onBlur={e => { if(e.target.value && e.target.value !== "••••••••••••••••") { saveIntegration(provider.key, { apiKey: e.target.value }); e.target.value = "••••••••••••••••"; } }} />
-                                      </div>
-                                      <p className="text-[10px] text-muted-foreground">Tokens are securely stored and masked after saving.</p>
-                                    </div>
-                                  )}
+                                  <IntegrationConfig 
+                                    providerKey={provider.key} 
+                                    integration={integration} 
+                                    onSave={async (data) => {
+                                      await saveIntegration(provider.key, data);
+                                    }} 
+                                  />
                                 </div>
                               )}
                             </div>

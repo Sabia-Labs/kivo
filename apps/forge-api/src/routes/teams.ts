@@ -120,7 +120,8 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
             instructions: cap.instructions,
             inputsDescription: cap.inputsDescription,
             expectedOutputsDescription: cap.expectedOutputsDescription,
-            suggestedNextCapabilities: cap.suggestedNextCapabilities,
+            tasksWorkflow: cap.tasksWorkflow,
+            type: cap.type,
           }))
         );
       }
@@ -270,19 +271,37 @@ teamsRouter.post("/:id/capabilities", authMiddleware, async (req: Request, res: 
     const name = String(req.body.name || "New Capability");
     const identifier = req.body.identifier ? String(req.body.identifier) : generateSlug(name);
     
+    const type = req.body.type || "task_template";
+    const tasksWorkflow = req.body.tasksWorkflow || null;
+    let inputsDescription = req.body.inputsDescription ? String(req.body.inputsDescription) : null;
+    
+    if (type === "workflow" && Array.isArray(tasksWorkflow) && tasksWorkflow.length > 0) {
+      const { and } = await import("drizzle-orm");
+      const [firstTask] = await db.select().from(teamCapabilities).where(
+        and(
+          eq(teamCapabilities.teamId, String(req.params.id)),
+          eq(teamCapabilities.identifier, tasksWorkflow[0])
+        )
+      );
+      if (firstTask) {
+        inputsDescription = firstTask.inputsDescription;
+      }
+    }
+
     const [created] = await db.insert(teamCapabilities).values({
       teamId: String(req.params.id),
       name,
       identifier,
       instructions: String(req.body.instructions || ""),
-      inputsDescription: req.body.inputsDescription ? String(req.body.inputsDescription) : null,
+      inputsDescription,
       expectedOutputsDescription: req.body.expectedOutputsDescription ? String(req.body.expectedOutputsDescription) : null,
       assignedAgentId: req.body.assignedAgentId ? String(req.body.assignedAgentId) : null,
       assignedRole: req.body.assignedRole ? String(req.body.assignedRole) : null,
       isEnabled: Boolean(req.body.isEnabled ?? true),
       isFavorite: Boolean(req.body.isFavorite ?? false),
       scheduleConfig: req.body.scheduleConfig || null,
-      suggestedNextCapabilities: req.body.suggestedNextCapabilities || null
+      tasksWorkflow,
+      type
     }).returning();
     
     // Sync K8s CronJob
@@ -322,23 +341,39 @@ teamsRouter.put("/:id/capabilities/:capId", authMiddleware, async (req: Request,
     if (req.body.expectedOutputsDescription !== undefined) updateData.expectedOutputsDescription = req.body.expectedOutputsDescription ? String(req.body.expectedOutputsDescription) : null;
     if (req.body.assignedAgentId !== undefined) updateData.assignedAgentId = req.body.assignedAgentId ? String(req.body.assignedAgentId) : null;
     if (req.body.assignedRole !== undefined) updateData.assignedRole = req.body.assignedRole ? String(req.body.assignedRole) : null;
-    if (req.body.suggestedNextCapabilities !== undefined) updateData.suggestedNextCapabilities = req.body.suggestedNextCapabilities;
+    if (req.body.tasksWorkflow !== undefined) updateData.tasksWorkflow = req.body.tasksWorkflow;
+    if (req.body.type !== undefined) updateData.type = req.body.type;
+    
+    const resolvedType = updateData.type || existing.type;
+    const resolvedTasksWorkflow = updateData.tasksWorkflow !== undefined ? updateData.tasksWorkflow : existing.tasksWorkflow;
+    
+    if (resolvedType === "workflow" && Array.isArray(resolvedTasksWorkflow) && resolvedTasksWorkflow.length > 0) {
+      const [firstTask] = await db.select().from(teamCapabilities).where(
+        and(
+          eq(teamCapabilities.teamId, String(req.params.id)),
+          eq(teamCapabilities.identifier, resolvedTasksWorkflow[0])
+        )
+      );
+      if (firstTask) {
+        updateData.inputsDescription = firstTask.inputsDescription;
+      }
+    }
     
     const [updated] = await db.update(teamCapabilities)
       .set({ ...updateData, updatedAt: new Date() })
       .where(and(eq(teamCapabilities.id, String(req.params.capId)), eq(teamCapabilities.teamId, String(req.params.id))))
       .returning();
       
-    // Cascade update suggestedNextCapabilities if identifier changed
+    // Cascade update tasksWorkflow if identifier changed
     if (updated && existing.identifier !== updated.identifier) {
       const allCaps = await db.select().from(teamCapabilities).where(eq(teamCapabilities.teamId, String(req.params.id)));
       for (const cap of allCaps) {
         if (cap.id === updated.id) continue;
-        const suggestions = cap.suggestedNextCapabilities as string[] | null;
+        const suggestions = cap.tasksWorkflow as string[] | null;
         if (suggestions && Array.isArray(suggestions) && suggestions.includes(existing.identifier)) {
           const newSuggestions = suggestions.map(id => id === existing.identifier ? updated.identifier : id);
           await db.update(teamCapabilities)
-            .set({ suggestedNextCapabilities: newSuggestions })
+            .set({ tasksWorkflow: newSuggestions })
             .where(eq(teamCapabilities.id, cap.id));
         }
       }

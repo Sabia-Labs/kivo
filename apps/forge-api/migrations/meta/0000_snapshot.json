@@ -1,5 +1,5 @@
 {
-  "id": "76c7c6d9-dfc4-446b-bb2f-3a65dc3a8d20",
+  "id": "72929d5f-cd9d-420b-85e2-bc10f81879b3",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -45,13 +45,6 @@
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
-        },
-        "externally_visible": {
-          "name": "externally_visible",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "change_type": {
           "name": "change_type",
@@ -613,6 +606,112 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.notifications": {
+      "name": "notifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_id": {
+          "name": "recipient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recipient_type": {
+          "name": "recipient_type",
+          "type": "actor_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content": {
+          "name": "content",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "priority": {
+          "name": "priority",
+          "type": "notification_priority",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'normal'"
+        },
+        "is_read": {
+          "name": "is_read",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "related_entity_id": {
+          "name": "related_entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "related_entity_type": {
+          "name": "related_entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "notifications_team_id_teams_id_fk": {
+          "name": "notifications_team_id_teams_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.requests": {
       "name": "requests",
       "schema": "",
@@ -630,6 +729,18 @@
           "primaryKey": false,
           "notNull": true
         },
+        "number": {
+          "name": "number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "requester_user_id": {
           "name": "requester_user_id",
           "type": "uuid",
@@ -641,14 +752,6 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": false
-        },
-        "request_scope": {
-          "name": "request_scope",
-          "type": "request_scope",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'external'"
         },
         "parent_request_id": {
           "name": "parent_request_id",
@@ -665,12 +768,6 @@
         },
         "request_details": {
           "name": "request_details",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "instructions": {
-          "name": "instructions",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -694,20 +791,14 @@
           "primaryKey": false,
           "notNull": false
         },
-        "assigned_agent_id": {
-          "name": "assigned_agent_id",
-          "type": "uuid",
+        "capabilities_workflow": {
+          "name": "capabilities_workflow",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
-        "response_contract": {
-          "name": "response_contract",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "request_capabilities": {
-          "name": "request_capabilities",
+        "state": {
+          "name": "state",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
@@ -820,23 +911,27 @@
           ],
           "onDelete": "set null",
           "onUpdate": "no action"
-        },
-        "requests_assigned_agent_id_agents_id_fk": {
-          "name": "requests_assigned_agent_id_agents_id_fk",
-          "tableFrom": "requests",
-          "tableTo": "agents",
-          "columnsFrom": [
-            "assigned_agent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "requests_team_id_number_unique": {
+          "name": "requests_team_id_number_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "team_id",
+            "number"
+          ]
+        },
+        "requests_team_id_identifier_unique": {
+          "name": "requests_team_id_identifier_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "team_id",
+            "identifier"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -864,45 +959,66 @@
           "primaryKey": false,
           "notNull": false
         },
-        "number": {
-          "name": "number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "identifier": {
-          "name": "identifier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "title": {
           "name": "title",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "short_summary": {
-          "name": "short_summary",
+        "prompt": {
+          "name": "prompt",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "description_markdown": {
-          "name": "description_markdown",
+        "instructions": {
+          "name": "instructions",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "description_rich_text": {
-          "name": "description_rich_text",
-          "type": "jsonb",
+        "plan": {
+          "name": "plan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "task_list": {
+          "name": "task_list",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "work_summary": {
+          "name": "work_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
         "assigned_to_id": {
           "name": "assigned_to_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "task_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'open'"
+        },
+        "resolution": {
+          "name": "resolution",
+          "type": "task_resolution",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -951,24 +1067,7 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "tasks_team_id_number_unique": {
-          "name": "tasks_team_id_number_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "team_id",
-            "number"
-          ]
-        },
-        "tasks_team_id_identifier_unique": {
-          "name": "tasks_team_id_identifier_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "team_id",
-            "identifier"
-          ]
-        }
-      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1002,12 +1101,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "triggers": {
-          "name": "triggers",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "instructions": {
           "name": "instructions",
           "type": "text",
@@ -1026,17 +1119,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "expected_events_output": {
-          "name": "expected_events_output",
+        "tasks_workflow": {
+          "name": "tasks_workflow",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
-        "suggested_next_capabilities": {
-          "name": "suggested_next_capabilities",
-          "type": "jsonb",
+        "type": {
+          "name": "type",
+          "type": "capability_type",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'task_template'"
+        },
+        "is_candidate": {
+          "name": "is_candidate",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "is_enabled": {
           "name": "is_enabled",
@@ -1129,68 +1231,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.team_events": {
-      "name": "team_events",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "identifier": {
-          "name": "identifier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "team_events_team_id_teams_id_fk": {
-          "name": "team_events_team_id_teams_id_fk",
-          "tableFrom": "team_events",
-          "tableTo": "teams",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "team_events_team_id_identifier_unique": {
-          "name": "team_events_team_id_identifier_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "team_id",
-            "identifier"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.team_meta_capabilities": {
       "name": "team_meta_capabilities",
       "schema": "",
@@ -1220,12 +1260,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "triggers": {
-          "name": "triggers",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
         "instructions": {
           "name": "instructions",
           "type": "text",
@@ -1244,17 +1278,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "expected_events_output": {
-          "name": "expected_events_output",
+        "tasks_workflow": {
+          "name": "tasks_workflow",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
-        "suggested_next_capabilities": {
-          "name": "suggested_next_capabilities",
-          "type": "jsonb",
+        "type": {
+          "name": "type",
+          "type": "capability_type",
+          "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true,
+          "default": "'task_template'"
+        },
+        "is_candidate": {
+          "name": "is_candidate",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "is_favorite": {
           "name": "is_favorite",
@@ -1668,6 +1711,14 @@
         "software_architect"
       ]
     },
+    "public.capability_type": {
+      "name": "capability_type",
+      "schema": "public",
+      "values": [
+        "task_template",
+        "workflow"
+      ]
+    },
     "public.change_type": {
       "name": "change_type",
       "schema": "public",
@@ -1706,6 +1757,16 @@
         "assistant"
       ]
     },
+    "public.notification_priority": {
+      "name": "notification_priority",
+      "schema": "public",
+      "values": [
+        "info",
+        "normal",
+        "high",
+        "alert"
+      ]
+    },
     "public.request_resolution": {
       "name": "request_resolution",
       "schema": "public",
@@ -1714,19 +1775,30 @@
         "failed"
       ]
     },
-    "public.request_scope": {
-      "name": "request_scope",
-      "schema": "public",
-      "values": [
-        "external",
-        "internal"
-      ]
-    },
     "public.request_status": {
       "name": "request_status",
       "schema": "public",
       "values": [
         "draft",
+        "open",
+        "in_progress",
+        "waiting_user",
+        "completed",
+        "cancelled"
+      ]
+    },
+    "public.task_resolution": {
+      "name": "task_resolution",
+      "schema": "public",
+      "values": [
+        "success",
+        "failed"
+      ]
+    },
+    "public.task_status": {
+      "name": "task_status",
+      "schema": "public",
+      "values": [
         "open",
         "in_progress",
         "waiting_user",
