@@ -60,8 +60,8 @@ jobs:
       - name: Build & push API image
         uses: docker/build-push-action@v6
         with:
-          context: apps/api
-          file: apps/api/Dockerfile
+          context: apps/kivo-api
+          file: apps/kivo-api/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:dev-latest
           labels: ${{ steps.meta.outputs.labels }}
@@ -71,8 +71,8 @@ jobs:
       - name: Build & push Web image
         uses: docker/build-push-action@v6
         with:
-          context: apps/web
-          file: apps/web/Dockerfile
+          context: apps/kivo-web
+          file: apps/kivo-web/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:dev-latest
           labels: ${{ steps.meta.outputs.labels }}
