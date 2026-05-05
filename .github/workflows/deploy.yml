@@ -63,7 +63,7 @@ jobs:
           context: apps/kivo-api
           file: apps/kivo-api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:dev-latest
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -74,7 +74,7 @@ jobs:
           context: apps/kivo-web
           file: apps/kivo-web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:dev-latest
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
