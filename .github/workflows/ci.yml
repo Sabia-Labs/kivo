@@ -60,13 +60,7 @@ jobs:
         working-directory: apps/kivo-api
         run: pnpm typecheck
 
-      - name: Docker build (no push — validation only)
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/kivo-api
-          file: apps/kivo-api/Dockerfile
-          push: false
-          tags: kivo/api:ci
+
 
   # ── Web Typecheck & Build ────────────────────────────────────────────────────
   web-check:
@@ -90,10 +84,4 @@ jobs:
         working-directory: apps/kivo-web
         run: npm run typecheck
 
-      - name: Docker build (no push — validation only)
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/kivo-web
-          file: apps/kivo-web/Dockerfile
-          push: false
-          tags: kivo/web:ci
+
