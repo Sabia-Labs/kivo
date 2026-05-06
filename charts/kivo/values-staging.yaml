@@ -22,7 +22,7 @@ kivoApi:
     PORT: "4000"
     CORS_ORIGIN: "https://kivo-staging.example.com"
   existingSecret: kivo-api-staging-secret
-  runMigrations: true
+  runMigrations: false
 
 kivoWeb:
   replicaCount: 1
