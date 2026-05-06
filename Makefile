@@ -151,27 +151,49 @@ k8s-render:
 ## Create the kivo namespace (idempotent — safe to run multiple times)
 k8s-namespace:
 	kubectl create namespace kivo --dry-run=client -o yaml | kubectl apply -f -
-
 ## Delete the kivo namespace AND all kivo-ws-* workspace namespaces.
 ## ⚠  DESTRUCTIVE: wipes all agent PVCs, Secrets, and state for every workspace.
 ## Use only during local dev to start fresh. Never run against production.
 clean-k8s:
 	@echo ""
 	@echo "  ⚠  WARNING: This will permanently delete:"
-	@echo "     • namespace/kivo  (API, Web, Controller, PostgreSQL, all data)"
-	@echo "     • all kivo-ws-* namespaces (agent pods, PVCs, Secrets)"
+	@echo "     • namespace/kivo           (API, Web, Controller, PostgreSQL, all data)"
+	@echo "     • namespace/kivo-admin     (Admin API, Admin Web)"
+	@echo "     • namespace/infra-messaging (RabbitMQ instances)"
+	@echo "     • namespace/ingress-nginx   (Ingress controller)"
+	@echo "     • namespace/rabbitmq-system (RabbitMQ operator)"
+	@echo "     • all kivo-ws-* namespaces  (agent pods, PVCs, Secrets)"
 	@echo ""
 	@printf "  Type 'yes' to confirm: "; read CONFIRM; \
 	if [ "$$CONFIRM" = "yes" ]; then \
-		echo "→ Deleting namespace kivo and kivo-admin..."; \
-		kubectl delete namespace kivo --ignore-not-found; \
-		kubectl delete namespace kivo-admin --ignore-not-found; \
+		echo "→ Deleting infrastructure and app namespaces..."; \
+		kubectl delete namespace kivo kivo-admin infra-messaging ingress-nginx rabbitmq-system --ignore-not-found; \
 		echo "→ Deleting kivo-ws-* namespaces..."; \
 		kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found; \
-		echo "✓ Done. Run 'make tilt-up' to start fresh."; \
+		echo "✓ K8s Environment cleaned."; \
 	else \
 		echo "Aborted."; \
 	fi
+
+## ⚠ TOTAL RESET: Returns the environment to factory state.
+## Stops all processes, deletes all k8s resources, and wipes local databases.
+factory-reset: web-kill
+	@echo "Starting factory reset..."
+	@make tilt-down || true
+	@make clean-k8s
+	@echo "→ Stopping and removing local PostgreSQL container..."
+	@docker stop kivo-postgres 2>/dev/null || true
+	@docker rm kivo-postgres 2>/dev/null || true
+	@make clean
+	@echo ""
+	@echo "✓ Factory reset complete."
+	@echo "To start fresh:"
+	@echo "  1. make docker-db"
+	@echo "  2. make db-migrate admin-migrate"
+	@echo "  3. make admin-seed"
+	@echo "  4. make tilt-up"
+	@echo ""
+
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
