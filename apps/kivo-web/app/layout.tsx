@@ -48,6 +48,9 @@ export default function RootLayout({
               fontMono.variable
             , "font-sans", figtree.variable)}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: `window.__ENV = ${JSON.stringify({ SITE_URL: process.env.NEXT_PUBLIC_SITE_URL })};` }} />
+      </head>
       <body className="font-sans">
         <ThemeProvider>
           <LanguageProvider>
