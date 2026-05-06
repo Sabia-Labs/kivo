@@ -201,6 +201,7 @@ authRouter.get("/google", (req, res) => {
   const url = googleClient.generateAuthUrl({
     access_type: "offline",
     scope: ["email", "profile"],
+    redirect_uri: process.env.GOOGLE_REDIRECT_URI || "http://localhost:4001/auth/google/callback"
   });
   res.redirect(url);
 });
