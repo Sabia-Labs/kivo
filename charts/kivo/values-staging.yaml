@@ -8,7 +8,7 @@ kivoApi:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-api
-    tag: "94046f626b00955e9d05997927403d7aba3f0574" # injected by CI
+    tag: "eaca62e0c5c6fb454e0b2969e94902cdcde7f965" # injected by CI
     pullPolicy: Always
   resources:
     requests:
@@ -27,7 +27,7 @@ kivoWeb:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-web
-    tag: "94046f626b00955e9d05997927403d7aba3f0574"
+    tag: "eaca62e0c5c6fb454e0b2969e94902cdcde7f965"
     pullPolicy: Always
   resources:
     requests:
@@ -43,7 +43,7 @@ adminApi:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-api
-    tag: "94046f626b00955e9d05997927403d7aba3f0574"
+    tag: "eaca62e0c5c6fb454e0b2969e94902cdcde7f965"
     pullPolicy: Always
   resources:
     requests:
@@ -58,7 +58,7 @@ adminWeb:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-web
-    tag: "94046f626b00955e9d05997927403d7aba3f0574"
+    tag: "eaca62e0c5c6fb454e0b2969e94902cdcde7f965"
     pullPolicy: Always
   resources:
     requests:
@@ -74,7 +74,7 @@ controller:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
-    tag: "94046f626b00955e9d05997927403d7aba3f0574"
+    tag: "eaca62e0c5c6fb454e0b2969e94902cdcde7f965"
     pullPolicy: Always
   agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
   consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
