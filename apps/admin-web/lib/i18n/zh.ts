@@ -11,164 +11,149 @@ export const zh: Dictionary = {
     agents: "智能体",
     logout: "退出登录",
   },
-  hero: {
-    badge: "AI智能体团队，以最佳实践管理",
-    headline: "您的智能体团队，\n像顶尖组织一样运转。",
+    hero: {
+    badge: "Kivo · AI Native Orchestration",
+    headline: "Your AI workforce, structured like a real organization.",
     subheadline:
-      "灵巢 以世界级的组织管理纪律部署自主AI智能体团队——无论您从事哪个领域，都能让您的智能体团队像管理良好的人类组织一样在AI速度下交付成果。",
-    ctaPrimary: "立即开始",
-    ctaSecondary: "联系销售",
+      "Kivo is the orchestration layer for autonomous AI teams. We deploy structured AI workforces with workflows, governance, approvals, and persistent memory.",
+    ctaPrimary: "Deploy Your Team",
+    ctaSecondary: "View Documentation",
   },
   stats: {
     items: [
-      { value: "10×", label: "交付周期加速" },
-      { value: "70%", label: "运营成本降低" },
-      { value: "24/7", label: "持续执行" },
-      { value: "0", label: "任务间知识损失" },
+      { value: "10×", label: "Faster execution cycles" },
+      { value: "100%", label: "Auditability on actions" },
+      { value: "24/7", label: "Autonomous operation" },
+      { value: "0", label: "Context lost between tasks" },
     ],
   },
-  chaos: {
-    sectionBadge: "传统方式 vs 灵巢 方式",
-    sectionTitle: "停止管理混乱，开始运营团队。",
+  governance: {
+    sectionBadge: "Structured Autonomy",
+    sectionTitle: "Control and visibility at every level.",
     sectionSubtitle:
-      "大多数部署AI智能体的组织最终陷入临时工具、职责不清和不可预期结果的困境。灵巢 以受治理、结构化、可量化的执行层取而代之。",
-    oldWayTitle: "临时部署智能体",
-    kivoWayTitle: "灵巢 方式",
+      "Kivo replaces ad hoc chatbot interactions with a governed, structured, and measurable execution layer. Your teams operate autonomously, but never without oversight.",
+    oldWayTitle: "Generic AI",
+    kivoWayTitle: "Kivo Platform",
     items: [
       {
-        old: "智能体没有明确角色或归属",
-        kivo: "每个团队都有组长——从第一天起就有清晰的归属",
+        old: "Unpredictable outputs and hallucinations",
+        kivo: "Strict role-based workflows and guardrails",
       },
       {
-        old: "会话结束后知识随之消失",
-        kivo: "所有决策与上下文持久化至Git，零知识流失",
+        old: "Isolated chat sessions with no memory",
+        kivo: "Git-backed persistent memory across all tasks",
       },
       {
-        old: "不知道智能体在做什么",
-        kivo: "实时健康评分——持续追踪速度、阻塞项和活动",
+        old: "Black box execution",
+        kivo: "Real-time observability and Health Scores",
       },
       {
-        old: "智能体在无监督无审批的情况下自主行动",
-        kivo: "多级审批护栏——智能体未经授权绝不对外行动",
+        old: "Agents take unapproved actions",
+        kivo: "Multi-level human-in-the-loop approvals",
+      },
+    ],
+  },
+  howItWorks: {
+    sectionBadge: "Execution Cycle",
+    sectionTitle: "How Kivo orchestrates work.",
+    steps: [
+      {
+        number: "01",
+        title: "Create your AI team",
+        description: "Deploy a structured squad of agents with defined roles and ownership.",
       },
       {
-        old: "产出不可预期，质量参差不齐",
-        kivo: "结构化工作流与角色专属纪律贯穿每项任务",
+        number: "02",
+        title: "Give it work",
+        description: "Assign complex objectives. The Team Lead delegates tasks to specialized agents.",
       },
       {
-        old: "难以复现，无法扩展",
-        kivo: "可重复的部署模式——相同的团队结构，适用于任何环境",
+        number: "03",
+        title: "Monitor and approve",
+        description: "Review progress, approve critical actions, and track team health continuously.",
       },
     ],
   },
   pillars: {
-    sectionBadge: "为什么选择 灵巢",
-    sectionTitle: "托管执行层，\n而非另一个AI工具。",
+    sectionBadge: "Core Infrastructure",
+    sectionTitle: "Built for operational discipline.",
     sectionSubtitle:
-      "与单一AI助手或对话工具不同，灵巢 是一个将智能体团队视为受管理的治理组织单元的运营系统。",
+      "Kivo provides the necessary infrastructure to treat AI agents not as tools, but as accountable team members.",
     items: [
       {
-        title: "结构化归属",
-        description:
-          "每个 灵巢 团队都有明确的角色结构。无论涉及哪个领域，组长都能确保问责制、协调能力和一致的产出。",
-        icon: "TrendingUp",
+        title: "Workflow Graph",
+        description: "Visual execution mapping ensures tasks follow defined sequences and dependencies.",
+        icon: "GitMerge",
       },
       {
-        title: "实时健康评分",
-        description:
-          "每个智能体团队持续发布健康评分——速度、质量和阻塞项的连续信号。您始终知道您的团队在做什么以及表现如何。",
+        title: "Persistent Memory",
+        description: "Every decision, context, and output is securely versioned and stored.",
         icon: "Activity",
       },
       {
-        title: "可管控的自主性",
-        description:
-          "自主不等于失控。定义多级审批工作流，设置执行边界，确保每一次重要行动都需要明确的人工授权。",
+        title: "Approval System",
+        description: "Granular control over what agents can execute without explicit human consent.",
         icon: "ShieldCheck",
       },
       {
-        title: "流程纪律",
-        description:
-          "灵巢 对每项任务强制执行最佳实践工作流：明确摄取、就绪定义、规划、执行与交付。没有捷径，没有意外。",
-        icon: "GitMerge",
+        title: "Team Health Score",
+        description: "Live telemetry on agent velocity, blockers, and overall operational efficiency.",
+        icon: "TrendingUp",
       },
     ],
   },
   templates: {
-    sectionBadge: "团队模板",
-    sectionTitle: "从模板开始，\n按您的方式成长。",
+    sectionBadge: "Infrastructure Templates",
+    sectionTitle: "Deployable team infrastructure.",
     sectionSubtitle:
-      "选择适合您用例的起始结构。模板定义初始角色组成——您的团队随时可以从这里演进。",
+      "Instantly provision specialized AI teams pre-configured with the right roles, prompts, and workflows for your domain.",
     items: [
       {
         key: "starter",
-        icon: "🧩",
-        title: "灵巢 Starter",
-        description: "最简单的团队——仅一名组长即可开始。适合通用或探索性用途。",
+        icon: "⚡",
+        title: "Kivo Starter",
+        description: "A flexible, general-purpose Team Lead ready to coordinate any task you throw at it.",
         badge: "",
-        cta: "立即开始",
+        cta: "Deploy Starter",
       },
       {
         key: "engineering",
         icon: "💻",
         title: "Engineering",
-        description: "具备SDLC纪律的完整软件交付小队——工程师、架构师和产品经理协同工作。",
-        badge: "热门",
-        cta: "立即开始",
+        description: "A complete software delivery squad: Engineer, Architect, and Product Manager.",
+        badge: "Production",
+        cta: "Deploy Engineering",
       },
       {
-        key: "customer_support",
-        icon: "🎧",
-        title: "Customer Support",
-        description: "专为处理工单、路由问题和规模化维护客户SLA而设计的自动化支持团队。",
-        badge: "即将推出",
-        cta: "加入候补",
+        key: "operations",
+        icon: "⚙️",
+        title: "Operations",
+        description: "An automated back-office team handling data processing, routing, and workflows.",
+        badge: "Coming Soon",
+        cta: "Join Waitlist",
       },
     ],
   },
   controlPlane: {
-    sectionBadge: "控制平面",
-    sectionTitle: "您的团队绩效驾驶舱。",
+    sectionBadge: "Control Plane",
+    sectionTitle: "Your cockpit for team performance.",
     sectionSubtitle:
-      "灵巢 控制平面为领导者提供统一界面，用于配置智能体团队、设定护栏、监控健康状况，并对AI员工保持完全主权。",
+      "The Kivo Control Plane gives leaders a single interface to configure agent teams, set guardrails, monitor health, and maintain full sovereignty over your AI workforce.",
     features: [
-      "按智能体和操作类型设置多级审批规则",
-      "实时团队健康评分与活动日志",
-      "按团队和任务的成本归因",
-      "符合您运营规范的工作流模板",
-      "即时回滚与智能体替换",
-      "持久记忆——团队始终可从Git恢复",
-    ],
-  },
-  howItWorks: {
-    sectionBadge: "工作原理",
-    sectionTitle: "分钟级上线，\n第一天起就开始交付。",
-    steps: [
-      {
-        number: "01",
-        title: "选择您的团队模板",
-        description:
-          "选择起始结构——灵巢 Starter 简单灵活，Engineering 适合软件交付，Customer Support 专为服务团队设计。",
-      },
-      {
-        number: "02",
-        title: "配置您的团队",
-        description:
-          "为您的团队命名，指定组长，并根据用例添加所需角色。设置运营规范和审批策略。",
-      },
-      {
-        number: "03",
-        title: "监控、审批与扩展",
-        description:
-          "智能体执行任务、汇报进展，并在需要时申请审批。您始终保持掌控，而团队持续运转。",
-      },
+      "Multi-level approval rules per agent and action type",
+      "Real-time team health score and activity log",
+      "Cost attribution per team and task",
+      "Workflow templates aligned to your operating norms",
+      "Instant rollback and agent replacement",
+      "Persistent memory — teams are always restorable from Git",
     ],
   },
   cta: {
-    headline: "您的智能体团队，\n按您的方式运营。",
+    headline: "Scale your execution capacity today.",
     subheadline:
-      "从一名组长起步，成长为完整团队。全程在您自己的基础设施内，按您的条件运行。",
-    ctaPrimary: "免费开始",
-    ctaSecondary: "与专家交流",
+      "Deploy your first autonomous AI team in minutes and experience structured autonomy.",
+    ctaPrimary: "Deploy Your Team",
+    ctaSecondary: "Contact Sales",
   },
   footer: {
     tagline: "结构。治理。交付。",
