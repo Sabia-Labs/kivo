@@ -13,7 +13,7 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
-const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
+const getKivoWebUrl = () => (typeof window !== 'undefined' && (window as any).__ENV?.KIVO_WEB_URL) || process.env.NEXT_PUBLIC_KIVO_WEB_URL || "http://localhost:3000";
 
 function GoogleIcon() {
   return (
@@ -134,7 +134,7 @@ export default function SignupPage() {
       
       // Redirect to kivo-web for team creation
       const workspaceId = data.data.workspace.id;
-      window.location.href = `${KIVO_WEB_URL}/newteam?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
+      window.location.href = `${getKivoWebUrl()}/newteam?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
     } catch {
       toast.error("Network error");
     } finally {
