@@ -1,17 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Activity, ArrowRight, Check, Cpu, GitMerge, ShieldCheck, TrendingUp, X
-} from "lucide-react";
+import { Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
-
-const pillarIcons: Record<string, React.ElementType> = {
-  TrendingUp, Activity, ShieldCheck, GitMerge,
-};
 
 const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
 
@@ -22,54 +16,66 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col bg-background">
-      
-      {/* ─── HERO ─────────────────────────────────────────────────────── */}
       <section id="hero" className="flex flex-col items-center justify-center px-4 py-32 text-center sm:py-40">
         <div className="flex flex-col items-center gap-8 max-w-3xl mx-auto">
           <Badge variant="secondary" className="px-3 py-1 text-xs font-medium tracking-wide">
             {t.hero.badge}
           </Badge>
-          
+
           <h1 className="text-5xl font-bold tracking-tight text-foreground sm:text-6xl md:text-7xl">
             {t.hero.headline.split("\n").map((line, i) => (
               <span key={i} className="block">{line}</span>
             ))}
           </h1>
-          
+
           <p className="max-w-2xl text-lg text-muted-foreground sm:text-xl">
             {t.hero.subheadline}
           </p>
-          
+
           <div className="flex flex-col sm:flex-row items-center gap-4 pt-4">
             <Button asChild size="lg" className="px-8 h-12 text-base">
-              <Link href={signupHref}>
-                {t.hero.ctaPrimary}
-              </Link>
+              <Link href={signupHref}>{t.hero.ctaPrimary}</Link>
             </Button>
             <Button asChild size="lg" variant="ghost" className="px-8 h-12 text-base border">
-              <Link href="#contact">
-                {t.hero.ctaSecondary}
-              </Link>
+              <Link href="#contact">{t.hero.ctaSecondary}</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* ─── STATS ─────────────────────────────────────────────────────── */}
+      <section id="orchestrator" className="px-4 pb-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl rounded-2xl border bg-card p-6 sm:p-10">
+          <div className="grid gap-4 sm:grid-cols-7 sm:items-center">
+            {[t.orchestrator.request, t.orchestrator.kivoOrchestrator, t.orchestrator.aiTeams, t.orchestrator.outcome].map((step, i) => (
+              <div key={step} className={`${i % 2 === 0 ? "sm:col-span-1" : "hidden sm:flex sm:col-span-1"} text-center`}>
+                {i % 2 === 0 ? (
+                  <div className="rounded-lg border bg-muted/40 px-3 py-4 text-sm font-medium">{step}</div>
+                ) : (
+                  <span className="text-muted-foreground">→</span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-6 text-center text-sm text-muted-foreground">{t.orchestrator.subtitle}</p>
+        </div>
+      </section>
+
       <section className="border-y bg-muted/20">
         <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
-            {t.stats.items.map((stat, i) => (
-              <div key={i} className="flex flex-col items-center gap-2 text-center">
-                <span className="text-4xl font-bold text-foreground tracking-tight">{stat.value}</span>
-                <span className="text-sm text-muted-foreground">{stat.label}</span>
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl font-bold tracking-tight">{t.foundations.sectionTitle}</h2>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {t.foundations.items.map((item, i) => (
+              <div key={i} className="rounded-xl border bg-card p-5">
+                <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{item.description}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─── TEMPLATES ────────────────────────────────────────────────── */}
       <section id="templates" className="px-4 py-24 sm:px-6 lg:px-8 max-w-6xl mx-auto">
         <div className="mb-16">
           <h2 className="text-3xl font-bold tracking-tight mb-4">{t.templates.sectionTitle}</h2>
@@ -80,7 +86,7 @@ export default function HomePage() {
           {t.templates.items.map((tmpl, i) => {
             const isComingSoon = tmpl.badge === "Coming Soon" || tmpl.badge === "即将推出";
             return (
-              <div key={i} className={`flex flex-col rounded-xl border bg-card p-6 ${isComingSoon ? 'opacity-60 grayscale' : 'hover:border-primary/50 transition-colors'}`}>
+              <div key={i} className={`flex flex-col rounded-xl border bg-card p-6 ${isComingSoon ? "opacity-60 grayscale" : "hover:border-primary/50 transition-colors"}`}>
                 <div className="mb-4 text-3xl">{tmpl.icon}</div>
                 <h3 className="mb-2 text-lg font-bold">{tmpl.title}</h3>
                 <p className="text-sm text-muted-foreground mb-6 flex-1">{tmpl.description}</p>
@@ -93,7 +99,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── CHAOS vs 灵巢 WAY ───────────────────────────────────────── */}
       <section id="about" className="bg-muted/30 px-4 py-24 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <div className="mb-16 text-center">
@@ -133,7 +138,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── CTA ──────────────────────────────────────────────────────── */}
+      <section id="sabia" className="px-4 py-16 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl rounded-xl border bg-muted/20 p-6 text-sm text-muted-foreground sm:p-8">
+          {t.sabia.blurb}
+        </div>
+      </section>
+
       <section id="contact" className="px-4 py-32 text-center">
         <div className="mx-auto max-w-3xl">
           <h2 className="text-4xl font-bold tracking-tight mb-6">{t.cta.headline}</h2>
@@ -146,7 +156,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── FOOTER ───────────────────────────────────────────────────── */}
       <footer className="border-t bg-card px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl grid gap-8 sm:grid-cols-4">
           <div className="sm:col-span-2">
@@ -168,19 +177,18 @@ export default function HomePage() {
             <p className="text-sm text-muted-foreground max-w-xs">{t.footer.tagline}</p>
           </div>
           <div>
-            <span className="font-semibold block mb-4">Product</span>
+            <span className="font-semibold block mb-4">{t.footer.product}</span>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link href="#features" className="hover:text-foreground">Features</Link></li>
-              <li><Link href="#pricing" className="hover:text-foreground">Pricing</Link></li>
-              <li><Link href="#docs" className="hover:text-foreground">Documentation</Link></li>
+              <li><Link href="#orchestrator" className="hover:text-foreground">{t.footer.links.features}</Link></li>
+              <li><Link href="#templates" className="hover:text-foreground">{t.footer.links.docs}</Link></li>
             </ul>
           </div>
           <div>
-            <span className="font-semibold block mb-4">Company</span>
+            <span className="font-semibold block mb-4">{t.footer.company}</span>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><Link href="#about" className="hover:text-foreground">About</Link></li>
-              <li><Link href="#blog" className="hover:text-foreground">Blog</Link></li>
-              <li><Link href="#contact" className="hover:text-foreground">Contact</Link></li>
+              <li><Link href="#about" className="hover:text-foreground">{t.footer.links.about}</Link></li>
+              <li><Link href="#sabia" className="hover:text-foreground">Sabia Labs</Link></li>
+              <li><Link href="#contact" className="hover:text-foreground">{t.footer.links.contact}</Link></li>
             </ul>
           </div>
         </div>

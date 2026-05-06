@@ -12,53 +12,42 @@ export const zh: Dictionary = {
     logout: "退出登录",
   },
   hero: {
-    badge: "AI智能体团队，以最佳实践管理",
-    headline: "您的智能体团队，\n像顶尖组织一样运转。",
+    badge: "AI 原生团队编排平台",
+    headline: "部署 AI 原生团队，\n将请求转化为结果。",
     subheadline:
-      "灵巢 以世界级的组织管理纪律部署自主AI智能体团队——无论您从事哪个领域，都能让您的智能体团队像管理良好的人类组织一样在AI速度下交付成果。",
+      "Kivo 帮助工程、销售、客服、市场与运营团队以 AI 原生方式协同执行，并保持清晰归属与治理。",
     ctaPrimary: "立即开始",
     ctaSecondary: "联系销售",
   },
-  stats: {
+  orchestrator: {
+    request: "请求",
+    kivoOrchestrator: "Kivo 编排器",
+    aiTeams: "AI 团队",
+    outcome: "结果",
+    subtitle: "以统一编排层把业务请求转化为可追责执行。",
+  },
+  foundations: {
+    sectionTitle: "平台基础能力",
     items: [
-      { value: "10×", label: "交付周期加速" },
-      { value: "70%", label: "运营成本降低" },
-      { value: "24/7", label: "持续执行" },
-      { value: "0", label: "任务间知识损失" },
+      { title: "预置团队类型", description: "为工程、销售、客服、市场与运营提供可直接启用的团队结构。" },
+      { title: "基于能力的工作流", description: "围绕声明能力运行任务，并按角色智能分配执行路径。" },
+      { title: "工具集成", description: "连接现有系统，让团队无需频繁切换上下文即可执行。" },
+      { title: "人工监督", description: "在关键节点保留审批与复核，保障结果质量与合规。" },
     ],
   },
   chaos: {
     sectionBadge: "传统方式 vs 灵巢 方式",
-    sectionTitle: "停止管理混乱，开始运营团队。",
+    sectionTitle: "从孤立智能体走向协同 AI 团队。",
     sectionSubtitle:
-      "大多数部署AI智能体的组织最终陷入临时工具、职责不清和不可预期结果的困境。灵巢 以受治理、结构化、可量化的执行层取而代之。",
-    oldWayTitle: "临时部署智能体",
-    kivoWayTitle: "灵巢 方式",
+      "Kivo 用面向真实业务执行的团队运营模型，替代碎片化的智能体试验。",
+    oldWayTitle: "传统方式",
+    kivoWayTitle: "Kivo 方式",
     items: [
-      {
-        old: "智能体没有明确角色或归属",
-        kivo: "每个团队都有组长——从第一天起就有清晰的归属",
-      },
-      {
-        old: "会话结束后知识随之消失",
-        kivo: "所有决策与上下文持久化至Git，零知识流失",
-      },
-      {
-        old: "不知道智能体在做什么",
-        kivo: "实时健康评分——持续追踪速度、阻塞项和活动",
-      },
-      {
-        old: "智能体在无监督无审批的情况下自主行动",
-        kivo: "多级审批护栏——智能体未经授权绝不对外行动",
-      },
-      {
-        old: "产出不可预期，质量参差不齐",
-        kivo: "结构化工作流与角色专属纪律贯穿每项任务",
-      },
-      {
-        old: "难以复现，无法扩展",
-        kivo: "可重复的部署模式——相同的团队结构，适用于任何环境",
-      },
+      { old: "孤立智能体", kivo: "基于角色的 AI 团队" },
+      { old: "Prompt 链", kivo: "声明式能力体系" },
+      { old: "人工协调", kivo: "可审计工作流" },
+      { old: "无流程记忆", kivo: "异步任务执行" },
+      { old: "归属不清", kivo: "人工监督" },
     ],
   },
   pillars: {
@@ -95,9 +84,9 @@ export const zh: Dictionary = {
   },
   templates: {
     sectionBadge: "团队模板",
-    sectionTitle: "从模板开始，\n按您的方式成长。",
+    sectionTitle: "从可直接运营的 AI 团队开始。",
     sectionSubtitle:
-      "选择适合您用例的起始结构。模板定义初始角色组成——您的团队随时可以从这里演进。",
+      "选择可用于生产的团队结构，并随业务增长持续演进。",
     items: [
       {
         key: "starter",
@@ -171,7 +160,7 @@ export const zh: Dictionary = {
     ctaSecondary: "与专家交流",
   },
   footer: {
-    tagline: "结构。治理。交付。",
+    tagline: "为 AI 原生团队编排而生。",
     product: "产品",
     company: "公司",
     links: {
@@ -185,6 +174,9 @@ export const zh: Dictionary = {
       contact: "联系我们",
     },
     copyright: "© 2026 灵巢。保留所有权利。",
+  },
+  sabia: {
+    blurb: "由 Sabia Labs 打造——一家位于德国、为全球企业构建 AI 原生团队基础设施的创业公司。",
   },
   login: {
     title: "欢迎回来",

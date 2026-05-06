@@ -10,53 +10,42 @@ export const en = {
     logout: "Log out",
   },
   hero: {
-    badge: "AI Agent Teams, Managed with Best Practices",
-    headline: "Teams excellence\non demand.",
+    badge: "AI-native team orchestration platform",
+    headline: "Deploy AI-native teams\nthat turn requests into outcomes.",
     subheadline:
-      "Kivo deploys autonomous AI agent teams with the structure, discipline, and governance of a world-class organization — so every team delivers, no matter the domain.",
+      "Kivo helps engineering, sales, customer support, marketing, and operations run as coordinated AI-native teams with clear ownership and governance.",
     ctaPrimary: "Get Started",
     ctaSecondary: "Contact Sales",
   },
-  stats: {
+  orchestrator: {
+    request: "Request",
+    kivoOrchestrator: "Kivo Orchestrator",
+    aiTeams: "AI Teams",
+    outcome: "Outcome",
+    subtitle: "One orchestration layer that converts business requests into accountable execution.",
+  },
+  foundations: {
+    sectionTitle: "Platform foundations",
     items: [
-      { value: "10×", label: "Faster delivery cycles" },
-      { value: "70%", label: "Lower operational overhead" },
-      { value: "24/7", label: "Continuous execution" },
-      { value: "0", label: "Knowledge lost between tasks" },
+      { title: "Pre-seeded team types", description: "Launch ready team structures for engineering, sales, support, marketing, and operations." },
+      { title: "Capability-based workflows", description: "Run work through declared capabilities with role-aware execution paths." },
+      { title: "Tool integrations", description: "Connect your existing systems so teams can execute without context switching." },
+      { title: "Human oversight", description: "Keep approvals and checkpoints in the loop for high-confidence outcomes." },
     ],
   },
   chaos: {
     sectionBadge: "The Old Way vs The Kivo Way",
-    sectionTitle: "Stop managing chaos. Start running teams.",
+    sectionTitle: "From isolated agents to coordinated AI teams.",
     sectionSubtitle:
-      "Most organizations deploying AI agents end up with ad hoc tools, unclear ownership, and unpredictable results. Kivo replaces that with a governed, structured, measurable execution layer.",
-    oldWayTitle: "Ad Hoc Agents",
-    kivoWayTitle: "The Kivo Way",
+      "Kivo replaces fragmented agent experiments with a team operating model designed for real business execution.",
+    oldWayTitle: "Old way",
+    kivoWayTitle: "Kivo way",
     items: [
-      {
-        old: "Agents with no defined roles or ownership",
-        kivo: "Every team has a Team Lead — clear ownership from day one",
-      },
-      {
-        old: "Knowledge disappears when a session ends",
-        kivo: "Every decision and context persisted in Git — zero knowledge loss",
-      },
-      {
-        old: "No visibility into what agents are doing",
-        kivo: "Real-time Health Score — velocity, blockers, and activity tracked continuously",
-      },
-      {
-        old: "Agents act without oversight or approval",
-        kivo: "Multi-level approval guardrails — agents never act externally without your sign-off",
-      },
-      {
-        old: "Unpredictable output and inconsistent quality",
-        kivo: "Structured workflows and role-specific discipline on every task",
-      },
-      {
-        old: "Hard to reproduce, impossible to scale",
-        kivo: "Repeatable deployment patterns — same team structure anywhere, any environment",
-      },
+      { old: "Isolated agents", kivo: "Role-based AI teams" },
+      { old: "Prompt chains", kivo: "Declared capabilities" },
+      { old: "Manual coordination", kivo: "Auditable workflows" },
+      { old: "No process memory", kivo: "Async task execution" },
+      { old: "Unclear ownership", kivo: "Human oversight" },
     ],
   },
   pillars: {
@@ -93,9 +82,9 @@ export const en = {
   },
   templates: {
     sectionBadge: "Team Templates",
-    sectionTitle: "Start with a template.\nGrow into your own.",
+    sectionTitle: "Start with ready-to-operate AI teams.",
     sectionSubtitle:
-      "Choose a starting structure that fits your use case. Templates define the initial role composition — your team can always evolve from there.",
+      "Pick a production-ready team structure and adapt it to your organization as you scale.",
     items: [
       {
         key: "starter",
@@ -169,7 +158,7 @@ export const en = {
     ctaSecondary: "Talk to a Specialist",
   },
   footer: {
-    tagline: "Structure. Govern. Deliver.",
+    tagline: "Built for AI-native team orchestration.",
     product: "Product",
     company: "Company",
     links: {
@@ -183,6 +172,9 @@ export const en = {
       contact: "Contact",
     },
     copyright: "© 2026 Kivo. All rights reserved.",
+  },
+  sabia: {
+    blurb: "Built by Sabia Labs, a Germany-based startup building AI-native team infrastructure for global businesses.",
   },
   login: {
     title: "Welcome back",
