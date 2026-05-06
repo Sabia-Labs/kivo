@@ -61,7 +61,7 @@ export function Navbar() {
               <circle cx="18" cy="17" r="2" fill="currentColor" />
             </svg>
           </span>
-          <span className="text-lg tracking-tight">Kivo</span>
+          <span className="text-lg tracking-tight">{t.brand}</span>
         </Link>
 
         {/* Desktop Nav Links — only show marketing links when not authenticated */}

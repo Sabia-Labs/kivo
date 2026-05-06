@@ -12,8 +12,9 @@ import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSeparator } from 
 import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
-const getKivoWebUrl = () => (typeof window !== 'undefined' && (window as any).__ENV?.KIVO_WEB_URL) || process.env.NEXT_PUBLIC_KIVO_WEB_URL || "http://localhost:3000";
+
 
 function GoogleIcon() {
   return (
@@ -44,6 +45,7 @@ function WeChatIcon() {
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -98,7 +100,7 @@ export default function LoginPage() {
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Welcome back!");
       const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
-      window.location.href = `${getKivoWebUrl()}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
+      window.location.href = `/redirect-app?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
     } catch {
       toast.error("Network error. Please check your connection.");
     } finally {
@@ -121,7 +123,7 @@ export default function LoginPage() {
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Dev login successful!");
       const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
-      window.location.href = `${getKivoWebUrl()}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
+      window.location.href = `/redirect-app?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
     } catch {
       toast.error("Network error");
     } finally {
@@ -155,9 +157,9 @@ export default function LoginPage() {
                 
                 {step === 1 && (
                   <>
-                    <h1 className="text-xl font-bold">Welcome back to Kivo</h1>
+                    <h1 className="text-xl font-bold">{t.login.title}</h1>
                     <FieldDescription>
-                      Don't have an account? <Link href="/signup" className="hover:text-primary underline underline-offset-4">Sign up</Link>
+                      {t.login.noAccount} <Link href="/signup" className="hover:text-primary underline underline-offset-4">{t.login.signUp}</Link>
                     </FieldDescription>
                   </>
                 )}
@@ -175,7 +177,7 @@ export default function LoginPage() {
               {step === 1 && (
                 <>
                   <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <FieldLabel htmlFor="email">{t.login.emailLabel}</FieldLabel>
                     <Input
                       id="email"
                       type="email"
@@ -190,7 +192,7 @@ export default function LoginPage() {
                   <Field>
                     <Button type="submit" disabled={isLoading}>
                       {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                      Continue with Email
+                      {t.login.continueWithEmail}
                     </Button>
                   </Field>
 
@@ -202,7 +204,7 @@ export default function LoginPage() {
                     </Field>
                   )}
 
-                  <FieldSeparator>Or</FieldSeparator>
+                  <FieldSeparator>{t.login.orContinueWith}</FieldSeparator>
                   
                   <Field className="grid gap-3">
                     <div className="grid grid-cols-2 gap-3">

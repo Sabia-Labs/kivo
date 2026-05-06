@@ -1,4 +1,5 @@
 export const en = {
+  brand: "Kivo",
   nav: {
     about: "About Us",
     contactSales: "Contact Sales",
@@ -9,7 +10,7 @@ export const en = {
     agents: "Agents",
     logout: "Log out",
   },
-  hero: {
+      hero: {
     badge: "AI Agent Teams, Managed with Best Practices",
     headline: "Teams excellence\non demand.",
     subheadline:
@@ -19,105 +20,114 @@ export const en = {
   },
   stats: {
     items: [
-      { value: "10×", label: "Faster delivery cycles" },
-      { value: "70%", label: "Lower operational overhead" },
-      { value: "24/7", label: "Continuous execution" },
-      { value: "0", label: "Knowledge lost between tasks" },
+      { value: "10×", label: "Faster execution cycles" },
+      { value: "100%", label: "Auditability on actions" },
+      { value: "24/7", label: "Autonomous operation" },
+      { value: "0", label: "Context lost between tasks" },
     ],
   },
-  chaos: {
-    sectionBadge: "The Old Way vs The Kivo Way",
-    sectionTitle: "Stop managing chaos. Start running teams.",
+  governance: {
+    sectionBadge: "Structured Autonomy",
+    sectionTitle: "Control and visibility at every level.",
     sectionSubtitle:
-      "Most organizations deploying AI agents end up with ad hoc tools, unclear ownership, and unpredictable results. Kivo replaces that with a governed, structured, measurable execution layer.",
-    oldWayTitle: "Ad Hoc Agents",
-    kivoWayTitle: "The Kivo Way",
+      "Kivo replaces ad hoc chatbot interactions with a governed, structured, and measurable execution layer. Your teams operate autonomously, but never without oversight.",
+    oldWayTitle: "Generic AI",
+    kivoWayTitle: "Kivo Platform",
     items: [
       {
-        old: "Agents with no defined roles or ownership",
-        kivo: "Every team has a Team Lead — clear ownership from day one",
+        old: "Unpredictable outputs and hallucinations",
+        kivo: "Strict role-based workflows and guardrails",
       },
       {
-        old: "Knowledge disappears when a session ends",
-        kivo: "Every decision and context persisted in Git — zero knowledge loss",
+        old: "Isolated chat sessions with no memory",
+        kivo: "Git-backed persistent memory across all tasks",
       },
       {
-        old: "No visibility into what agents are doing",
-        kivo: "Real-time Health Score — velocity, blockers, and activity tracked continuously",
+        old: "Black box execution",
+        kivo: "Real-time observability and Health Scores",
       },
       {
-        old: "Agents act without oversight or approval",
-        kivo: "Multi-level approval guardrails — agents never act externally without your sign-off",
+        old: "Agents take unapproved actions",
+        kivo: "Multi-level human-in-the-loop approvals",
+      },
+    ],
+  },
+  howItWorks: {
+    sectionBadge: "Execution Cycle",
+    sectionTitle: "How Kivo orchestrates work.",
+    steps: [
+      {
+        number: "01",
+        title: "Create your AI team",
+        description: "Deploy a structured squad of agents with defined roles and ownership.",
       },
       {
-        old: "Unpredictable output and inconsistent quality",
-        kivo: "Structured workflows and role-specific discipline on every task",
+        number: "02",
+        title: "Give it work",
+        description: "Assign complex objectives. The Team Lead delegates tasks to specialized agents.",
       },
       {
-        old: "Hard to reproduce, impossible to scale",
-        kivo: "Repeatable deployment patterns — same team structure anywhere, any environment",
+        number: "03",
+        title: "Monitor and approve",
+        description: "Review progress, approve critical actions, and track team health continuously.",
       },
     ],
   },
   pillars: {
-    sectionBadge: "Why Kivo",
-    sectionTitle: "A managed execution layer,\nnot just another AI tool.",
+    sectionBadge: "Core Infrastructure",
+    sectionTitle: "Built for operational discipline.",
     sectionSubtitle:
-      "Unlike standalone AI assistants or chat tools, Kivo is an operational system that treats your agent teams as a managed, governed organizational unit.",
+      "Kivo provides the necessary infrastructure to treat AI agents not as tools, but as accountable team members.",
     items: [
       {
-        title: "Structured Ownership",
-        description:
-          "Every Kivo team has a defined structure with clear roles. The Team Lead ensures accountability, coordination, and consistent output — no matter the domain.",
-        icon: "TrendingUp",
+        title: "Workflow Graph",
+        description: "Visual execution mapping ensures tasks follow defined sequences and dependencies.",
+        icon: "GitMerge",
       },
       {
-        title: "Real-Time Health Score",
-        description:
-          "Every agent team publishes a live Health Score — a continuous signal of velocity, quality, and blockers. You always know what your teams are doing and how they are performing.",
+        title: "Persistent Memory",
+        description: "Every decision, context, and output is securely versioned and stored.",
         icon: "Activity",
       },
       {
-        title: "Managed Autonomy",
-        description:
-          "Autonomous does not mean uncontrolled. Define multi-level approval workflows, set execution boundaries, and ensure every consequential action requires explicit human sign-off.",
+        title: "Approval System",
+        description: "Granular control over what agents can execute without explicit human consent.",
         icon: "ShieldCheck",
       },
       {
-        title: "Process Discipline",
-        description:
-          "Kivo enforces best-practice workflows on every task: clear intake, definition of ready, planning, execution, and delivery. No shortcuts, no surprises.",
-        icon: "GitMerge",
+        title: "Team Health Score",
+        description: "Live telemetry on agent velocity, blockers, and overall operational efficiency.",
+        icon: "TrendingUp",
       },
     ],
   },
   templates: {
-    sectionBadge: "Team Templates",
-    sectionTitle: "Start with a template.\nGrow into your own.",
+    sectionBadge: "Infrastructure Templates",
+    sectionTitle: "Deployable team infrastructure.",
     sectionSubtitle:
-      "Choose a starting structure that fits your use case. Templates define the initial role composition — your team can always evolve from there.",
+      "Instantly provision specialized AI teams pre-configured with the right roles, prompts, and workflows for your domain.",
     items: [
       {
         key: "starter",
-        icon: "🧩",
+        icon: "⚡",
         title: "Kivo Starter",
-        description: "The simplest possible team — just a Team Lead to get you going. Perfect for general-purpose or exploratory use.",
+        description: "A flexible, general-purpose Team Lead ready to coordinate any task you throw at it.",
         badge: "",
-        cta: "Get Started",
+        cta: "Deploy Starter",
       },
       {
         key: "engineering",
         icon: "💻",
         title: "Engineering",
-        description: "A full software delivery squad with SDLC discipline — Engineer, Architect, and Product Manager working together.",
-        badge: "Popular",
-        cta: "Get Started",
+        description: "A complete software delivery squad: Engineer, Architect, and Product Manager.",
+        badge: "Production",
+        cta: "Deploy Engineering",
       },
       {
-        key: "customer_support",
-        icon: "🎧",
-        title: "Customer Support",
-        description: "An automated support team designed to handle tickets, route issues, and maintain customer SLAs at scale.",
+        key: "operations",
+        icon: "⚙️",
+        title: "Operations",
+        description: "An automated back-office team handling data processing, routing, and workflows.",
         badge: "Coming Soon",
         cta: "Join Waitlist",
       },
@@ -137,41 +147,18 @@ export const en = {
       "Persistent memory — teams are always restorable from Git",
     ],
   },
-  howItWorks: {
-    sectionBadge: "How It Works",
-    sectionTitle: "Live in minutes.\nDelivering from day one.",
-    steps: [
-      {
-        number: "01",
-        title: "Choose your team template",
-        description:
-          "Pick a starting structure — Kivo Starter for simplicity, Engineering for software delivery, or Customer Support for service teams.",
-      },
-      {
-        number: "02",
-        title: "Configure your team",
-        description:
-          "Name your team, define your Team Lead, and add the roles your use case requires. Set your operating norms and approval policies.",
-      },
-      {
-        number: "03",
-        title: "Monitor, approve, and scale",
-        description:
-          "Agents execute tasks, report progress, and request approval when needed. You stay in control while your team operates continuously.",
-      },
-    ],
-  },
   cta: {
-    headline: "Your agent team,\nrun your way.",
+    headline: "Scale your execution capacity today.",
     subheadline:
-      "Start with one Team Lead. Grow into a full squad. All inside your own infrastructure, on your terms.",
-    ctaPrimary: "Get Started Free",
-    ctaSecondary: "Talk to a Specialist",
+      "Deploy your first autonomous AI team in minutes and experience structured autonomy.",
+    ctaPrimary: "Deploy Your Team",
+    ctaSecondary: "Contact Sales",
   },
   footer: {
     tagline: "Structure. Govern. Deliver.",
     product: "Product",
     company: "Company",
+    legal: "Legal",
     links: {
       features: "Features",
       pricing: "Pricing",
@@ -181,6 +168,8 @@ export const en = {
       blog: "Blog",
       careers: "Careers",
       contact: "Contact",
+      privacy: "Privacy",
+      terms: "Terms",
     },
     copyright: "© 2026 Kivo. All rights reserved.",
   },
