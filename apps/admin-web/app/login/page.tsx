@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { GalleryVerticalEnd, Loader2, Eye, EyeOff, Apple } from "lucide-react";
+import { GalleryVerticalEnd, Loader2, Apple, Code } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field";
-import { useTranslation } from "@/lib/i18n";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
@@ -44,25 +44,52 @@ export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
 
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetch(`${API_BASE}/auth/otp/send`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(apiErrorMessage(data.error, "Failed to send code"));
+        return;
+      }
+      
+      toast.success("Code sent to your email!");
+      setStep(2);
+    } catch {
+      toast.error("Network error. Please check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 4) return;
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/login/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: otp }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(apiErrorMessage(data.error, "Invalid email or password."));
+        toast.error(apiErrorMessage(data.error, "Invalid code"));
         return;
       }
 
@@ -76,15 +103,43 @@ export default function LoginPage() {
     }
   };
 
+  const handleDevLogin = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/dev-login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(apiErrorMessage(data.error, "Dev login failed"));
+        return;
+      }
+      login(data.data.token, data.data.user, data.data.teamId ?? null);
+      toast.success("Dev login successful!");
+      router.replace("/teams");
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSSO = () => {
     toast.info("SSO Login coming soon");
   };
+
+  const handleGoogleSSO = () => {
+    window.location.href = `${API_BASE}/auth/google`;
+  };
+
+  const isDevMode = process.env.NODE_ENV === "development";
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
       <div className="w-full max-w-sm">
         <div className={cn("flex flex-col gap-6")}>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={step === 1 ? handleEmailSubmit : handleOtpSubmit}>
             <FieldGroup>
               <div className="flex flex-col items-center gap-2 text-center">
                 <a href="/" className="flex flex-col items-center gap-2 font-medium">
@@ -94,80 +149,99 @@ export default function LoginPage() {
                   <span className="sr-only">Kivo</span>
                 </a>
                 
-                <h1 className="text-xl font-bold">Welcome back to Kivo</h1>
-                <FieldDescription>
-                  Don't have an account? <Link href="/signup" className="hover:text-primary underline underline-offset-4">Sign up</Link>
-                </FieldDescription>
+                {step === 1 && (
+                  <>
+                    <h1 className="text-xl font-bold">Welcome back to Kivo</h1>
+                    <FieldDescription>
+                      Don't have an account? <Link href="/signup" className="hover:text-primary underline underline-offset-4">Sign up</Link>
+                    </FieldDescription>
+                  </>
+                )}
+                
+                {step === 2 && (
+                  <>
+                    <h1 className="text-xl font-bold">Check your email</h1>
+                    <FieldDescription>
+                      We sent a 4-digit code to <span className="font-medium text-foreground">{email}</span>.
+                    </FieldDescription>
+                  </>
+                )}
               </div>
 
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
-              </Field>
-              
-              <Field>
-                <div className="flex items-center justify-between">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <Link href="/forgot-password" className="text-sm font-medium text-muted-foreground hover:text-primary">
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label="Toggle password visibility"
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-              </Field>
+              {step === 1 && (
+                <>
+                  <Field>
+                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      autoComplete="email"
+                      required
+                    />
+                  </Field>
+                  
+                  <Field>
+                    <Button type="submit" disabled={isLoading}>
+                      {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                      Continue with Email
+                    </Button>
+                  </Field>
 
-              <Field>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                  Sign In
-                </Button>
-              </Field>
+                  {isDevMode && (
+                    <Field className="mt-2">
+                      <Button type="button" variant="secondary" onClick={handleDevLogin} disabled={isLoading}>
+                        <Code className="mr-2 size-4" /> Quick Dev Login (wei.chen)
+                      </Button>
+                    </Field>
+                  )}
 
-              <FieldSeparator>Or</FieldSeparator>
-              
-              <Field className="grid gap-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" type="button" onClick={handleSSO}>
-                    <Apple className="size-5" /> Apple
-                  </Button>
-                  <Button variant="outline" type="button" onClick={handleSSO}>
-                    <GoogleIcon /> Google
-                  </Button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" type="button" onClick={handleSSO}>
-                    <MicrosoftIcon /> Microsoft
-                  </Button>
-                  <Button variant="outline" type="button" onClick={handleSSO}>
-                      <WeChatIcon /> WeChat
-                  </Button>
-                </div>
-              </Field>
+                  <FieldSeparator>Or</FieldSeparator>
+                  
+                  <Field className="grid gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline" type="button" onClick={handleSSO}>
+                        <Apple className="size-5" /> Apple
+                      </Button>
+                      <Button variant="outline" type="button" onClick={handleGoogleSSO}>
+                        <GoogleIcon /> Google
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button variant="outline" type="button" onClick={handleSSO}>
+                        <MicrosoftIcon /> Microsoft
+                      </Button>
+                      <Button variant="outline" type="button" onClick={handleSSO}>
+                          <WeChatIcon /> WeChat
+                      </Button>
+                    </div>
+                  </Field>
+                </>
+              )}
+
+              {step === 2 && (
+                <>
+                  <Field className="items-center justify-center py-4">
+                    <InputOTP maxLength={4} value={otp} onChange={setOtp} autoFocus disabled={isLoading}>
+                      <InputOTPGroup>
+                        <InputOTPSlot index={0} />
+                        <InputOTPSlot index={1} />
+                        <InputOTPSlot index={2} />
+                        <InputOTPSlot index={3} />
+                      </InputOTPGroup>
+                    </InputOTP>
+                  </Field>
+                  <Field>
+                    <Button type="submit" disabled={otp.length !== 4 || isLoading}>
+                      {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                      Verify Code
+                    </Button>
+                    <Button variant="ghost" type="button" onClick={() => setStep(1)} className="mt-2 text-muted-foreground" disabled={isLoading}>Back</Button>
+                  </Field>
+                </>
+              )}
             </FieldGroup>
           </form>
         </div>

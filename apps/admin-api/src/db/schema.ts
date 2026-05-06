@@ -5,7 +5,7 @@ import { pgTable, uuid, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-c
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  passwordHash: text("password_hash"), // Nullable for SSO / OTP users
   isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -26,3 +26,14 @@ export const workspaces = pgTable("workspaces", {
 
 export type Workspace = typeof workspaces.$inferSelect;
 
+// ── Verification Codes ────────────────────────────────────────────────────────
+// OTP Codes for Login and Signup
+export const verificationCodes = pgTable("verification_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  code: text("code").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type VerificationCode = typeof verificationCodes.$inferSelect;
