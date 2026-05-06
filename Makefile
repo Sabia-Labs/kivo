@@ -138,8 +138,8 @@ tilt-down:
 k8s-lint:
 	@echo "→ Linting chart with values-local.yaml..."
 	helm lint charts/kivo -f charts/kivo/values-local.yaml
-	@echo "→ Linting chart with values-uat.yaml..."
-	helm lint charts/kivo -f charts/kivo/values-uat.yaml --set api.image.tag=lint --set web.image.tag=lint
+	@echo "→ Linting chart with values-staging.yaml..."
+	helm lint charts/kivo -f charts/kivo/values-staging.yaml --set api.image.tag=lint --set web.image.tag=lint
 	@echo "→ Linting chart with values-prod.yaml..."
 	helm lint charts/kivo -f charts/kivo/values-prod.yaml --set api.image.tag=lint --set web.image.tag=lint
 	@echo "✓ All Helm lints passed"

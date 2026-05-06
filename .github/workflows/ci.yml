@@ -24,14 +24,14 @@ jobs:
       - name: Lint chart (local values)
         run: helm lint charts/kivo -f charts/kivo/values-local.yaml
 
-      - name: Lint chart (UAT values)
-        run: helm lint charts/kivo -f charts/kivo/values-uat.yaml --set api.image.tag=test --set web.image.tag=test
+      - name: Lint chart (staging values)
+        run: helm lint charts/kivo -f charts/kivo/values-staging.yaml --set api.image.tag=test --set web.image.tag=test
 
       - name: Lint chart (prod values)
         run: helm lint charts/kivo -f charts/kivo/values-prod.yaml --set api.image.tag=test --set web.image.tag=test
 
       - name: Render templates (dry-run)
-        run: helm template kivo charts/kivo -f charts/kivo/values-uat.yaml --set api.image.tag=test --set web.image.tag=test
+        run: helm template kivo charts/kivo -f charts/kivo/values-staging.yaml --set api.image.tag=test --set web.image.tag=test
 
   # ── API Typecheck & Build ────────────────────────────────────────────────────
   api-check:
