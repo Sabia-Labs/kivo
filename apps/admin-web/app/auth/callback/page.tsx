@@ -25,7 +25,8 @@ function AuthCallbackContent() {
       
       login(token, user, workspaceId || null);
       toast.success("Successfully logged in via Google!");
-      window.location.href = `${KIVO_WEB_URL}/teams`;
+      const wsIdParam = workspaceId ? `&workspaceId=${workspaceId}` : "";
+      window.location.href = `${KIVO_WEB_URL}/teams?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
     } else {
       toast.error("Authentication failed. Missing token.");
       router.replace("/login");

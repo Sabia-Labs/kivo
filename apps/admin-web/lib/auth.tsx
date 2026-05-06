@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4001";
 
@@ -59,23 +59,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = (newToken: string, newUser: AuthUser, newWorkspaceId?: string | null) => {
+  const login = useCallback((newToken: string, newUser: AuthUser, newWorkspaceId?: string | null) => {
     localStorage.setItem("kivo_token", newToken);
     localStorage.setItem("kivo_user", JSON.stringify(newUser));
     if (newWorkspaceId) localStorage.setItem("kivo_workspace_id", newWorkspaceId);
     setToken(newToken);
     setUser(newUser);
     if (newWorkspaceId !== undefined) setWorkspaceId(newWorkspaceId ?? null);
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem("kivo_token");
     localStorage.removeItem("kivo_user");
     localStorage.removeItem("kivo_workspace_id");
     setToken(null);
     setUser(null);
     setWorkspaceId(null);
-  };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, workspaceId, isLoading, login, logout }}>

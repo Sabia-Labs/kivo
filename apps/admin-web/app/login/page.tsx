@@ -97,7 +97,8 @@ export default function LoginPage() {
 
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Welcome back!");
-      window.location.href = `${KIVO_WEB_URL}/teams`;
+      const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
+      window.location.href = `${KIVO_WEB_URL}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
     } catch {
       toast.error("Network error. Please check your connection.");
     } finally {
@@ -119,7 +120,8 @@ export default function LoginPage() {
       }
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Dev login successful!");
-      window.location.href = `${KIVO_WEB_URL}/teams`;
+      const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
+      window.location.href = `${KIVO_WEB_URL}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
     } catch {
       toast.error("Network error");
     } finally {
