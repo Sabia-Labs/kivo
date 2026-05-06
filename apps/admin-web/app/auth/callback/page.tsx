@@ -6,6 +6,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 
+const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,7 +25,7 @@ function AuthCallbackContent() {
       
       login(token, user, workspaceId || null);
       toast.success("Successfully logged in via Google!");
-      router.replace("/teams");
+      window.location.href = `${KIVO_WEB_URL}/teams`;
     } else {
       toast.error("Authentication failed. Missing token.");
       router.replace("/login");

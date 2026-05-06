@@ -13,6 +13,8 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
+const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
+
 function GoogleIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="size-5">
@@ -95,7 +97,7 @@ export default function LoginPage() {
 
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Welcome back!");
-      router.replace("/teams");
+      window.location.href = `${KIVO_WEB_URL}/teams`;
     } catch {
       toast.error("Network error. Please check your connection.");
     } finally {
@@ -117,7 +119,7 @@ export default function LoginPage() {
       }
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Dev login successful!");
-      router.replace("/teams");
+      window.location.href = `${KIVO_WEB_URL}/teams`;
     } catch {
       toast.error("Network error");
     } finally {
