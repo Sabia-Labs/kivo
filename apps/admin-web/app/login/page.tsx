@@ -13,7 +13,7 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
-const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
+const getKivoWebUrl = () => (typeof window !== 'undefined' && (window as any).__ENV?.KIVO_WEB_URL) || process.env.NEXT_PUBLIC_KIVO_WEB_URL || "http://localhost:3000";
 
 function GoogleIcon() {
   return (
@@ -98,7 +98,7 @@ export default function LoginPage() {
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Welcome back!");
       const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
-      window.location.href = `${KIVO_WEB_URL}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
+      window.location.href = `${getKivoWebUrl()}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
     } catch {
       toast.error("Network error. Please check your connection.");
     } finally {
@@ -121,7 +121,7 @@ export default function LoginPage() {
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success("Dev login successful!");
       const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
-      window.location.href = `${KIVO_WEB_URL}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
+      window.location.href = `${getKivoWebUrl()}/teams?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
     } catch {
       toast.error("Network error");
     } finally {
