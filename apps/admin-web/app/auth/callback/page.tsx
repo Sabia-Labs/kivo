@@ -18,6 +18,8 @@ function AuthCallbackContent() {
     const userId = searchParams.get("userId");
     const workspaceId = searchParams.get("workspaceId");
 
+    const isNew = searchParams.get("isNew") === "true";
+
     if (token && userId) {
       // In a real app we'd fetch full user details if needed, 
       // but for this example we'll construct a basic user object
@@ -26,7 +28,12 @@ function AuthCallbackContent() {
       login(token, user, workspaceId || null);
       toast.success("Successfully logged in via Google!");
       const wsIdParam = workspaceId ? `&workspaceId=${workspaceId}` : "";
-      window.location.href = `${KIVO_WEB_URL}/teams?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
+      
+      if (isNew) {
+        window.location.href = `${KIVO_WEB_URL}/newteam?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
+      } else {
+        window.location.href = `${KIVO_WEB_URL}/teams?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
+      }
     } else {
       toast.error("Authentication failed. Missing token.");
       router.replace("/login");

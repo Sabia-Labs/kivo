@@ -228,7 +228,9 @@ authRouter.get("/google/callback", async (req, res) => {
     // we might need to handle this differently in a real app, 
     // e.g. redirect to a "complete profile" page. For now we use a default workspace name)
     let workspaceId = null;
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       const result = await db.transaction(async (tx) => {
         const [newUser] = await tx.insert(users).values({ email }).returning();
         const [newWorkspace] = await tx.insert(workspaces).values({ userId: newUser.id, name: email.split('@')[0] }).returning();
@@ -241,6 +243,24 @@ authRouter.get("/google/callback", async (req, res) => {
       });
       user = result.user;
       workspaceId = result.workspace.id;
+
+      // Sync with kivo-api (application plane)
+      const KIVO_API_INTERNAL_URL = process.env.KIVO_API_INTERNAL_URL ?? "http://kivo-api.kivo:4000";
+      try {
+        await fetch(`${KIVO_API_INTERNAL_URL}/internal/provision-workspace`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: user.id,
+            userEmail: user.email,
+            userName: user.email.split("@")[0],
+            workspaceId: workspaceId,
+            workspaceName: result.workspace.name,
+          }),
+        });
+      } catch (err) {
+        console.error("[admin-api] Critical: Failed to sync with kivo-api:", err);
+      }
     } else {
       const [workspace] = await db.select().from(workspaces).where(eq(workspaces.userId, user.id));
       workspaceId = workspace?.id;
@@ -250,7 +270,7 @@ authRouter.get("/google/callback", async (req, res) => {
     
     // Redirect to frontend with token
     const ADMIN_WEB_URL = process.env.ADMIN_WEB_URL || "http://localhost:3001";
-    res.redirect(`${ADMIN_WEB_URL}/auth/callback?token=${token}&userId=${user.id}&workspaceId=${workspaceId || ""}`);
+    res.redirect(`${ADMIN_WEB_URL}/auth/callback?token=${token}&userId=${user.id}&workspaceId=${workspaceId || ""}&isNew=${isNewUser}`);
   } catch (err) {
     console.error("Google Auth Error:", err);
     res.status(500).send("Authentication failed");
