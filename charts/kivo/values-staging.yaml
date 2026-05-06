@@ -1,14 +1,14 @@
 # ── Staging Environment Overrides ─────────────────────────────────────────────────
 # Used by: helm upgrade --install kivo charts/kivo -f values-staging.yaml \
-#            --set api.image.tag=$GIT_SHA --set web.image.tag=$GIT_SHA
+#            --set kivoApi.image.tag=$GIT_SHA ...
 
 namespace: kivo-staging
 
-api:
+kivoApi:
   replicaCount: 1
   image:
-    repository: ghcr.io/ltreven/kivo-api
-    tag: ""             # injected by CI: --set api.image.tag=$GIT_SHA
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-api
+    tag: ""             # injected by CI
     pullPolicy: Always
   resources:
     requests:
@@ -21,38 +21,66 @@ api:
     NODE_ENV: production
     PORT: "4000"
     CORS_ORIGIN: "https://kivo-staging.example.com"
-  # Secret must be pre-created in the cluster by the ops team / Terraform
   existingSecret: kivo-api-staging-secret
   runMigrations: true
 
-web:
+kivoWeb:
   replicaCount: 1
   image:
-    repository: ghcr.io/ltreven/kivo-web
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-web
     tag: ""
     pullPolicy: Always
   env:
     NODE_ENV: production
     PORT: "3000"
-    NEXT_PUBLIC_API_URL: "https://kivo-uat.example.com/api"
+    NEXT_PUBLIC_API_URL: "https://kivo-staging.example.com/api"
+
+adminApi:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-api
+    tag: ""
+    pullPolicy: Always
+  env:
+    NODE_ENV: production
+    ADMIN_PORT: "4001"
+    CORS_ORIGIN: "https://admin.kivo-staging.example.com"
+  existingSecret: kivo-api-staging-secret
+
+adminWeb:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-web
+    tag: ""
+    pullPolicy: Always
+  env:
+    NODE_ENV: production
+    PORT: "3001"
+
+controller:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
+    tag: ""
+    pullPolicy: Always
+  agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
+  consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
 
 ingress:
   enabled: true
-  className: nginx     # managed by Terraform in target cluster
-  host: kivo-uat.example.com   # CHANGE: update to actual UAT hostname
+  className: nginx
+  host: kivo-staging.example.com
   tls:
     enabled: true
-    secretName: kivo-uat-tls
+    secretName: kivo-staging-tls
     certManager:
       enabled: true
-      clusterIssuer: letsencrypt-staging   # use staging issuer for UAT
+      clusterIssuer: letsencrypt-staging
 
 postgresql:
-  embedded: false       # Use managed DB (RDS / Cloud SQL / Neon)
-  # Connection string injected via kivo-api-uat-secret (DATABASE_URL key)
+  embedded: false
 
 networkPolicy:
   enabled: true
 
-imagePullSecrets:
-  - name: ghcr-pull-secret   # must exist in namespace (created by Terraform/ops)
+imagePullSecrets: []

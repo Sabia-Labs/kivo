@@ -53,6 +53,11 @@ jobs:
           images: |
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api
             ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent
+            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer
           tags: |
             type=sha,format=short
             type=ref,event=branch
@@ -79,6 +84,61 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build & push Admin API image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/admin-api
+          file: apps/admin-api/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push Admin Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/admin-web
+          file: apps/admin-web/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push Controller image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/controller
+          file: apps/controller/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push Agent image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/agents
+          file: apps/agents/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push Consumer image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/consumer
+          file: apps/consumer/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   update-manifests:
     name: Update GitOps Manifests
     needs: build-and-push
@@ -94,9 +154,12 @@ jobs:
           
       - name: Update staging values with new image tag
         run: |
-          # Use yq to update the image tag for both api and web
-          yq -i '.api.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
-          yq -i '.web.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          # Use yq to update the image tag for all components
+          yq -i '.kivoApi.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          yq -i '.kivoWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          yq -i '.adminApi.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          yq -i '.adminWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          yq -i '.controller.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
           
       - name: Commit and push changes
         run: |
