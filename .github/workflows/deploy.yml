@@ -151,6 +151,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GIT_PUSH_TOKEN }}
+          ref: main
           
       - name: Update staging values with new image tag
         run: |
@@ -170,7 +171,8 @@ jobs:
           # Only commit if there are changes
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore: deploy ${{ github.sha }} to staging [skip ci]"
-            git push origin main
+            git pull --rebase origin main
+            git push origin HEAD:main
           else
             echo "No changes to commit"
           fi
