@@ -70,8 +70,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=kivo-api
+          cache-to: type=gha,mode=max,scope=kivo-api
 
       - name: Build & push Web image
         uses: docker/build-push-action@v6
@@ -81,8 +81,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=kivo-web
+          cache-to: type=gha,mode=max,scope=kivo-web
 
       - name: Build & push Admin API image
         uses: docker/build-push-action@v6
@@ -92,8 +92,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=admin-api
+          cache-to: type=gha,mode=max,scope=admin-api
 
       - name: Build & push Admin Web image
         uses: docker/build-push-action@v6
@@ -103,8 +103,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=admin-web
+          cache-to: type=gha,mode=max,scope=admin-web
 
       - name: Build & push Controller image
         uses: docker/build-push-action@v6
@@ -114,8 +114,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=controller
+          cache-to: type=gha,mode=max,scope=controller
 
       - name: Build & push Agent image
         uses: docker/build-push-action@v6
@@ -125,8 +125,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=agents
+          cache-to: type=gha,mode=max,scope=agents
 
       - name: Build & push Consumer image
         uses: docker/build-push-action@v6
@@ -136,8 +136,8 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer:latest
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=consumer
+          cache-to: type=gha,mode=max,scope=consumer
 
   update-manifests:
     name: Update GitOps Manifests
