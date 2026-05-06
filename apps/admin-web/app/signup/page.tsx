@@ -12,8 +12,8 @@ import { Field, FieldDescription, FieldGroup, FieldLabel, FieldSeparator } from 
 import { useAuth, API_BASE } from "@/lib/auth";
 import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
-const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
 
 function GoogleIcon() {
   return (
@@ -44,6 +44,7 @@ function MicrosoftIcon() {
 
 export default function SignupPage() {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -134,7 +135,7 @@ export default function SignupPage() {
       
       // Redirect to kivo-web for team creation
       const workspaceId = data.data.workspace.id;
-      window.location.href = `${KIVO_WEB_URL}/newteam?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
+      window.location.href = `/redirect-app?path=/newteam&token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
     } catch {
       toast.error("Network error");
     } finally {
@@ -166,9 +167,9 @@ export default function SignupPage() {
                 
                 {step === 1 && (
                   <>
-                    <h1 className="text-xl font-bold">Welcome to Kivo</h1>
+                    <h1 className="text-xl font-bold">{t.signup.title}</h1>
                     <FieldDescription>
-                      Already have an account? <Link href="/login" className="hover:text-primary underline underline-offset-4">Sign in</Link>
+                      {t.signup.haveAccount} <Link href="/login" className="hover:text-primary underline underline-offset-4">{t.signup.signIn}</Link>
                     </FieldDescription>
                   </>
                 )}
@@ -185,7 +186,7 @@ export default function SignupPage() {
               {step === 1 && (
                 <>
                   <Field>
-                    <FieldLabel htmlFor="workspace">Workspace Name</FieldLabel>
+                    <FieldLabel htmlFor="workspace">{t.signup.step2.workspaceLabel}</FieldLabel>
                     <div className="relative">
                       <Input 
                         id="workspace" 
@@ -207,18 +208,18 @@ export default function SignupPage() {
                   </Field>
 
                   <Field>
-                    <FieldLabel htmlFor="email">Email</FieldLabel>
+                    <FieldLabel htmlFor="email">{t.signup.step1.emailLabel}</FieldLabel>
                     <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </Field>
 
                   <Field className="mt-2">
                     <Button type="submit" disabled={isCheckingWorkspace || workspaceAvailable === false || !workspaceName || isLoading}>
                       {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                      Create Account
+                      {t.signup.step1.next}
                     </Button>
                   </Field>
                   
-                  <FieldSeparator>Or</FieldSeparator>
+                  <FieldSeparator>{t.signup.step1.orSignUpWith}</FieldSeparator>
                   
                   <Field className="grid gap-3">
                     <div className="grid grid-cols-2 gap-3">

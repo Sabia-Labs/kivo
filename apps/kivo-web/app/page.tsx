@@ -15,8 +15,7 @@ export default function HomePage() {
       router.push("/teams");
     } else {
       // Redirect to the public marketing site and sync logout state
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001";
-      window.location.href = `${siteUrl}?logout=true`;
+      window.location.href = `/redirect-login`;
     }
   }, [router, user, isLoading]);
 

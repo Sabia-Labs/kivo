@@ -6,7 +6,6 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 
-const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
 
 function AuthCallbackContent() {
   const router = useRouter();
@@ -30,9 +29,9 @@ function AuthCallbackContent() {
       const wsIdParam = workspaceId ? `&workspaceId=${workspaceId}` : "";
       
       if (isNew) {
-        window.location.href = `${KIVO_WEB_URL}/newteam?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
+        window.location.href = `/redirect-app?path=/newteam&token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
       } else {
-        window.location.href = `${KIVO_WEB_URL}/teams?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
+        window.location.href = `/redirect-app?path=/teams&token=${token}&user=${encodeURIComponent(JSON.stringify(user))}${wsIdParam}`;
       }
     } else {
       toast.error("Authentication failed. Missing token.");

@@ -43,6 +43,7 @@ This document provides foundational mandates for Gemini CLI when operating withi
 - **Lint Command:** `[e.g., npm run lint]`
 - **Test Command:** `[e.g., npm test]`
 - **Pre-Commit:** Ensure `[command]` passes before suggesting a commit.
+- **Git Workflow:** NEVER push directly to the `main` branch. Always create a new branch and submit a Pull Request (PR).
 
 ## 💬 Communication & Language
 - **Language:** All code, comments, documentation (including README and ADRs), and interactions must be in English.

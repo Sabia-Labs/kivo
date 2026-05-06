@@ -46,6 +46,18 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.adminApi.existingSecret }}
                   key: JWT_SECRET
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminApi.existingSecret }}
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminApi.existingSecret }}
+                  key: GOOGLE_CLIENT_SECRET
+                  optional: true
             {{- else if .Values.postgresql.embedded }}
             - name: DATABASE_URL_ADMIN
               value: {{ include "kivo.postgresql.adminConnectionString" . | quote }}
