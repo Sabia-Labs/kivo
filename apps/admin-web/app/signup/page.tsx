@@ -14,7 +14,6 @@ import { apiErrorMessage } from "@/lib/api-error";
 import { cn } from "@/lib/utils";
 
 const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
-const KIVO_API_URL = process.env.NEXT_PUBLIC_KIVO_API_URL ?? "http://localhost:4000";
 
 function GoogleIcon() {
   return (
@@ -79,10 +78,31 @@ export default function SignupPage() {
     return () => clearTimeout(timeout);
   }, [workspaceName]);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || workspaceAvailable === false || isCheckingWorkspace) return;
-    setStep(2);
+    
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/otp/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        toast.error(apiErrorMessage(data.error, "Failed to send code"));
+        return;
+      }
+      
+      toast.success("Code sent to your email!");
+      setStep(2);
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleOtpSubmit = async (e: React.FormEvent) => {
@@ -91,19 +111,19 @@ export default function SignupPage() {
     
     setIsLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/auth/signup`, {
+      const res = await fetch(`${API_BASE}/auth/signup/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email,
-          password: "password_not_used_in_otp", // Placeholder
+          code: otp,
           workspaceName,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        toast.error(apiErrorMessage(data.error, "Signup failed"));
+        toast.error(apiErrorMessage(data.error, "Invalid code or signup failed"));
         return;
       }
       
@@ -123,12 +143,11 @@ export default function SignupPage() {
   };
 
   const handleSSO = () => {
-    if (workspaceAvailable === false || isCheckingWorkspace || !workspaceName) {
-      toast.error("Please enter a valid workspace name first");
-      return;
-    }
     toast.info("Using SSO - this would redirect to provider");
-    // In a real app, SSO would callback and then we'd create the user.
+  }
+
+  const handleGoogleSSO = () => {
+    window.location.href = `${API_BASE}/auth/google`;
   }
 
   return (
@@ -193,7 +212,8 @@ export default function SignupPage() {
                   </Field>
 
                   <Field className="mt-2">
-                    <Button type="submit" disabled={isCheckingWorkspace || workspaceAvailable === false || !workspaceName}>
+                    <Button type="submit" disabled={isCheckingWorkspace || workspaceAvailable === false || !workspaceName || isLoading}>
+                      {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
                       Create Account
                     </Button>
                   </Field>
@@ -205,7 +225,7 @@ export default function SignupPage() {
                       <Button variant="outline" type="button" onClick={handleSSO}>
                         <Apple className="size-5" /> Apple
                       </Button>
-                      <Button variant="outline" type="button" onClick={handleSSO}>
+                      <Button variant="outline" type="button" onClick={handleGoogleSSO}>
                         <GoogleIcon /> Google
                       </Button>
                     </div>

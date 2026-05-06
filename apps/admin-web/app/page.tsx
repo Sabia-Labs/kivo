@@ -13,10 +13,12 @@ const pillarIcons: Record<string, React.ElementType> = {
   TrendingUp, Activity, ShieldCheck, GitMerge,
 };
 
+const KIVO_WEB_URL = process.env.NEXT_PUBLIC_KIVO_WEB_URL ?? "http://localhost:3000";
+
 export default function HomePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const signupHref = user ? "/teams" : "/signup";
+  const signupHref = user ? `${KIVO_WEB_URL}/teams` : "/signup";
 
   return (
     <div className="flex flex-col bg-background">
