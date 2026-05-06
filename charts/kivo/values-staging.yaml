@@ -53,6 +53,7 @@ adminApi:
     NODE_ENV: production
     ADMIN_PORT: "4001"
     CORS_ORIGIN: "http://www.kivo-staging.34-141-70-109.nip.io"
+    ADMIN_WEB_URL: "http://www.kivo-staging.34-141-70-109.nip.io"
   existingSecret: kivo-api-staging-secret
 adminWeb:
   replicaCount: 1
