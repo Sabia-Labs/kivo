@@ -3,6 +3,7 @@
 #            --set kivoApi.image.tag=$GIT_SHA ...
 
 namespace: kivo-staging
+adminNamespace: kivo-staging
 kivoApi:
   replicaCount: 1
   image:
@@ -36,6 +37,8 @@ kivoWeb:
     NODE_ENV: production
     PORT: "3000"
     NEXT_PUBLIC_API_URL: "http://app.kivo-staging.34-141-70-109.nip.io/api"
+    NEXT_PUBLIC_SITE_URL: "http://www.kivo-staging.34-141-70-109.nip.io"
+    API_INTERNAL_URL: "http://kivo-api:4000"
 adminApi:
   replicaCount: 1
   image:
@@ -64,6 +67,9 @@ adminWeb:
   env:
     NODE_ENV: production
     PORT: "3001"
+    NEXT_PUBLIC_API_URL: "http://www.kivo-staging.34-141-70-109.nip.io/admin-api"
+    NEXT_PUBLIC_KIVO_WEB_URL: "http://app.kivo-staging.34-141-70-109.nip.io"
+    API_INTERNAL_URL: "http://kivo-admin-api:4001"
 controller:
   replicaCount: 1
   image:
