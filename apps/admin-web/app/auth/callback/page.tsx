@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
@@ -30,6 +30,10 @@ export default function AuthCallbackPage() {
     }
   }, [searchParams, login, router]);
 
+  return null;
+}
+
+export default function AuthCallbackPage() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-4 text-center">
@@ -37,6 +41,9 @@ export default function AuthCallbackPage() {
         <h1 className="text-xl font-medium">Completing login...</h1>
         <p className="text-sm text-muted-foreground">Please wait while we redirect you.</p>
       </div>
+      <Suspense fallback={null}>
+        <AuthCallbackContent />
+      </Suspense>
     </div>
   );
 }
