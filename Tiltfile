@@ -36,6 +36,9 @@ PLATFORM_OPENAI_KEY    = _env.get("PLATFORM_OPENAI_API_KEY",  "")
 PLATFORM_MODEL_PROVIDER = _env.get("PLATFORM_MODEL_PROVIDER", "openai")
 PLATFORM_MODEL_NAME     = _env.get("PLATFORM_MODEL_NAME",    "gpt-5.4")
 
+GOOGLE_CLIENT_ID        = _env.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET    = _env.get("GOOGLE_CLIENT_SECRET", "")
+
 # ── Configuration ─────────────────────────────────────────────────────────────
 NAMESPACE       = "kivo"
 ADMIN_NAMESPACE = "kivo-admin"
@@ -439,6 +442,8 @@ k8s_yaml(
       'kivoApi.env.PLATFORM_MODEL_PROVIDER=' + PLATFORM_MODEL_PROVIDER,
       'kivoApi.env.PLATFORM_MODEL_NAME=' + PLATFORM_MODEL_NAME,
       'adminApi.env.KIVO_API_INTERNAL_URL=http://kivo-api.kivo:4000',
+      'adminApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
+      'adminApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
     ],
   )
 )
