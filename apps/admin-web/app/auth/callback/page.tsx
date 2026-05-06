@@ -19,7 +19,7 @@ export default function AuthCallbackPage() {
     if (token && userId) {
       // In a real app we'd fetch full user details if needed, 
       // but for this example we'll construct a basic user object
-      const user = { id: userId, email: "user@example.com", isAdmin: false };
+      const user = { id: userId, email: "user@example.com", name: "Kivo User", isAdmin: false };
       
       login(token, user, workspaceId || null);
       toast.success("Successfully logged in via Google!");
