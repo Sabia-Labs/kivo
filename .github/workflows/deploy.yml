@@ -79,33 +79,35 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Deploy to UAT — DISABLED until Terraform provisions the cluster ──────────
-  # Uncomment this job when the UAT cluster is ready.
-  #
-  # deploy-uat:
-  #   name: Deploy to UAT
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   environment: uat
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - name: Set up Helm
-  #       uses: azure/setup-helm@v4
-  #       with:
-  #         version: "3.17.x"
-  #
-  #     - name: Configure kubectl (from secret)
-  #       run: |
-  #         echo "${{ secrets.UAT_KUBECONFIG }}" | base64 -d > /tmp/kubeconfig
-  #         echo "KUBECONFIG=/tmp/kubeconfig" >> $GITHUB_ENV
-  #
-  #     - name: Helm upgrade UAT
-  #       run: |
-  #         helm upgrade --install kivo charts/kivo \
-  #           --namespace kivo-uat \
-  #           --create-namespace \
-  #           -f charts/kivo/values-uat.yaml \
-  #           --set api.image.tag=${{ github.sha }} \
-  #           --set web.image.tag=${{ github.sha }} \
-  #           --wait --timeout 5m
+  update-manifests:
+    name: Update GitOps Manifests
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: write # needed to push commits
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update staging values with new image tag
+        run: |
+          # Use yq to update the image tag for both api and web
+          yq -i '.api.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          yq -i '.web.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add charts/kivo/values-staging.yaml
+          
+          # Only commit if there are changes
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "chore: deploy ${{ github.sha }} to staging [skip ci]"
+            git push origin main
+          else
+            echo "No changes to commit"
+          fi

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kivo-staging
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/Sabia-Labs/kivo.git'
+    path: charts/kivo
+    targetRevision: main
+    helm:
+      valueFiles:
+        - values-staging.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: kivo-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,8 +1,8 @@
-# ── UAT Environment Overrides ─────────────────────────────────────────────────
-# Used by: helm upgrade --install kivo charts/kivo -f values-uat.yaml \
+# ── Staging Environment Overrides ─────────────────────────────────────────────────
+# Used by: helm upgrade --install kivo charts/kivo -f values-staging.yaml \
 #            --set api.image.tag=$GIT_SHA --set web.image.tag=$GIT_SHA
 
-namespace: kivo-uat
+namespace: kivo-staging
 
 api:
   replicaCount: 1
@@ -20,9 +20,9 @@ api:
   env:
     NODE_ENV: production
     PORT: "4000"
-    CORS_ORIGIN: "https://kivo-uat.example.com"
+    CORS_ORIGIN: "https://kivo-staging.example.com"
   # Secret must be pre-created in the cluster by the ops team / Terraform
-  existingSecret: kivo-api-uat-secret
+  existingSecret: kivo-api-staging-secret
   runMigrations: true
 
 web:
