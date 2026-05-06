@@ -19,7 +19,7 @@ kivoApi:
   env:
     NODE_ENV: production
     PORT: "4000"
-    CORS_ORIGIN: "http://kivo-staging.34-141-70-109.nip.io"
+    CORS_ORIGIN: "http://app.kivo-staging.34-141-70-109.nip.io"
   existingSecret: kivo-api-staging-secret
   runMigrations: false
 kivoWeb:
@@ -35,7 +35,7 @@ kivoWeb:
   env:
     NODE_ENV: production
     PORT: "3000"
-    NEXT_PUBLIC_API_URL: "http://kivo-staging.34-141-70-109.nip.io/api"
+    NEXT_PUBLIC_API_URL: "http://app.kivo-staging.34-141-70-109.nip.io/api"
 adminApi:
   replicaCount: 1
   image:
@@ -49,7 +49,7 @@ adminApi:
   env:
     NODE_ENV: production
     ADMIN_PORT: "4001"
-    CORS_ORIGIN: "http://admin.kivo-staging.34-141-70-109.nip.io"
+    CORS_ORIGIN: "http://www.kivo-staging.34-141-70-109.nip.io"
   existingSecret: kivo-api-staging-secret
 adminWeb:
   replicaCount: 1
