@@ -96,3 +96,7 @@ networkPolicy:
   enabled: true
 
 imagePullSecrets: []
+
+rabbitmq:
+  persistence:
+    storageClassName: "standard-rwo"
