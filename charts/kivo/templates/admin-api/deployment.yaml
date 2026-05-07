@@ -35,12 +35,20 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- if .Values.adminApi.existingSecret }}
+            {{- if .Values.adminApi.databaseSecret }}
+            - name: DATABASE_URL_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminApi.databaseSecret }}
+                  key: DATABASE_URL_ADMIN
+            {{- else if .Values.adminApi.existingSecret }}
             - name: DATABASE_URL_ADMIN
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.adminApi.existingSecret }}
                   key: DATABASE_URL_ADMIN
+            {{- end }}
+            {{- if .Values.adminApi.existingSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

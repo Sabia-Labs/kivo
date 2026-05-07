@@ -35,12 +35,20 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- if .Values.kivoApi.existingSecret }}
+            {{- if .Values.kivoApi.databaseSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.databaseSecret }}
+                  key: DATABASE_URL
+            {{- else if .Values.kivoApi.existingSecret }}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: DATABASE_URL
+            {{- end }}
+            {{- if .Values.kivoApi.existingSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
@@ -65,13 +73,21 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- if .Values.kivoApi.existingSecret }}
+            {{- if .Values.kivoApi.databaseSecret }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.databaseSecret }}
+                  key: DATABASE_URL
+            {{- else if .Values.kivoApi.existingSecret }}
             {{- /* UAT/Prod: credentials come from a pre-existing Kubernetes Secret */}}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: DATABASE_URL
+            {{- end }}
+            {{- if .Values.kivoApi.existingSecret }}
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
