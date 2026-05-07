@@ -3,6 +3,7 @@ import { registerTaskTools } from "./tools/tasks";
 import { registerTeamTools } from "./tools/teams";
 import { registerRequestTools } from "./tools/requests";
 import { registerCapabilityTools } from "./tools/capabilities";
+import { registerAgentTools } from "./tools/agents";
 
 export function createMcpServerForActor(actor: any, authHeader: string) {
   const server = new McpServer({
@@ -15,6 +16,7 @@ export function createMcpServerForActor(actor: any, authHeader: string) {
   registerTeamTools(server, actor, authHeader);
   registerRequestTools(server, actor, authHeader);
   registerCapabilityTools(server, actor, authHeader);
+  registerAgentTools(server, actor, authHeader);
 
   return server;
 }

@@ -144,6 +144,9 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
     const namespace = workspace.k8sNamespace ?? workspaceNamespace(workspace.id);
     const gatewayToken = randomBytes(32).toString("base64url");
 
+    const { agentRoles: agentRolesSchema } = await import("../db/schema");
+    const [role] = await db.select().from(agentRolesSchema).where(eq(agentRolesSchema.id, input.type));
+
     const [newAgent] = await db
       .insert(agents)
       .values({
@@ -151,6 +154,13 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
         teamId,
         gatewayToken,
         k8sStatus: "pending",
+        soul: role?.soul,
+        identity: role?.identity,
+        agentsInstructions: role?.agentsInstructions,
+        userContext: role?.userContext,
+        memory: role?.memory,
+        toolsNotes: role?.toolsNotes,
+        heartbeat: role?.heartbeat,
       })
       .returning();
 

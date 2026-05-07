@@ -166,6 +166,22 @@ export const agents = pgTable("agents", {
   k8sResourceName: text("k8s_resource_name"),
   /** Current availability of the agent. */
   availability: agentAvailabilityEnum("availability").notNull().default("available"),
+  /** Defining personality, values, tone, and behavioral boundaries */
+  soul: text("soul"),
+  /** Surface-level details like name, ID, role label, and voice */
+  identity: text("identity"),
+  /** Operational instructions and rules governing agent behavior */
+  agentsInstructions: text("agents_instructions"),
+  /** Preferences, communication style, and context about the human user */
+  userContext: text("user_context"),
+  /** Long-term memory storing durable facts, preferences, and decisions */
+  memory: text("memory"),
+  /** JSON map of dates to daily log strings for running context */
+  dailyLogs: jsonb("daily_logs"),
+  /** Notes about external tools and conventions */
+  toolsNotes: text("tools_notes"),
+  /** Used for scheduled tasks and to trigger periodic actions */
+  heartbeat: text("heartbeat"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -414,6 +430,22 @@ export const agentRoles = pgTable("agent_roles", {
   emoji: text("emoji").notNull(),
   backgroundColor: text("background_color").notNull(), // Hex or CSS color
   suggestedName: text("suggested_name").notNull().default("agent_default_name"), // Dictionary key
+  /** Defining personality, values, tone, and behavioral boundaries */
+  soul: text("soul"),
+  /** Surface-level details like name, ID, role label, and voice */
+  identity: text("identity"),
+  /** Operational instructions and rules governing agent behavior */
+  agentsInstructions: text("agents_instructions"),
+  /** Preferences, communication style, and context about the human user */
+  userContext: text("user_context"),
+  /** Long-term memory storing durable facts, preferences, and decisions */
+  memory: text("memory"),
+  /** JSON map of dates to daily log strings for running context */
+  dailyLogs: jsonb("daily_logs"),
+  /** Notes about external tools and conventions */
+  toolsNotes: text("tools_notes"),
+  /** Used for scheduled tasks and to trigger periodic actions */
+  heartbeat: text("heartbeat"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -431,5 +463,19 @@ export const teamTypeRoles = pgTable("team_type_roles", {
 }, (t) => ({
   pk: primaryKey({ columns: [t.teamTypeId, t.agentRoleId] }),
 }));
+
+export const leaderChatHistory = pgTable("leader_chat_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  teamId: uuid("team_id")
+    .notNull()
+    .references(() => teams.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  message: text("message").notNull(),
+  role: text("role").notNull(), // 'user' | 'assistant'
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LeaderChatHistory = typeof leaderChatHistory.$inferSelect;
+export type NewLeaderChatHistory = typeof leaderChatHistory.$inferInsert;
 
 export type TeamTypeRole = typeof teamTypeRoles.$inferSelect;

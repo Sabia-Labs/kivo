@@ -6,6 +6,8 @@
  */
 
 import "dotenv/config";
+import fs from "fs";
+import path from "path";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
@@ -71,7 +73,16 @@ async function main() {
   console.log("  ✓ Team meta capabilities seeded.\n");
 
   console.log("→ Seeding Agent Roles...");
-  const agentRoles = [
+  const profilesDir = path.resolve(__dirname, "../../agents/profiles");
+  const readProfileField = (roleId: string, filename: string) => {
+    const filePath = path.join(profilesDir, roleId, filename);
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath, "utf-8");
+    }
+    return null;
+  };
+
+  const baseAgentRoles = [
     { id: "team_lead", name: "agent_role_team_lead", description: "agent_desc_team_lead", emoji: "👑", backgroundColor: "#4F46E5", suggestedName: "team_lead_suggested_name" },
     { id: "software_engineer", name: "agent_role_software_engineer", description: "agent_desc_software_engineer", emoji: "💻", backgroundColor: "#10B981", suggestedName: "engineer_suggested_name" },
     { id: "software_architect", name: "agent_role_software_architect", description: "agent_desc_software_architect", emoji: "🏛️", backgroundColor: "#8B5CF6", suggestedName: "architect_suggested_name" },
@@ -79,8 +90,32 @@ async function main() {
     { id: "support_responder", name: "agent_role_support_responder", description: "agent_desc_support_responder", emoji: "🎧", backgroundColor: "#3B82F6", suggestedName: "responder_suggested_name" },
     { id: "support_analist", name: "agent_role_support_analist", description: "agent_desc_support_analist", emoji: "🔍", backgroundColor: "#EC4899", suggestedName: "analyst_suggested_name" },
   ];
+
+  const agentRoles = baseAgentRoles.map(role => ({
+    ...role,
+    soul: readProfileField(role.id, "SOUL.md"),
+    identity: readProfileField(role.id, "IDENTITY.md"),
+    agentsInstructions: readProfileField(role.id, "AGENTS.md"),
+    userContext: readProfileField(role.id, "USER.md"),
+    memory: readProfileField(role.id, "MEMORY.md"),
+    toolsNotes: readProfileField(role.id, "TOOLS.md"),
+    heartbeat: readProfileField(role.id, "HEARTBEAT.md"),
+  }));
+
   for (const role of agentRoles) {
-    await db.insert(schema.agentRoles).values(role).onConflictDoNothing();
+    // Upsert mechanism to ensure fields get updated if they already existed without these fields
+    await db.insert(schema.agentRoles).values(role).onConflictDoUpdate({
+      target: schema.agentRoles.id,
+      set: {
+        soul: role.soul,
+        identity: role.identity,
+        agentsInstructions: role.agentsInstructions,
+        userContext: role.userContext,
+        memory: role.memory,
+        toolsNotes: role.toolsNotes,
+        heartbeat: role.heartbeat,
+      }
+    });
   }
   console.log("  ✓ Agent roles seeded.\n");
 
