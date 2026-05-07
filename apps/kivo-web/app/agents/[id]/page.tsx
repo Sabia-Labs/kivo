@@ -14,6 +14,7 @@ import { useTranslation } from "@/lib/i18n";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { DisplayStatus } from "@/lib/types";
+import { AgentChatArea } from "@/components/AgentChatArea";
 
 // ── Constants & Types ────────────────────────────────────────────────────────
 
@@ -47,6 +48,9 @@ interface Agent {
   teamId?: string;
   k8sStatus?: string;
   availability?: string;
+  soul?: string;
+  identity?: string;
+  agentsInstructions?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -217,38 +221,66 @@ function TelegramChannel({
               {telegramStatus === "not_configured" && (
                 <p className="mb-4 text-xs text-muted-foreground">{BOTFATHER_GUIDE}</p>
               )}
-              <div className="flex flex-col gap-1.5">
-                <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
-                  <KeyRound className="size-3.5 text-muted-foreground" />
-                  {hasTelegramToken && telegramStatus === "complete" ? "Update Bot Token" : "Bot Token"}
-                </label>
-                {hasTelegramToken && telegramStatus === "complete" && (
-                  <p className="text-xs text-muted-foreground">
-                    A token is already saved. Paste a new one below to replace it. This will restart the agent.
-                  </p>
-                )}
-                <div className="flex gap-2">
-                  <Input
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    placeholder={hasTelegramToken ? "Paste new token to update…" : "Paste your bot token here…"}
-                    className="flex-1 font-mono text-xs"
-                    type="password"
-                    autoComplete="off"
-                  />
-                  <Button
-                    onClick={handleSaveToken}
-                    disabled={savingToken || !token.trim()}
-                    size="sm"
-                    className="shrink-0 gap-1.5"
-                  >
-                    {savingToken
-                      ? <><Loader2 className="size-3.5 animate-spin" />Saving…</>
-                      : <><Send className="size-3.5" />{hasTelegramToken ? "Update" : "Save & Connect"}</>
-                    }
-                  </Button>
+              {hasTelegramToken && telegramStatus === "complete" ? (
+                <details className="group">
+                  <summary className="cursor-pointer text-xs text-muted-foreground/60 hover:text-muted-foreground select-none list-none flex items-center gap-1">
+                    <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
+                    Update Bot Token
+                  </summary>
+                  <div className="mt-3 flex flex-col gap-1.5">
+                    <p className="text-xs text-muted-foreground">
+                      A token is already saved. Paste a new one below to replace it. This will restart the agent.
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={token}
+                        onChange={(e) => setToken(e.target.value)}
+                        placeholder="Paste new token to update…"
+                        className="flex-1 font-mono text-xs"
+                        autoComplete="off"
+                      />
+                      <Button
+                        onClick={handleSaveToken}
+                        disabled={savingToken || !token.trim()}
+                        size="sm"
+                        className="shrink-0 gap-1.5"
+                      >
+                        {savingToken
+                          ? <><Loader2 className="size-3.5 animate-spin" />Saving…</>
+                          : <><Send className="size-3.5" />Update</>
+                        }
+                      </Button>
+                    </div>
+                  </div>
+                </details>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+                    <KeyRound className="size-3.5 text-muted-foreground" />
+                    Bot Token
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={token}
+                      onChange={(e) => setToken(e.target.value)}
+                      placeholder="Paste your bot token here…"
+                      className="flex-1 font-mono text-xs"
+                      autoComplete="off"
+                    />
+                    <Button
+                      onClick={handleSaveToken}
+                      disabled={savingToken || !token.trim()}
+                      size="sm"
+                      className="shrink-0 gap-1.5"
+                    >
+                      {savingToken
+                        ? <><Loader2 className="size-3.5 animate-spin" />Saving…</>
+                        : <><Send className="size-3.5" />Save & Connect</>
+                      }
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
 
@@ -319,7 +351,6 @@ function TelegramChannel({
                       onChange={(e) => setToken(e.target.value)}
                       placeholder="Paste new bot token to replace…"
                       className="flex-1 font-mono text-xs"
-                      type="password"
                       autoComplete="off"
                     />
                     <Button
@@ -343,145 +374,6 @@ function TelegramChannel({
   );
 }
 
-// ── ChatArea ──────────────────────────────────────────────────────────────────
-
-function ChatArea({ agentId, agentName, agentIcon, agentColor, userName, token, t, newChatTrigger }: any) {
-  const [messages, setMessages] = useState<any[]>([]);
-  const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
-  const [conv, setConv] = useState<any>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const bottomRef = useRef<HTMLDivElement>(null);
-
-  const headers = useCallback((): HeadersInit => ({
-    "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  }), [token]);
-
-  useEffect(() => {
-    setIsInitializing(false);
-  }, []);
-
-  useEffect(() => {
-    if (newChatTrigger > 0) {
-      setConv(null);
-      setMessages([]);
-    }
-  }, [newChatTrigger]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, sending]);
-
-  const send = async () => {
-    const text = input.trim();
-    if (!text || sending) return;
-    setInput(""); setSending(true);
-    const tempId = `u-${Date.now()}`;
-    let messageIdInState = tempId;
-    
-    setMessages(p => [...p, { id: tempId, role: "user", content: text, createdAt: new Date().toISOString(), status: "sending" }]);
-
-    try {
-      let cid = conv?.id;
-      if (!cid) {
-        const r = await fetch(`${API_BASE}/conversations`, {
-          method: "POST", headers: headers(),
-          body: JSON.stringify({ agentId, counterpartType: "human", counterpartName: userName }),
-        });
-        if (!r.ok) throw new Error();
-        const nc = (await r.json()).data;
-        setConv(nc); cid = nc.id;
-      }
-      
-      const res = await fetch(`${API_BASE}/conversations/${cid}/messages`, { method: "POST", headers: headers(), body: JSON.stringify({ role: "user", content: text }) });
-      const resultObj = await res.json().catch(() => ({}));
-      
-      const serverId = resultObj.data?.userMessage?.id;
-      if (serverId && serverId !== messageIdInState) {
-        setMessages(p => p.map(m => m.id === messageIdInState ? { ...m, id: serverId } : m));
-        messageIdInState = serverId;
-      }
-
-      if (!res.ok || resultObj.data?.error) {
-        setMessages(p => p.map(m => m.id === messageIdInState ? { ...m, status: "error" } : m));
-        toast.error("Failed to send message.");
-        setSending(false);
-        return;
-      }
-
-      setMessages(p => p.map(m => m.id === messageIdInState ? { ...m, status: "sent" } : m));
-
-      if (resultObj.data?.agentMessage) {
-        setMessages(p => [...p, {
-          id: resultObj.data.agentMessage.id || `a-${Date.now()}`,
-          role: "assistant",
-          content: resultObj.data.agentMessage.content,
-          createdAt: resultObj.data.agentMessage.createdAt || new Date().toISOString()
-        }]);
-      }
-    } catch {
-      setMessages(p => p.map(m => m.id === messageIdInState ? { ...m, status: "error" } : m));
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col flex-1 h-full min-h-0 bg-background overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        {isInitializing ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-2 select-none opacity-50">
-            <Bot className="size-8 text-muted-foreground" />
-            <p className="text-xs">Start a conversation...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {messages.map(m => (
-              <div key={m.id} className={cn("flex items-end gap-2", m.role === "user" ? "flex-row-reverse" : "")}>
-                {m.role !== "user" && (
-                  <div className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs" style={{ background: agentColor + "22" }}>
-                    {agentIcon}
-                  </div>
-                )}
-                <div className={cn("px-4 py-2.5 rounded-2xl max-w-[80%] text-sm", 
-                  m.role === "user" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm",
-                  m.status === "error" && "bg-destructive/10 text-destructive-foreground"
-                )}>
-                  {m.content}
-                </div>
-              </div>
-            ))}
-            {sending && (
-               <div className="flex items-end gap-2">
-                 <div className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs" style={{ background: agentColor + "22" }}>{agentIcon}</div>
-                 <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-muted flex items-center gap-1.5">
-                   <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:0ms]" />
-                   <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:150ms]" />
-                   <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:300ms]" />
-                 </div>
-               </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
-        )}
-      </div>
-
-      <div className="p-3 border-t bg-muted/10 shrink-0">
-        <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-center gap-2">
-          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Send a message..." className="bg-background shadow-sm h-10" disabled={sending} />
-          <Button type="submit" size="icon" disabled={!input.trim() || sending} className="h-10 w-10 shrink-0">
-            {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -504,13 +396,12 @@ export default function AgentPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Brain Editors State
-  type BrainField = "soul" | "identity" | "agents";
+  type BrainField = "soul" | "identity" | "agentsInstructions";
   const [editingBrainField, setEditingBrainField] = useState<BrainField | null>(null);
   const [brainContent, setBrainContent] = useState("");
   const [isSavingBrain, setIsSavingBrain] = useState(false);
 
-  // Floating Chat State
-  const [isChatOpen, setIsChatOpen] = useState(false);
+
 
   const authHeaders = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
@@ -573,12 +464,13 @@ export default function AgentPage() {
     saveSettings({ icon: newIcon, metadata: { avatarColor: newColor } });
   };
 
+
+
   const openBrainEditor = (field: BrainField) => {
     setEditingBrainField(field);
-    const meta = agent?.metadata ?? {};
-    if (field === "soul") setBrainContent(meta.soul ?? meta.personality ?? "");
-    else if (field === "identity") setBrainContent(meta.identity ?? "");
-    else if (field === "agents") setBrainContent(meta.agents ?? "");
+    if (field === "soul") setBrainContent(agent?.soul ?? "");
+    else if (field === "identity") setBrainContent(agent?.identity ?? "");
+    else if (field === "agentsInstructions") setBrainContent(agent?.agentsInstructions ?? "");
   };
 
   const saveBrainContent = async () => {
@@ -588,10 +480,7 @@ export default function AgentPage() {
       const r = await fetch(`${API_BASE}/agents/${agentId}`, {
         method: "PUT", headers: authHeaders(),
         body: JSON.stringify({
-          metadata: { 
-            ...(agent.metadata ?? {}), 
-            [editingBrainField]: brainContent 
-          },
+          [editingBrainField]: brainContent
         }),
       });
       if (!r.ok) throw new Error();
@@ -723,120 +612,100 @@ export default function AgentPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-6">
-          <section className="rounded-xl border bg-card overflow-hidden">
-            <div className="border-b px-5 py-3.5 bg-muted/20 flex items-center gap-2">
-              <Brain className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Brain & Memory</h3>
+      <div className="flex flex-col gap-8">
+        {/* Chat Area */}
+        <section className="rounded-xl border bg-card overflow-hidden">
+          <div className="border-b px-5 py-3.5 flex items-center justify-between bg-muted/20">
+            <div className="flex items-center gap-2">
+              <Bot className="size-4 text-muted-foreground" />
+              <h3 className="text-sm font-semibold">Agent Chat</h3>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-muted-foreground mb-4">
-                Configure the core personality, identity, and operational rules for this agent.
-              </p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "soul" && "ring-2 ring-primary")} onClick={() => openBrainEditor("soul")}>
-                  <span className="font-semibold mb-1">SOUL</span>
-                  <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Defines personality, values, tone, and behavioral boundaries.</span>
-                </Button>
-                <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "identity" && "ring-2 ring-primary")} onClick={() => openBrainEditor("identity")}>
-                  <span className="font-semibold mb-1">IDENTITY</span>
-                  <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Contains surface-level details like name, role, and voice.</span>
-                </Button>
-                <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "agents" && "ring-2 ring-primary")} onClick={() => openBrainEditor("agents")}>
-                  <span className="font-semibold mb-1">AGENTS</span>
-                  <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Operational instructions and rules governing agent behavior.</span>
-                </Button>
-              </div>
-
-              {editingBrainField && (
-                <div className="mt-5 border rounded-xl p-4 bg-muted/10 animate-in fade-in slide-in-from-top-2">
-                   <div className="flex justify-between items-center mb-3">
-                      <h4 className="font-semibold text-sm tracking-wide uppercase">{editingBrainField} Content</h4>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingBrainField(null)}><X className="size-4" /></Button>
-                   </div>
-                   <textarea 
-                     value={brainContent} 
-                     onChange={e => setBrainContent(e.target.value)}
-                     className="w-full min-h-[250px] p-4 text-sm font-mono bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y"
-                     placeholder={`Write the markdown content for ${editingBrainField.toUpperCase()} here...`}
-                   />
-                   <div className="mt-3 flex justify-end">
-                     <Button onClick={saveBrainContent} disabled={isSavingBrain}>
-                       {isSavingBrain ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
-                       Save
-                     </Button>
-                   </div>
-                </div>
-              )}
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setNewChatTrigger(p => p + 1)}>New Chat</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" asChild>
+                <Link href={`/agents/${agentId}/history`}>History</Link>
+              </Button>
             </div>
-          </section>
-        </div>
-
-        {/* Side Column */}
-        <div className="space-y-6">
-          <section className="rounded-xl border bg-card overflow-hidden">
-             <div className="border-b px-5 py-3.5 bg-muted/20">
-              <h3 className="text-sm font-semibold">Communication Channels</h3>
-            </div>
-            <div className="p-5">
-              <div className="mb-4">
-                <p className="text-xs text-muted-foreground">
-                  Connect your agent to messaging platforms so users can interact with it directly.
-                </p>
-              </div>
-              <div className="divide-y divide-border/60">
-                <TelegramChannel
-                  agentId={agentId}
-                  hasTelegramToken={hasTelegramToken}
-                  telegramStatus={telegramStatus}
-                  onTokenSaved={saveTelegramToken}
-                  onPairingApproved={approveTelegramPairing}
-                />
-              </div>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      {/* Floating Chat Window */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
-        {isChatOpen && (
-          <div className="w-[380px] h-[600px] max-h-[80vh] rounded-2xl shadow-2xl border bg-card flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
-            <div className="flex items-center justify-between p-3 border-b bg-muted/30 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="flex size-6 items-center justify-center rounded-full text-xs" style={{ background: color + "22" }}>
-                  {icon}
-                </div>
-                <span className="text-sm font-semibold">{agent.name}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="size-7" onClick={() => setNewChatTrigger(p => p + 1)} title="New Chat">
-                   <Plus className="size-3.5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="size-7" onClick={() => setIsChatOpen(false)}>
-                  <X className="size-4" />
-                </Button>
-              </div>
-            </div>
-            <ChatArea 
+          </div>
+          <div className="h-[400px]">
+            <AgentChatArea 
               agentId={agentId} agentName={agent.name} agentIcon={icon} agentColor={color} 
               userName={user?.name ?? "You"} token={token} t={t} newChatTrigger={newChatTrigger} 
             />
           </div>
-        )}
-        
-        {!isChatOpen && (
-          <Button 
-            onClick={() => setIsChatOpen(true)}
-            className="size-14 rounded-full shadow-xl hover:scale-105 transition-transform"
-            style={{ backgroundColor: color }}
-          >
-            <MessageSquare className="size-6 text-white" />
-          </Button>
-        )}
+        </section>
+
+        {/* Communication Channels */}
+        <section className="rounded-xl border bg-card overflow-hidden">
+           <div className="border-b px-5 py-3.5 bg-muted/20">
+            <h3 className="text-sm font-semibold">Communication Channels</h3>
+          </div>
+          <div className="p-5">
+            <div className="mb-4">
+              <p className="text-xs text-muted-foreground">
+                Connect your agent to messaging platforms so users can interact with it directly.
+              </p>
+            </div>
+            <div className="divide-y divide-border/60">
+              <TelegramChannel
+                agentId={agentId}
+                hasTelegramToken={hasTelegramToken}
+                telegramStatus={telegramStatus}
+                onTokenSaved={saveTelegramToken}
+                onPairingApproved={approveTelegramPairing}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Brain & Memory */}
+        <section className="rounded-xl border bg-card overflow-hidden">
+          <div className="border-b px-5 py-3.5 bg-muted/20 flex items-center gap-2">
+            <Brain className="size-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Brain & Memory</h3>
+          </div>
+          <div className="p-5">
+            <p className="text-sm text-muted-foreground mb-4">
+              Configure the core personality, identity, and operational rules for this agent.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "soul" && "ring-2 ring-primary")} onClick={() => openBrainEditor("soul")}>
+                <span className="font-semibold mb-1">SOUL</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Defines personality, values, tone, and behavioral boundaries.</span>
+              </Button>
+              <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "identity" && "ring-2 ring-primary")} onClick={() => openBrainEditor("identity")}>
+                <span className="font-semibold mb-1">IDENTITY</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Contains surface-level details like name, role, and voice.</span>
+              </Button>
+              <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "agentsInstructions" && "ring-2 ring-primary")} onClick={() => openBrainEditor("agentsInstructions")}>
+                <span className="font-semibold mb-1">AGENTS</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Operational instructions and rules governing agent behavior.</span>
+              </Button>
+            </div>
+
+            {editingBrainField && (
+              <div className="mt-5 border rounded-xl p-4 bg-muted/10 animate-in fade-in slide-in-from-top-2">
+                 <div className="flex justify-between items-center mb-3">
+                    <h4 className="font-semibold text-sm tracking-wide uppercase">{editingBrainField} Content</h4>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingBrainField(null)}><X className="size-4" /></Button>
+                 </div>
+                 <textarea 
+                   value={brainContent} 
+                   onChange={e => setBrainContent(e.target.value)}
+                   className="w-full min-h-[250px] p-4 text-sm font-mono bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y"
+                   placeholder={`Write the markdown content for ${editingBrainField.toUpperCase()} here...`}
+                 />
+                 <div className="mt-3 flex justify-end">
+                   <Button onClick={saveBrainContent} disabled={isSavingBrain}>
+                     {isSavingBrain ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
+                     Save
+                   </Button>
+                 </div>
+              </div>
+            )}
+          </div>
+        </section>
       </div>
 
     </div>

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { SmartCapabilitySelect } from "@/components/smart-capability-select";
 
 export default function NewRequestPage() {
   const { token, isLoading: authLoading } = useAuth();
@@ -23,6 +23,7 @@ export default function NewRequestPage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
+  const [capabilities, setCapabilities] = useState<any[]>([]);
   const [selectedCapabilityInfo, setSelectedCapabilityInfo] = useState<any>(null);
 
   // Form State
@@ -58,7 +59,10 @@ export default function NewRequestPage() {
       let loadedAgents = [];
       let loadedCaps = [];
       if (agentsRes.ok) loadedAgents = (await agentsRes.json()).data ?? [];
-      if (capsRes.ok) loadedCaps = (await capsRes.json()).data ?? [];
+      if (capsRes.ok) {
+        loadedCaps = (await capsRes.json()).data ?? [];
+        setCapabilities(loadedCaps);
+      }
       setAgents(loadedAgents);
 
       let loadedRequest = null;
@@ -134,6 +138,19 @@ export default function NewRequestPage() {
       setLeaderThought("I'm having trouble analyzing this right now, but feel free to submit!");
     } finally {
       setIsLeaderThinking(false);
+    }
+  };
+
+  const handleCapabilityChange = (val: string | null) => {
+    if (val) {
+      setCapabilitiesWorkflow([val]);
+      const cap = capabilities.find(c => c.identifier === val);
+      setSelectedCapabilityInfo(cap || null);
+      setSuggestedCapability(null);
+    } else {
+      setCapabilitiesWorkflow([]);
+      setSelectedCapabilityInfo(null);
+      setSuggestedCapability(null);
     }
   };
 
@@ -245,6 +262,17 @@ export default function NewRequestPage() {
       <div className="space-y-6 rounded-xl border bg-card p-6 shadow-sm">
 
         <div className="space-y-3">
+          <Label className="text-sm font-medium">
+            {(!capabilitiesWorkflow.length && suggestedCapability) ? "Matched Capability" : selectedCapabilityInfo ? "Selected Capability" : "Capability"}
+          </Label>
+          <SmartCapabilitySelect
+            value={capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : suggestedCapability}
+            onChange={handleCapabilityChange}
+            availableCapabilities={capabilities}
+          />
+        </div>
+
+        <div className="space-y-3">
           <Label htmlFor="requestDetails" className="sr-only">Details of what you'd like done</Label>
           <textarea
             id="requestDetails"
@@ -283,33 +311,20 @@ export default function NewRequestPage() {
         </div>
 
         {/* Title and Capability Fields */}
-        {(title || suggestedCapability || selectedCapabilityInfo) && (
+        {title && (
           <div className="space-y-4 pt-4 border-t animate-in fade-in">
-            {title && (
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-medium">Request Title</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => {
-                    setTitle(e.target.value);
-                    setHasUserEditedTitle(true);
-                  }}
-                  placeholder="Request Title"
-                />
-              </div>
-            )}
-            
-            {(suggestedCapability || selectedCapabilityInfo) && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">
-                  {selectedCapabilityInfo ? "Selected Capability:" : "Matched Capability:"}
-                </span>
-                <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-                  {selectedCapabilityInfo ? selectedCapabilityInfo.identifier : suggestedCapability}
-                </span>
-              </div>
-            )}
+            <div className="space-y-2">
+              <Label htmlFor="title" className="text-sm font-medium">Request Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  setHasUserEditedTitle(true);
+                }}
+                placeholder="Request Title"
+              />
+            </div>
           </div>
         )}
 

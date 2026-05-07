@@ -22,7 +22,7 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
-import { TeamLeaderChat } from "@/components/TeamLeaderChat";
+import { AgentChatAccordion } from "@/components/AgentChatAccordion";
 
 function computeHealth(a: Agent): HealthStatus {
   const k8s = a.k8sStatus;
@@ -395,43 +395,23 @@ export default function TeamDetailPage() {
         </section>
       )}
 
-      {/* Manager Actions Area */}
-      <section className="mb-8 rounded-xl border bg-card p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <AlertCircle className="size-4 text-primary" />
-          <h2 className="text-sm font-semibold">Manager Actions</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Agents</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold">{agents.filter(a => computeHealth(a) === "online").length}/{agents.length}</span>
-              <span className="text-xs text-muted-foreground">Online</span>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Opened Requests</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-bold">{openedRequests.length}</span>
-              <span className="text-xs text-muted-foreground">in pipeline</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
-            <div className="flex size-8 items-center justify-center rounded-full bg-primary/20 text-primary">
-              <CheckCircle2 className="size-4" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">All systems operational</p>
-              <p className="text-xs text-muted-foreground">Your squad is ready for tasks.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Left Column - Team Work */}
+        {/* Left Column - Team Work */}
         <div className="lg:col-span-2 space-y-6">
-          
+          <section>
+            <div className="flex items-center justify-between mb-3 px-1">
+              <div className="flex items-center gap-2">
+                <Bot className="size-5 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">Squad Chat</h3>
+              </div>
+              <Link href={`/teams/${teamId}/agents/new`} className="text-xs font-medium text-primary hover:underline">
+                Add Agent
+              </Link>
+            </div>
+            <AgentChatAccordion agents={agents} teamId={teamId} />
+          </section>
+
           <section className="rounded-xl border bg-card overflow-hidden">
             <div className="border-b px-5 py-3 flex items-center justify-between bg-muted/20">
               <div className="flex items-center gap-2">
@@ -508,55 +488,38 @@ export default function TeamDetailPage() {
           </section>
         </div>
 
-        {/* Right Column - Agents & Activity */}
+        {/* Right Column - KPIs & Activity */}
         <div className="space-y-6">
-          {teamLead && (
-            <section>
-              <TeamLeaderChat teamId={teamId} leaderAgent={teamLead} />
-            </section>
-          )}
-
-          <section className="rounded-xl border bg-card">
-            <div className="border-b px-5 py-4 flex items-center justify-between bg-muted/20">
-              <div className="flex items-center gap-2">
-                <Bot className="size-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold">Squad</h3>
-              </div>
-              <Link href={`/teams/${teamId}/agents/new`} className="text-xs font-medium text-primary hover:underline">
-                Add Agent
-              </Link>
+          {/* Manager Actions Area */}
+          <section className="rounded-xl border bg-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <AlertCircle className="size-4 text-primary" />
+              <h2 className="text-sm font-semibold">Manager Actions</h2>
             </div>
-            <div className="p-2">
-              {otherAgents.filter(Boolean).map((agent) => {
-                if (!agent) return null;
-                const health = computeHealth(agent);
-                return (
-                  <Link
-                    key={agent.id}
-                    href={`/agents/${agent.id}`}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                  >
-                    <div className="relative">
-                      <div className="flex size-10 items-center justify-center rounded-full bg-muted text-lg">
-                        {agent.icon || "🤖"}
-                      </div>
-                      <span className={cn(
-                        "absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-card",
-                        health === "online" ? "bg-emerald-500" : health === "starting" ? "bg-amber-500 animate-pulse" : "bg-red-500"
-                      )} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-medium truncate">{agent.name}</span>
-                        {agent.type === "team_lead" && <Crown className="size-3 text-amber-500" />}
-                      </div>
-                      <span className="text-xs text-muted-foreground capitalize block truncate">
-                        {agent.type.replace("_", " ")}
-                      </span>
-                    </div>
-                  </Link>
-                );
-              })}
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Agents</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">{agents.filter(a => computeHealth(a) === "online").length}/{agents.length}</span>
+                  <span className="text-xs text-muted-foreground">Online</span>
+                </div>
+              </div>
+              <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Opened Requests</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold">{openedRequests.length}</span>
+                  <span className="text-xs text-muted-foreground">in pipeline</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
+                  <CheckCircle2 className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">All systems operational</p>
+                  <p className="text-xs text-muted-foreground">Your squad is ready for tasks.</p>
+                </div>
+              </div>
             </div>
           </section>
 
