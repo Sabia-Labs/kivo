@@ -69,12 +69,22 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
     // persists across pod restarts since openclaw stores its state on the PVC.
     const gatewayToken = randomBytes(32).toString("base64url");
 
+    const { agentRoles: agentRolesSchema } = await import("../db/schema");
+    const [role] = await db.select().from(agentRolesSchema).where(eq(agentRolesSchema.id, input.type));
+
     const [agent] = await db
       .insert(agents)
       .values({
         ...input,
         gatewayToken,
         k8sStatus: "pending",
+        soul: role?.soul,
+        identity: role?.identity,
+        agentsInstructions: role?.agentsInstructions,
+        userContext: role?.userContext,
+        memory: role?.memory,
+        toolsNotes: role?.toolsNotes,
+        heartbeat: role?.heartbeat,
       })
       .returning();
 
@@ -383,6 +393,47 @@ agentsRouter.post("/:id/command", async (req: Request, res: Response, next: Next
     );
 
     res.json(success({ queued: true, messageId, agentId: agent.id, sessionKey: effectiveSessionKey }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /agents/:id/memory ───────────────────────────────────────────────────
+// Appends a new memory item to the agent's dailyLogs for the current date.
+
+agentsRouter.post("/:id/memory", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { text } = req.body as { text?: string };
+    if (!text || typeof text !== "string") {
+      res.status(400).json(failure("text is required"));
+      return;
+    }
+
+    const [agent] = await db.select().from(agents).where(eq(agents.id, String(req.params.id)));
+    if (!agent) {
+      res.status(404).json(failure("Agent not found"));
+      return;
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+    const dailyLogs = (agent.dailyLogs as Record<string, string>) ?? {};
+    
+    if (dailyLogs[today]) {
+      dailyLogs[today] += `\n\n${text}`;
+    } else {
+      dailyLogs[today] = text;
+    }
+
+    const [updated] = await db
+      .update(agents)
+      .set({
+        dailyLogs,
+        updatedAt: new Date(),
+      })
+      .where(eq(agents.id, agent.id))
+      .returning();
+
+    res.json(success({ message: "Memory added successfully.", dailyLogs: updated.dailyLogs }));
   } catch (err) {
     next(err);
   }

@@ -43,12 +43,14 @@ render_profile_file() {
   safe_profile="$(escape_sed_replacement "${AGENT_PROFILE:-}")"
   safe_agent="$(escape_sed_replacement "${AGENT_NAME:-}")"
   safe_team="$(escape_sed_replacement "${TEAM_NAME:-}")"
+  safe_id="$(escape_sed_replacement "${AGENT_ID:-}")"
 
   sed \
     -e "s|\${AGENT_OPERATOR_NAME}|${safe_operator}|g" \
     -e "s|\${AGENT_PROFILE}|${safe_profile}|g" \
     -e "s|\${AGENT_NAME}|${safe_agent}|g" \
     -e "s|\${TEAM_NAME}|${safe_team}|g" \
+    -e "s|\${AGENT_ID}|${safe_id}|g" \
     "$src_file" >"$dst_file"
 }
 

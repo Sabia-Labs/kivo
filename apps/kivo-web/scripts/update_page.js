@@ -1,10 +1,12 @@
-"use client";
+const fs = require('fs');
+
+const code = `"use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Bot, Check, ChevronDown, ChevronRight, Brain,
+  ArrowLeft, Bot, Check, ChevronDown, ChevronRight,
   KeyRound, Loader2, Save, Send, Wifi, WifiOff, MessageSquare, Plus, X, Edit2
 } from "lucide-react";
 import { toast } from "sonner";
@@ -355,7 +357,7 @@ function ChatArea({ agentId, agentName, agentIcon, agentColor, userName, token, 
 
   const headers = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(token ? { Authorization: \`Bearer \${token}\` } : {}),
   }), [token]);
 
   useEffect(() => {
@@ -377,7 +379,7 @@ function ChatArea({ agentId, agentName, agentIcon, agentColor, userName, token, 
     const text = input.trim();
     if (!text || sending) return;
     setInput(""); setSending(true);
-    const tempId = `u-${Date.now()}`;
+    const tempId = \`u-\${Date.now()}\`;
     let messageIdInState = tempId;
     
     setMessages(p => [...p, { id: tempId, role: "user", content: text, createdAt: new Date().toISOString(), status: "sending" }]);
@@ -385,7 +387,7 @@ function ChatArea({ agentId, agentName, agentIcon, agentColor, userName, token, 
     try {
       let cid = conv?.id;
       if (!cid) {
-        const r = await fetch(`${API_BASE}/conversations`, {
+        const r = await fetch(\`\${API_BASE}/conversations\`, {
           method: "POST", headers: headers(),
           body: JSON.stringify({ agentId, counterpartType: "human", counterpartName: userName }),
         });
@@ -394,7 +396,7 @@ function ChatArea({ agentId, agentName, agentIcon, agentColor, userName, token, 
         setConv(nc); cid = nc.id;
       }
       
-      const res = await fetch(`${API_BASE}/conversations/${cid}/messages`, { method: "POST", headers: headers(), body: JSON.stringify({ role: "user", content: text }) });
+      const res = await fetch(\`\${API_BASE}/conversations/\${cid}/messages\`, { method: "POST", headers: headers(), body: JSON.stringify({ role: "user", content: text }) });
       const resultObj = await res.json().catch(() => ({}));
       
       const serverId = resultObj.data?.userMessage?.id;
@@ -414,7 +416,7 @@ function ChatArea({ agentId, agentName, agentIcon, agentColor, userName, token, 
 
       if (resultObj.data?.agentMessage) {
         setMessages(p => [...p, {
-          id: resultObj.data.agentMessage.id || `a-${Date.now()}`,
+          id: resultObj.data.agentMessage.id || \`a-\${Date.now()}\`,
           role: "assistant",
           content: resultObj.data.agentMessage.content,
           createdAt: resultObj.data.agentMessage.createdAt || new Date().toISOString()
@@ -514,12 +516,12 @@ export default function AgentPage() {
 
   const authHeaders = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(token ? { Authorization: \`Bearer \${token}\` } : {}),
   }), [token]);
 
   const fetchAgent = useCallback(async () => {
     try {
-      const r = await fetch(`${API_BASE}/agents/${agentId}`, { headers: authHeaders() });
+      const r = await fetch(\`\${API_BASE}/agents/\${agentId}\`, { headers: authHeaders() });
       if (r.ok) {
         const d = await r.json();
         const a: Agent = d.data;
@@ -545,7 +547,7 @@ export default function AgentPage() {
     if (!agent) return;
     setIsSaving(true);
     try {
-      const r = await fetch(`${API_BASE}/agents/${agentId}`, {
+      const r = await fetch(\`\${API_BASE}/agents/\${agentId}\`, {
         method: "PUT", headers: authHeaders(),
         body: JSON.stringify({
           name: updates.name ?? agent.name,
@@ -585,7 +587,7 @@ export default function AgentPage() {
     if (!editingBrainField || !agent) return;
     setIsSavingBrain(true);
     try {
-      const r = await fetch(`${API_BASE}/agents/${agentId}`, {
+      const r = await fetch(\`\${API_BASE}/agents/\${agentId}\`, {
         method: "PUT", headers: authHeaders(),
         body: JSON.stringify({
           metadata: { 
@@ -597,7 +599,7 @@ export default function AgentPage() {
       if (!r.ok) throw new Error();
       const d = await r.json();
       setAgent(d.data);
-      toast.success(`${editingBrainField.toUpperCase()} updated.`);
+      toast.success(\`\${editingBrainField.toUpperCase()} updated.\`);
       setEditingBrainField(null);
     } catch {
       toast.error("Failed to update brain.");
@@ -606,7 +608,7 @@ export default function AgentPage() {
 
   const saveTelegramToken = async (newToken: string) => {
     if (!agent) return;
-    const r = await fetch(`${API_BASE}/agents/${agentId}`, {
+    const r = await fetch(\`\${API_BASE}/agents/\${agentId}\`, {
       method: "PUT", headers: authHeaders(),
       body: JSON.stringify({
         metadata: { ...(agent.metadata ?? {}), telegramBotToken: newToken },
@@ -625,7 +627,7 @@ export default function AgentPage() {
   };
 
   const approveTelegramPairing = async (code: string) => {
-    const r = await fetch(`${API_BASE}/agents/${agentId}/telegram/approve-pairing`, {
+    const r = await fetch(\`\${API_BASE}/agents/\${agentId}/telegram/approve-pairing\`, {
       method: "POST", headers: authHeaders(),
       body: JSON.stringify({ code }),
     });
@@ -654,7 +656,7 @@ export default function AgentPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12 pb-32">
-      <Link href={agent.teamId ? `/teams/${agent.teamId}` : "/teams"} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground mb-6">
+      <Link href={agent.teamId ? \`/teams/\${agent.teamId}\` : "/teams"} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="size-3.5" />
         Back to Squad
       </Link>
@@ -761,7 +763,7 @@ export default function AgentPage() {
                      value={brainContent} 
                      onChange={e => setBrainContent(e.target.value)}
                      className="w-full min-h-[250px] p-4 text-sm font-mono bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y"
-                     placeholder={`Write the markdown content for ${editingBrainField.toUpperCase()} here...`}
+                     placeholder={\`Write the markdown content for \${editingBrainField.toUpperCase()} here...\`}
                    />
                    <div className="mt-3 flex justify-end">
                      <Button onClick={saveBrainContent} disabled={isSavingBrain}>
@@ -842,3 +844,6 @@ export default function AgentPage() {
     </div>
   );
 }
+\`;
+
+fs.writeFileSync('/Users/lourenco/code/kivo/apps/kivo-web/app/agents/[id]/page.tsx', code);

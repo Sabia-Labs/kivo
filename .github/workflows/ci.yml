@@ -58,6 +58,8 @@ jobs:
 
       - name: Typecheck
         working-directory: apps/kivo-api
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: pnpm typecheck
 
 
@@ -82,6 +84,8 @@ jobs:
 
       - name: Typecheck
         working-directory: apps/kivo-web
+        env:
+          NODE_OPTIONS: "--max-old-space-size=4096"
         run: npm run typecheck
 
 

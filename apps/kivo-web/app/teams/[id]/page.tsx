@@ -22,6 +22,8 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
+import { TeamLeaderChat } from "@/components/TeamLeaderChat";
+
 function computeHealth(a: Agent): HealthStatus {
   const k8s = a.k8sStatus;
   if (k8s === "running") return "online";
@@ -508,6 +510,12 @@ export default function TeamDetailPage() {
 
         {/* Right Column - Agents & Activity */}
         <div className="space-y-6">
+          {teamLead && (
+            <section>
+              <TeamLeaderChat teamId={teamId} leaderAgent={teamLead} />
+            </section>
+          )}
+
           <section className="rounded-xl border bg-card">
             <div className="border-b px-5 py-4 flex items-center justify-between bg-muted/20">
               <div className="flex items-center gap-2">
@@ -519,7 +527,7 @@ export default function TeamDetailPage() {
               </Link>
             </div>
             <div className="p-2">
-              {[teamLead, ...otherAgents].filter(Boolean).map((agent) => {
+              {otherAgents.filter(Boolean).map((agent) => {
                 if (!agent) return null;
                 const health = computeHealth(agent);
                 return (

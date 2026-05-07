@@ -91,16 +91,46 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
 
 
       // Create agents provided by the caller, or fall back to a default team lead.
+      // Fetch agent roles to copy profile fields
+      const { agentRoles: agentRolesSchema } = await import("../db/schema");
+      const allAgentRoles = await tx.select().from(agentRolesSchema);
+      const rolesMap = new Map(allAgentRoles.map(r => [r.id, r]));
+
       const agentInputs =
         input.agents && input.agents.length > 0
-          ? input.agents.map((a) => ({
-              teamId: team.id,
-              name: a.name,
-              type: a.type,
-              icon: a.icon,
-              gatewayToken: randomBytes(32).toString("base64url"),
-            }))
-          : [{ teamId: team.id, name: "Team Lead", type: "team_lead" as const, gatewayToken: randomBytes(32).toString("base64url") }];
+          ? input.agents.map((a) => {
+              const role = rolesMap.get(a.type);
+              return {
+                teamId: team.id,
+                name: a.name,
+                type: a.type,
+                icon: a.icon,
+                gatewayToken: randomBytes(32).toString("base64url"),
+                soul: role?.soul,
+                identity: role?.identity,
+                agentsInstructions: role?.agentsInstructions,
+                userContext: role?.userContext,
+                memory: role?.memory,
+                toolsNotes: role?.toolsNotes,
+                heartbeat: role?.heartbeat,
+              };
+            })
+          : (() => {
+              const role = rolesMap.get("team_lead");
+              return [{ 
+                teamId: team.id, 
+                name: "Team Lead", 
+                type: "team_lead" as const, 
+                gatewayToken: randomBytes(32).toString("base64url"),
+                soul: role?.soul,
+                identity: role?.identity,
+                agentsInstructions: role?.agentsInstructions,
+                userContext: role?.userContext,
+                memory: role?.memory,
+                toolsNotes: role?.toolsNotes,
+                heartbeat: role?.heartbeat,
+              }];
+            })();
 
       const createdAgents = await tx.insert(agents).values(agentInputs).returning();
 
@@ -477,3 +507,56 @@ teamsRouter.put("/:id/integrations/:provider", authMiddleware, async (req: Reque
 
 teamsRouter.use("/:teamId/requests", requestsRouter);
 teamsRouter.use("/:teamId/activities", activitiesRouter);
+
+// ── Team Leader Chat ──────────────────────────────────────────────────────────
+
+teamsRouter.get("/:id/leader-chat", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { leaderChatHistory } = await import("../db/schema");
+    const { desc, and } = await import("drizzle-orm");
+    const rows = await db
+      .select()
+      .from(leaderChatHistory)
+      .where(and(eq(leaderChatHistory.teamId, String(req.params.id)), eq(leaderChatHistory.userId, req.actor!.id)))
+      .orderBy(desc(leaderChatHistory.createdAt))
+      .limit(50);
+    
+    res.json(success(rows.reverse()));
+  } catch (err) { next(err); }
+});
+
+teamsRouter.post("/:id/leader-chat", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      res.status(400).json(failure("Message is required"));
+      return;
+    }
+    
+    const teamId = String(req.params.id);
+    const userId = req.actor!.id;
+    
+    // Save user message
+    const { leaderChatHistory } = await import("../db/schema");
+    await db.insert(leaderChatHistory).values({
+      teamId,
+      userId,
+      message,
+      role: "user"
+    });
+    
+    // Run Langgraph
+    const { runTeamLeaderChat } = await import("../workflows/teamLeaderChat");
+    const aiResponse = await runTeamLeaderChat(teamId, userId, message);
+    
+    // Save AI response
+    const [saved] = await db.insert(leaderChatHistory).values({
+      teamId,
+      userId,
+      message: aiResponse,
+      role: "assistant"
+    }).returning();
+    
+    res.json(success(saved));
+  } catch (err) { next(err); }
+});
