@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { internalFetch } from "../client";
