@@ -30,6 +30,27 @@ async function main() {
     }
   }
 
+  if (SEED_WORKSPACE_ID) {
+    console.log(`→ Ensuring Workspace ${SEED_WORKSPACE_ID} exists in Application Plane...`);
+    
+    // We need a userId to create a workspace. 
+    // Since we are seeding, we'll create a stable dummy user for the demo if not present.
+    const DEMO_USER_ID = "00000000-0000-0000-0000-000000000000";
+    
+    await db.insert(schema.users).values({
+      id: DEMO_USER_ID,
+      name: "Demo User",
+      email: "demo@kivo.ai"
+    }).onConflictDoNothing();
+
+    await db.insert(schema.workspaces).values({
+      id: SEED_WORKSPACE_ID,
+      userId: DEMO_USER_ID,
+      name: "Demo Workspace",
+      k8sNamespace: `kivo-ws-${SEED_WORKSPACE_ID.substring(0, 8)}`
+    }).onConflictDoNothing();
+  }
+
   console.log(`🌱 Seeding Kivo Application Plane${SEED_WORKSPACE_ID ? ` for Workspace: ${SEED_WORKSPACE_ID}` : ""}...\n`);
 
   // ── 0. Meta Configuration ───────────────────────────────────────────────────
