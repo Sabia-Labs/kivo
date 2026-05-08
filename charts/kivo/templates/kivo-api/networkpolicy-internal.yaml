@@ -38,4 +38,13 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.kivoApi.port }}
+    # ── Allow: admin-api → api (internal /internal/* routes only) ───────────
+    # The admin-api calls POST /internal/provision-workspace to sync tenants.
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-admin-api
+      ports:
+        - protocol: TCP
+          port: {{ .Values.kivoApi.port }}
 {{- end }}
