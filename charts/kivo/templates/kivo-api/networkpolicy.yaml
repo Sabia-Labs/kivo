@@ -39,9 +39,12 @@ spec:
 
     # Allow connection to RabbitMQ
     - to:
-        - podSelector:
+        - namespaceSelector:
             matchLabels:
-              app.kubernetes.io/name: rabbitmq
+              kubernetes.io/metadata.name: infra-messaging
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: rabbitmq
       ports:
         - protocol: TCP
           port: 5672
