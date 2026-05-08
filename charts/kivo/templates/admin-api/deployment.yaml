@@ -72,30 +72,6 @@ spec:
                   name: {{ .Values.adminApi.existingSecret }}
                   key: RESEND_API_KEY
                   optional: true
-            - name: OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.adminApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
-                  optional: true
-            - name: PLATFORM_OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.adminApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
-                  optional: true
-            - name: GEMINI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.adminApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
-                  optional: true
-            - name: PLATFORM_GEMINI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.adminApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
-                  optional: true
             {{- else if .Values.postgresql.embedded }}
             - name: DATABASE_URL_ADMIN
               value: {{ include "kivo.postgresql.adminConnectionString" . | quote }}
