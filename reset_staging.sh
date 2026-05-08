@@ -28,11 +28,23 @@ DB_BASE="postgres://postgres:$DB_PWD@localhost:5433"
 export DATABASE_URL="$DB_BASE/kivo"
 export DATABASE_URL_ADMIN="$DB_BASE/kivo_admin"
 
-echo "🏗 Running migrations for Kivo API (Application Plane)..."
+echo "🏗 Running migrations for both planes..."
 cd apps/kivo-api && pnpm install && pnpm db:migrate && cd ../..
+cd apps/admin-api && npm install && npm run db:migrate && cd ../..
 
-echo "🏗 Running migrations and SEED for Admin API (Control Plane)..."
-cd apps/admin-api && npm install && npm run db:migrate && npm run db:seed && cd ../..
+echo "🌱 Seeding Admin API (Control Plane)..."
+ADMIN_SEED_OUTPUT=$(cd apps/admin-api && npm run db:seed)
+echo "$ADMIN_SEED_OUTPUT"
+
+# Capturar o WORKSPACE_ID gerado
+WORKSPACE_ID=$(echo "$ADMIN_SEED_OUTPUT" | grep "Workspace created:" | awk '{print $4}')
+
+if [ -n "$WORKSPACE_ID" ]; then
+  echo "🌱 Seeding Kivo API (Application Plane) for Workspace $WORKSPACE_ID..."
+  cd apps/kivo-api && pnpm db:seed "$WORKSPACE_ID" && cd ../..
+else
+  echo "⚠️ Could not extract WORKSPACE_ID. Skipping Application Plane seed."
+fi
 
 echo "🛠 Creating/Updating separate Secret for Admin API..."
 NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@kivo-db-postgresql:5432/kivo_admin" | base64)
@@ -52,4 +64,4 @@ kubectl rollout restart deployment kivo-admin-api -n $NAMESPACE
 kubectl rollout restart deployment kivo-api -n $NAMESPACE
 
 kill $PF_PID
-echo "✨ STAGING RESET COMPLETE! Both planes are now in their own databases."
+echo "✨ STAGING RESET COMPLETE! Both planes are now in their own databases and seeded."
