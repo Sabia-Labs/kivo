@@ -1,4 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
+import { randomUUID } from "node:crypto";
 import { eq, and, gt } from "drizzle-orm";
 import { OAuth2Client } from "google-auth-library";
 import { Resend } from "resend";
@@ -77,6 +78,7 @@ authRouter.post("/otp/send", async (req, res, next) => {
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
     await db.insert(verificationCodes).values({
+      id: randomUUID(),
       email,
       code,
       expiresAt,
@@ -162,12 +164,19 @@ authRouter.post("/signup/verify", async (req, res, next) => {
     const result = await db.transaction(async (tx) => {
       const [user] = await tx
         .insert(users)
-        .values({ email: input.email })
+        .values({ 
+          id: randomUUID(),
+          email: input.email 
+        })
         .returning();
 
       const [workspace] = await tx
         .insert(workspaces)
-        .values({ userId: user.id, name: input.workspaceName })
+        .values({ 
+          id: randomUUID(),
+          userId: user.id, 
+          name: input.workspaceName 
+        })
         .returning();
 
       const [updatedWorkspace] = await tx
@@ -262,8 +271,16 @@ authRouter.get("/google/callback", async (req, res) => {
     if (!user) {
       isNewUser = true;
       const result = await db.transaction(async (tx) => {
-        const [newUser] = await tx.insert(users).values({ email }).returning();
-        const [newWorkspace] = await tx.insert(workspaces).values({ userId: newUser.id, name: email.split('@')[0] }).returning();
+        const [newUser] = await tx.insert(users).values({ 
+          id: randomUUID(),
+          email 
+        }).returning();
+
+        const [newWorkspace] = await tx.insert(workspaces).values({ 
+          id: randomUUID(),
+          userId: newUser.id, 
+          name: email.split('@')[0] 
+        }).returning();
         
         await tx.update(workspaces)
           .set({ k8sNamespace: `kivo-ws-${newWorkspace.id.substring(0, 8)}` })
