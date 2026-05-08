@@ -17,15 +17,17 @@ Kivo separates the platform into two distinct planes, enabling a **Cell-based Ar
 The **Control Plane** manages global state, user identities, and marketing. It is the entry point for administrative operations.
 - **Frontend:** `admin-web` (www.kivo.com) - Marketing, Docs, Login, Signup.
 - **Backend:** `admin-api` (Port 4001) - Global registry.
-- **Database:** `kivo_admin` (Global).
+- **Database:** `kivo_admin` (Global Control Plane DB).
 - **Namespace:** `kivo-admin`.
 
 ### 2. Application Plane (App/Regional)
 The **Application Plane** manages the actual execution of agent teams. These "cells" can be deployed in different regions to stay close to customer data.
 - **Frontend:** `kivo-web` (app.kivo.com or customer.kivo.com) - Client Portal.
 - **Backend:** `api` (Port 4000) - Team & Task logic.
-- **Database:** `kivo` (Tenant-specific).
+- **Database:** `kivo` (Regional/Tenant-specific Application DB).
 - **Namespace:** `kivo`.
+
+> **Note on Shared Infrastructure:** In staging or small local deployments, both `kivo_admin` and `kivo` may reside on the same PostgreSQL instance as separate logical databases to optimize costs. However, they are accessed via distinct connection strings (`DATABASE_URL` vs `DATABASE_URL_ADMIN`) to maintain architectural decoupling.
 
 ## Core Concepts
 

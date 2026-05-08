@@ -244,19 +244,38 @@ tilt down
 
 ### Navigating the database (Drizzle Studio)
 
-Drizzle ships a local web GUI — **Drizzle Studio** — that lets you browse tables, run queries, and inspect data without needing a SQL client.
+Drizzle ships a local web GUI — **Drizzle Studio** — that lets you browse tables, run queries, and inspect data.
+
+#### Local Development (Tilt)
+
+When using Tilt, both databases reside on `localhost:5432`.
 
 ```bash
-# Open Drizzle Studio (runs against the local k8s PostgreSQL via port-forward)
+# Browse Application Plane (Teams, Tasks, Agents)
 cd apps/kivo-api
 pnpm drizzle-kit studio
+
+# Browse Control Plane (Users, Workspaces, OTP Codes)
+cd apps/admin-api
+DATABASE_URL_ADMIN="postgres://kivo:kivo@localhost:5432/kivo_admin" npx drizzle-kit studio
 ```
 
-This starts the studio at **https://local.drizzle.studio** and opens it in your browser automatically.
+#### Staging Environment
 
-> **Note:** The `DATABASE_URL` in `apps/kivo-api/.env` must point to the running database. When using Tilt, PostgreSQL is port-forwarded to `localhost:5432` automatically, so no changes are needed.
+To browse Staging data, first get the credentials and start a port-forward:
 
-Alternatively, connect to the database directly via `psql`:
+```bash
+# 1. Start port-forward
+kubectl port-forward svc/kivo-db-postgresql 5432:5432 -n kivo-staging
+
+# 2. Browse Staging Control Plane (kivo_admin)
+cd apps/admin-api
+DATABASE_URL_ADMIN="postgresql://postgres:[PASSWORD]@localhost:5432/kivo_admin" npx drizzle-kit studio
+```
+
+> **Architecture Tip:** Always check the `DATABASE_URL` (Application Plane) vs `DATABASE_URL_ADMIN` (Control Plane) to ensure you are looking at the correct domain.
+
+Alternatively, connect directly via `psql`:
 
 ```bash
 # Interactive psql session inside the running pod

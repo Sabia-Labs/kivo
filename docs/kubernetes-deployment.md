@@ -59,6 +59,14 @@ Persistence is managed via:
 - **RabbitMQ StatefulSet:** PVCs for message queues and metadata.
 - **Agent Pods:** Each agent pod gets a dedicated PVC for its local workspace and memory state (managed by the controller).
 
+## Database Secrets
+
+The chart expects two separate secrets for database connectivity:
+- `kivo-db-credentials`: For the Application Plane (`DATABASE_URL` for `kivo` DB).
+- `kivo-admin-db-credentials`: For the Control Plane (`DATABASE_URL_ADMIN` for `kivo_admin` DB).
+
+In staging, these are typically provisioned to point to the same PostgreSQL instance but different logical databases.
+
 ## Troubleshooting
 
 ```bash
@@ -68,4 +76,8 @@ kubectl get pods -n kivo-admin
 
 # Check the controller logs if agents aren't provisioning
 kubectl logs -n kivo deployment/kivo-controller
+
+# TOTAL RESET of Staging (Databases + Architecture Sync)
+# ☢ WARNING: Wipes all data.
+make staging-reset
 ```
