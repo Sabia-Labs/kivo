@@ -95,7 +95,7 @@ authRouter.post("/otp/send", async (req, res, next) => {
     } else {
       console.log("[auth/otp/send] Sending OTP via Resend", { email });
       const resendResponse = await resend.emails.send({
-        from: "Kivo <noreply@kivo.app>",
+        from: "Sabia Labs <noreply@auth.sabialabs.de>",
         to: email,
         subject: "Your Kivo Login Code",
         html: `<p>Your login code is: <strong>${code}</strong></p><p>It will expire in 15 minutes.</p>`,
