@@ -135,10 +135,15 @@ authRouter.post("/login/verify", async (req, res, next) => {
 
     const [workspace] = await db.select().from(workspaces).where(eq(workspaces.userId, user.id));
 
-    const token = signToken({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
+    const token = signToken({ 
+      userId: user.id, 
+      email: user.email, 
+      name: user.name || user.email.split('@')[0],
+      isAdmin: user.isAdmin 
+    });
     res.json(success({
       token,
-      user: { id: user.id, email: user.email, isAdmin: user.isAdmin },
+      user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin },
       teamId: workspace?.id || null
     }));
   } catch (err) {
@@ -166,7 +171,8 @@ authRouter.post("/signup/verify", async (req, res, next) => {
         .insert(users)
         .values({ 
           id: randomUUID(),
-          email: input.email 
+          email: input.email,
+          name: input.email.split('@')[0]
         })
         .returning();
 
@@ -191,7 +197,7 @@ authRouter.post("/signup/verify", async (req, res, next) => {
     await db.delete(verificationCodes).where(eq(verificationCodes.email, input.email));
 
     // Sync with kivo-api (application plane)
-    const KIVO_API_INTERNAL_URL = process.env.KIVO_API_INTERNAL_URL ?? "http://kivo-api.kivo:4000";
+    const KIVO_API_INTERNAL_URL = process.env.KIVO_API_INTERNAL_URL ?? "http://kivo-api:4000";
     try {
       await fetch(`${KIVO_API_INTERNAL_URL}/internal/provision-workspace`, {
         method: "POST",
@@ -199,7 +205,7 @@ authRouter.post("/signup/verify", async (req, res, next) => {
         body: JSON.stringify({
           userId: result.user.id,
           userEmail: result.user.email,
-          userName: result.user.email.split("@")[0],
+          userName: result.user.name,
           workspaceId: result.workspace.id,
           workspaceName: result.workspace.name,
         }),
@@ -208,10 +214,15 @@ authRouter.post("/signup/verify", async (req, res, next) => {
       console.error("[admin-api] Critical: Failed to sync with kivo-api:", err);
     }
 
-    const token = signToken({ userId: result.user.id, email: result.user.email, isAdmin: result.user.isAdmin });
+    const token = signToken({ 
+      userId: result.user.id, 
+      email: result.user.email, 
+      name: result.user.name || result.user.email.split('@')[0],
+      isAdmin: result.user.isAdmin 
+    });
     res.status(201).json(success({
       token,
-      user: { id: result.user.id, email: result.user.email },
+      user: { id: result.user.id, email: result.user.email, name: result.user.name },
       workspace: { id: result.workspace.id, name: result.workspace.name }
     }));
   } catch (err) {
@@ -252,20 +263,19 @@ authRouter.get("/google/callback", async (req, res) => {
     const { tokens } = await googleClient.getToken(code);
     googleClient.setCredentials(tokens);
 
-    const userInfoResponse = await googleClient.request<{email: string}>({
+    const userInfoResponse = await googleClient.request<{email: string, name: string}>({
       url: "https://www.googleapis.com/oauth2/v3/userinfo",
     });
 
     const email = userInfoResponse.data.email;
+    const name = userInfoResponse.data.name;
     if (!email) {
       return res.status(400).send("No email found from Google.");
     }
 
     let [user] = await db.select().from(users).where(eq(users.email, email));
     
-    // If it's a new user, create them (Note: we don't have a workspace name yet, 
-    // we might need to handle this differently in a real app, 
-    // e.g. redirect to a "complete profile" page. For now we use a default workspace name)
+    // If it's a new user, create them
     let workspaceId = null;
     let isNewUser = false;
     if (!user) {
@@ -273,7 +283,8 @@ authRouter.get("/google/callback", async (req, res) => {
       const result = await db.transaction(async (tx) => {
         const [newUser] = await tx.insert(users).values({ 
           id: randomUUID(),
-          email 
+          email,
+          name: name || email.split('@')[0]
         }).returning();
 
         const [newWorkspace] = await tx.insert(workspaces).values({ 
@@ -300,7 +311,7 @@ authRouter.get("/google/callback", async (req, res) => {
           body: JSON.stringify({
             userId: user.id,
             userEmail: user.email,
-            userName: user.email.split("@")[0],
+            userName: user.name, // Using real name here!
             workspaceId: workspaceId,
             workspaceName: result.workspace.name,
           }),
@@ -313,7 +324,12 @@ authRouter.get("/google/callback", async (req, res) => {
       workspaceId = workspace?.id;
     }
 
-    const token = signToken({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
+    const token = signToken({ 
+      userId: user.id, 
+      email: user.email, 
+      name: user.name || user.email.split('@')[0],
+      isAdmin: user.isAdmin 
+    });
     
     // Redirect to frontend with token
     const ADMIN_WEB_URL = process.env.ADMIN_WEB_URL || "http://localhost:3001";
