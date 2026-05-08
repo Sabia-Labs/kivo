@@ -82,14 +82,28 @@ authRouter.post("/otp/send", async (req, res, next) => {
       expiresAt,
     });
 
+    console.log("[auth/otp/send] Verification code generated", {
+      email,
+      expiresAt: expiresAt.toISOString(),
+      deliveryMode:
+        process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY ? "console" : "resend",
+    });
+
     if (process.env.NODE_ENV === "development" && !process.env.RESEND_API_KEY) {
       console.log(`\n\n🔑 [DEV MODE] OTP Code for ${email}: ${code}\n\n`);
+      console.log("[auth/otp/send] DEV delivery complete", { email });
     } else {
-      await resend.emails.send({
+      console.log("[auth/otp/send] Sending OTP via Resend", { email });
+      const resendResponse = await resend.emails.send({
         from: "Kivo <noreply@kivo.app>",
         to: email,
         subject: "Your Kivo Login Code",
         html: `<p>Your login code is: <strong>${code}</strong></p><p>It will expire in 15 minutes.</p>`,
+      });
+      console.log("[auth/otp/send] Resend response", {
+        email,
+        data: resendResponse.data,
+        error: resendResponse.error,
       });
     }
 
@@ -198,6 +212,11 @@ authRouter.post("/signup/verify", async (req, res, next) => {
 
 // ── GET /auth/google ─────────────────────────────────────────────────────────
 authRouter.get("/google", (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.error("[auth/google] Missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET env vars");
+    return res.status(500).send("Google OAuth is not configured");
+  }
+
   const url = googleClient.generateAuthUrl({
     access_type: "offline",
     scope: ["email", "profile"],
@@ -209,7 +228,18 @@ authRouter.get("/google", (req, res) => {
 // ── GET /auth/google/callback ────────────────────────────────────────────────
 authRouter.get("/google/callback", async (req, res) => {
   try {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      console.error("[auth/google/callback] Missing GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET env vars");
+      return res.status(500).send("Google OAuth is not configured");
+    }
+
     const code = req.query.code as string;
+    if (!code) {
+      console.error("[auth/google/callback] Missing authorization code", {
+        query: req.query,
+      });
+      return res.status(400).send("Missing Google authorization code");
+    }
     const { tokens } = await googleClient.getToken(code);
     googleClient.setCredentials(tokens);
 
@@ -272,7 +302,12 @@ authRouter.get("/google/callback", async (req, res) => {
     const ADMIN_WEB_URL = process.env.ADMIN_WEB_URL || "http://localhost:3001";
     res.redirect(`${ADMIN_WEB_URL}/auth/callback?token=${token}&userId=${user.id}&workspaceId=${workspaceId || ""}&isNew=${isNewUser}`);
   } catch (err) {
-    console.error("Google Auth Error:", err);
+    console.error("[auth/google/callback] Google Auth Error:", {
+      error: err,
+      redirectUri: process.env.GOOGLE_REDIRECT_URI,
+      hasClientId: Boolean(process.env.GOOGLE_CLIENT_ID),
+      hasClientSecret: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+    });
     res.status(500).send("Authentication failed");
   }
 });
