@@ -1,20 +1,30 @@
 #!/bin/bash
 # ☢ WARNING: THIS SCRIPT WIPES ALL STAGING DATABASES (kivo & kivo_admin)
 # It ensures the architecture is correctly split between Control and Application Plane.
+# UPDATED: Now also cleans up all ephemeral kivo-ws-* namespaces.
 
 set -e
 
 NAMESPACE="kivo-staging"
 POSTGRES_POD="kivo-db-postgresql-0"
 
+echo "🧹 Cleaning up workspace namespaces (kivo-ws-*)..."
+kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found || true
+
+echo "📉 Scaling down apps to release DB locks..."
+kubectl scale deployment kivo-api kivo-admin-api kivo-web kivo-admin-web -n $NAMESPACE --replicas=0
+echo "Waiting for pods to terminate..."
+sleep 10
+
 echo "🔐 Extracting Postgres credentials from cluster..."
 DB_PWD=$(kubectl get secret kivo-db-credentials -n $NAMESPACE -o jsonpath='{.data.DATABASE_URL}' | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g')
 
 echo "🧹 Dropping and recreating databases (executing inside pod)..."
 # Usamos kubectl exec para rodar o psql dentro do pod do Postgres
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo;"
+# Forçamos o drop mesmo que haja conexões residuais (embora o scale down deva evitar isso)
+kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo WITH (FORCE);"
 kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "CREATE DATABASE kivo;"
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo_admin;"
+kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo_admin WITH (FORCE);"
 kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "CREATE DATABASE kivo_admin;"
 
 # Agora precisamos do port-forward apenas para as migrações que rodam LOCALMENTE
@@ -32,7 +42,21 @@ echo "🏗 Running migrations for Kivo API (Application Plane)..."
 cd apps/kivo-api && pnpm install && pnpm db:migrate && cd ../..
 
 echo "🏗 Running migrations and SEED for Admin API (Control Plane)..."
-cd apps/admin-api && npm install && npm run db:migrate && npm run db:seed && cd ../..
+cd apps/admin-api && npm install && npm run db:migrate
+ADMIN_SEED_OUTPUT=$(npm run db:seed)
+echo "$ADMIN_SEED_OUTPUT"
+
+# Extract Workspace ID from seed output (e.g. "✓ Workspace created: <uuid>")
+WORKSPACE_ID=$(echo "$ADMIN_SEED_OUTPUT" | grep "Workspace created:" | awk '{print $4}')
+
+cd ../..
+
+if [ -z "$WORKSPACE_ID" ]; then
+  echo "⚠️ Could not extract WORKSPACE_ID from Admin seed. Skipping Kivo API seed."
+else
+  echo "🏗 Running SEED for Kivo API (Application Plane) for Workspace $WORKSPACE_ID..."
+  cd apps/kivo-api && pnpm tsx seed/seed.ts "$WORKSPACE_ID" && cd ../..
+fi
 
 echo "🛠 Creating/Updating separate Secret for Admin API..."
 NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@kivo-db-postgresql:5432/kivo_admin" | base64)
@@ -47,9 +71,8 @@ data:
   DATABASE_URL_ADMIN: $NEW_URL_ADMIN
 EOF
 
-echo "🔄 Restarting pods to apply the new split architecture..."
-kubectl rollout restart deployment kivo-admin-api -n $NAMESPACE
-kubectl rollout restart deployment kivo-api -n $NAMESPACE
+echo "📈 Scaling up apps..."
+kubectl scale deployment kivo-api kivo-admin-api kivo-web kivo-admin-web -n $NAMESPACE --replicas=1
 
 kill $PF_PID
-echo "✨ STAGING RESET COMPLETE! Both planes are now in their own databases."
+echo "✨ STAGING RESET COMPLETE! Both planes are now in their own databases and K8s resources are clean."

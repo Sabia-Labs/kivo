@@ -23,7 +23,15 @@ function AuthCallbackContent() {
       // Decode JWT to get user info
       let user = { id: userId, email: "user@example.com", name: "Kivo User", isAdmin: false };
       try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
+        // Decode JWT payload handling UTF-8 characters correctly
+        const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const payload = JSON.parse(jsonPayload);
         user = {
           id: userId,
           email: payload.email || "user@example.com",
