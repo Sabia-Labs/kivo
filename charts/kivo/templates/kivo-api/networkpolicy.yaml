@@ -37,6 +37,22 @@ spec:
         - protocol: TCP
           port: 53
 
+    # Allow connection to RabbitMQ
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rabbitmq
+      ports:
+        - protocol: TCP
+          port: 5672
+        - protocol: TCP
+          port: 15672
+
+    # Allow connection to Kubernetes API (for provisioning agents/namespaces)
+    - ports:
+        - protocol: TCP
+          port: 443
+
     {{- if .Values.postgresql.embedded }}
     # Allow connection to embedded PostgreSQL
     - to:
