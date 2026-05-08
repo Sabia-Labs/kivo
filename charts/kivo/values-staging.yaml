@@ -8,7 +8,7 @@ kivoApi:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-api
-    tag: "f138b17b18c050098a7b1619e5c9ca59f69facfe" # injected by CI
+    tag: "2ccb1a9340a8059c849033c2477ad4dc74a1839c" # injected by CI
     pullPolicy: Always
   resources:
     requests:
@@ -28,7 +28,7 @@ kivoWeb:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-web
-    tag: "f138b17b18c050098a7b1619e5c9ca59f69facfe"
+    tag: "2ccb1a9340a8059c849033c2477ad4dc74a1839c"
     pullPolicy: Always
   resources:
     requests:
@@ -44,7 +44,7 @@ adminApi:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-api
-    tag: "f138b17b18c050098a7b1619e5c9ca59f69facfe"
+    tag: "2ccb1a9340a8059c849033c2477ad4dc74a1839c"
     pullPolicy: Always
   resources:
     requests:
@@ -56,13 +56,14 @@ adminApi:
     CORS_ORIGIN: "https://www.kivo-staging.34-141-70-109.nip.io"
     ADMIN_WEB_URL: "https://www.kivo-staging.34-141-70-109.nip.io"
     GOOGLE_REDIRECT_URI: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api/auth/google/callback"
+    KIVO_API_INTERNAL_URL: "http://kivo-api:4000"
   existingSecret: kivo-api-staging-secret
   databaseSecret: kivo-admin-db-credentials
 adminWeb:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-web
-    tag: "f138b17b18c050098a7b1619e5c9ca59f69facfe"
+    tag: "2ccb1a9340a8059c849033c2477ad4dc74a1839c"
     pullPolicy: Always
   resources:
     requests:
@@ -78,7 +79,7 @@ controller:
   replicaCount: 1
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
-    tag: "f138b17b18c050098a7b1619e5c9ca59f69facfe"
+    tag: "2ccb1a9340a8059c849033c2477ad4dc74a1839c"
     pullPolicy: Always
   agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
   consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
