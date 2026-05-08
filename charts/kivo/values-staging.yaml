@@ -21,6 +21,11 @@ kivoApi:
     NODE_ENV: production
     PORT: "4000"
     CORS_ORIGIN: "https://app.kivo-staging.34-141-70-109.nip.io"
+    RABBITMQ_MANAGEMENT_URL: "http://kivo-rabbit.infra-messaging.svc.cluster.local:15672"
+    RABBITMQ_AMQP_HOST: "kivo-rabbit.infra-messaging.svc.cluster.local"
+    RABBITMQ_AMQP_PORT: "5672"
+    RABBITMQ_ADMIN_USER: "default_user_NNXCNkR1HkmQ1haCg-8"
+    RABBITMQ_ADMIN_PASSWORD: "NMbnC7eBcarhFHXgRi2B3WMMdBWUnROI"
   existingSecret: kivo-api-staging-secret
   databaseSecret: kivo-db-credentials
   runMigrations: false
