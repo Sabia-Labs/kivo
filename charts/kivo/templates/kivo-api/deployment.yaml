@@ -54,6 +54,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: JWT_SECRET
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RESEND_API_KEY
+                  optional: true
             {{- else if .Values.postgresql.embedded }}
             - name: DATABASE_URL
               value: {{ include "kivo.postgresql.connectionString" . | quote }}
@@ -93,6 +99,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: JWT_SECRET
+            - name: RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RESEND_API_KEY
+                  optional: true
             {{- else if .Values.postgresql.embedded }}
             {{- /* Local: DATABASE_URL built from embedded PostgreSQL values */}}
             {{- /* JWT_SECRET is already injected above via the env range loop */}}
