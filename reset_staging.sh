@@ -38,25 +38,11 @@ DB_BASE="postgres://postgres:$DB_PWD@localhost:5433"
 export DATABASE_URL="$DB_BASE/kivo"
 export DATABASE_URL_ADMIN="$DB_BASE/kivo_admin"
 
-echo "🏗 Running migrations for Kivo API (Application Plane)..."
-cd apps/kivo-api && pnpm install && pnpm db:migrate && cd ../..
+echo "🏗 Running migrations and SEED for Kivo API (Application Plane)..."
+cd apps/kivo-api && pnpm install && pnpm db:migrate && pnpm db:seed && cd ../..
 
 echo "🏗 Running migrations and SEED for Admin API (Control Plane)..."
-cd apps/admin-api && npm install && npm run db:migrate
-ADMIN_SEED_OUTPUT=$(npm run db:seed)
-echo "$ADMIN_SEED_OUTPUT"
-
-# Extract Workspace ID from seed output (e.g. "✓ Workspace created: <uuid>")
-WORKSPACE_ID=$(echo "$ADMIN_SEED_OUTPUT" | grep "Workspace created:" | awk '{print $4}')
-
-cd ../..
-
-if [ -z "$WORKSPACE_ID" ]; then
-  echo "⚠️ Could not extract WORKSPACE_ID from Admin seed. Skipping Kivo API seed."
-else
-  echo "🏗 Running SEED for Kivo API (Application Plane) for Workspace $WORKSPACE_ID..."
-  cd apps/kivo-api && pnpm tsx seed/seed.ts "$WORKSPACE_ID" && cd ../..
-fi
+cd apps/admin-api && npm install && npm run db:migrate && npm run db:seed && cd ../..
 
 echo "🛠 Creating/Updating separate Secret for Admin API..."
 NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@kivo-db-postgresql:5432/kivo_admin" | base64)
