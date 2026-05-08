@@ -57,7 +57,7 @@ adminApi:
     ADMIN_WEB_URL: "https://www.kivo-staging.34-141-70-109.nip.io"
     GOOGLE_REDIRECT_URI: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api/auth/google/callback"
   existingSecret: kivo-api-staging-secret
-  databaseSecret: kivo-db-credentials
+  databaseSecret: kivo-admin-db-credentials
 adminWeb:
   replicaCount: 1
   image:
