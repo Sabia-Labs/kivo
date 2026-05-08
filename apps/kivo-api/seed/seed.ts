@@ -1,8 +1,8 @@
 /**
  * Kivo API — Seed Script (Application Plane)
  *
- * This script seeds a specific workspace with demo teams and agents.
- * The workspace and user must already exist in the Admin API database.
+ * This script seeds meta configuration: Team Types, Meta Capabilities, and Agent Roles.
+ * It does NOT seed any specific workspace data (teams, agents, tasks).
  */
 
 import "dotenv/config";
@@ -11,7 +11,6 @@ import path from "path";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
-import { eq } from "drizzle-orm";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL ?? "postgres://kivo:kivo@localhost:5432/kivo",
@@ -19,18 +18,8 @@ const pool = new Pool({
 
 const db = drizzle(pool, { schema });
 
-// Default workspace ID for seeding if not provided via env or arg
-let SEED_WORKSPACE_ID = process.argv[2];
-
 async function main() {
-  if (!SEED_WORKSPACE_ID) {
-    const defaultWorkspace = await db.query.workspaces.findFirst();
-    if (defaultWorkspace) {
-      SEED_WORKSPACE_ID = defaultWorkspace.id;
-    }
-  }
-
-  console.log(`🌱 Seeding Kivo Application Plane${SEED_WORKSPACE_ID ? ` for Workspace: ${SEED_WORKSPACE_ID}` : ""}...\n`);
+  console.log("🌱 Seeding Kivo Application Plane (Meta Configuration Only)...\n");
 
   // ── 0. Meta Configuration ───────────────────────────────────────────────────
   console.log("→ Seeding Team Types...");
@@ -61,10 +50,9 @@ async function main() {
     { teamTypeId: "starter", name: "Translate text", identifier: "translate-text", instructions: "Translate text while preserving meaning, tone, and professional context.", inputsDescription: "Source text, source language if known, target language, tone preference, and context.", expectedOutputsDescription: "Translated text, optionally with notes about nuance or alternative phrasing." },
     { teamTypeId: "starter", name: "Research a topic", identifier: "research-a-topic", instructions: "Research a topic and produce a structured explanation or recommendation.", inputsDescription: "Topic, question, desired depth, constraints, and preferred format.", expectedOutputsDescription: "Structured research summary, findings, trade-offs, recommendation, and sources if available." },
     { teamTypeId: "starter", name: "Create a plan", identifier: "create-a-plan", instructions: "Turn a goal into a practical plan with steps, risks, and milestones.", inputsDescription: "Goal, deadline, constraints, resources, and success criteria.", expectedOutputsDescription: "Action plan, milestones, assumptions, risks, and next steps." }
-
   ];
   
-  // Clear existing to prevent duplicates on re-runs (since IDs are generated UUIDs)
+  // Clear existing meta capabilities to prevent duplicates
   await db.delete(schema.teamMetaCapabilities);
   
   for (const cap of teamMetaCapabilitiesData) {
@@ -103,7 +91,6 @@ async function main() {
   }));
 
   for (const role of agentRoles) {
-    // Upsert mechanism to ensure fields get updated if they already existed without these fields
     await db.insert(schema.agentRoles).values(role).onConflictDoUpdate({
       target: schema.agentRoles.id,
       set: {
@@ -122,12 +109,10 @@ async function main() {
   console.log("→ Seeding Team Type Roles...");
   const teamTypeRoles = [
     { teamTypeId: "starter", agentRoleId: "team_lead", isLeader: true },
-    
     { teamTypeId: "engineering", agentRoleId: "team_lead", isLeader: true },
     { teamTypeId: "engineering", agentRoleId: "software_engineer", isLeader: false },
     { teamTypeId: "engineering", agentRoleId: "software_architect", isLeader: false },
     { teamTypeId: "engineering", agentRoleId: "product_manager", isLeader: false },
-    
     { teamTypeId: "customer_support", agentRoleId: "team_lead", isLeader: true },
     { teamTypeId: "customer_support", agentRoleId: "support_responder", isLeader: false },
     { teamTypeId: "customer_support", agentRoleId: "support_analist", isLeader: false },
@@ -136,89 +121,6 @@ async function main() {
     await db.insert(schema.teamTypeRoles).values(ttr).onConflictDoNothing();
   }
   console.log("  ✓ Team type roles seeded.\n");
-
-  if (!SEED_WORKSPACE_ID) {
-    console.log("⚠️ No workspace found. Skipping demo team and agents seed.");
-    console.log("\n✅ Application seed complete!\n");
-    return;
-  }
-
-  // ── 1. Team ──────────────────────────────────────────────────────────────────
-  console.log("→ Team: Product Delivery");
-  let team = await db.query.teams.findFirst({ 
-    where: (t, { eq, and }) => and(eq(t.workspaceId, SEED_WORKSPACE_ID), eq(t.name, "Product Delivery")) 
-  });
-  
-  if (!team) {
-    const [row] = await db.insert(schema.teams).values({
-      workspaceId: SEED_WORKSPACE_ID,
-      name: "Product Delivery",
-      identifierPrefix: "PRD",
-      mission: "Ship high-quality product increments on time by coordinating engineering, design, and business stakeholders.",
-    }).returning();
-    team = row;
-    console.log(`  ✓ Created: Product Delivery (${team.id})`);
-
-
-
-    // Copy meta capabilities to the team capabilities
-    const templateCapabilities = await db.query.teamMetaCapabilities.findMany({
-      where: (c, { eq }) => eq(c.teamTypeId, "engineering")
-    });
-
-    if (templateCapabilities.length > 0) {
-      await db.insert(schema.teamCapabilities).values(
-        templateCapabilities.map(cap => ({
-          teamId: team!.id,
-          name: cap.name,
-          identifier: cap.identifier,
-          instructions: cap.instructions,
-          inputsDescription: cap.inputsDescription,
-          expectedOutputsDescription: cap.expectedOutputsDescription,
-          isFavorite: cap.isFavorite,
-        }))
-      );
-    }
-  } else {
-    console.log(`  ↩ Already exists: Product Delivery (${team.id})`);
-  }
-  console.log();
-
-  // ── 2. Agents ────────────────────────────────────────────────────────────────
-  console.log("→ Agents...");
-  const agentDefs = [
-    { name: "Team Lead",  type: "team_lead" as const, icon: "👑" },
-    { name: "Alex Zhao", type: "software_engineer" as const, icon: "👨‍💻" },
-    { name: "Mei Lin",   type: "product_manager"   as const, icon: "📋" },
-  ];
-
-  for (const def of agentDefs) {
-    let agent = await db.query.agents.findFirst({ 
-      where: (a, { eq, and }) => and(eq(a.teamId, team!.id), eq(a.name, def.name)) 
-    });
-    if (!agent) {
-      const [row] = await db.insert(schema.agents).values({ teamId: team!.id, ...def }).returning();
-      agent = row;
-      console.log(`  ✓ Created: ${def.name} (${agent.id})`);
-    } else {
-      console.log(`  ↩ Already exists: ${def.name} (${agent.id})`);
-    }
-  }
-
-  // ── 3. Tasks ─────────────────────────────────────────────────────────────────
-  console.log("\n→ Tasks...");
-  let task1 = await db.query.tasks.findFirst({ 
-    where: (t, { eq, and }) => and(eq(t.teamId, team!.id), eq(t.title, "Initial System Setup")) 
-  });
-  if (!task1) {
-    const [row] = await db.insert(schema.tasks).values({
-      teamId: team!.id,
-      title: "Initial System Setup",
-      plan: "Configure the repository and initial settings.",
-    }).returning();
-    task1 = row;
-    console.log(`  ✓ Created Task: ${task1.id}`);
-  }
 
   console.log("\n✅ Application seed complete!\n");
 }
