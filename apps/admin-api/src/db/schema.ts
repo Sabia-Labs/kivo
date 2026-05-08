@@ -4,6 +4,7 @@ import { pgTable, uuid, text, timestamp, boolean, jsonb } from "drizzle-orm/pg-c
 // Only Admin can create/manage users via Control Plane
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name"),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"), // Nullable for SSO / OTP users
   isAdmin: boolean("is_admin").notNull().default(false),
