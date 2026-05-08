@@ -96,6 +96,20 @@ Both databases are port-forwarded automatically by Tilt to `localhost:5432`.
 make staging-reset
 ```
 
+### 4. Connectivity & Network Policies
+**Symptom:** Logs show `ConnectTimeoutError` or `UND_ERR_CONNECT_TIMEOUT` when one service tries to call another.
+**Reason:** Kubernetes `NetworkPolicies` are likely blocking the traffic.
+
+#### Ingress Issues (Incoming)
+- If the **source** service (e.g., `admin-api`) logs a timeout, check the **target** service's (`kivo-api`) Ingress rules.
+- Check policies: `kubectl get networkpolicy -n kivo-staging`
+- Ensure the source pod is allowed in the ingress rules of the target pod.
+
+#### Egress Issues (Outgoing)
+- If a service fails to reach the **Kubernetes API** (e.g., `10.30.0.1:443`) or **RabbitMQ**, check its **Egress** rules.
+- Symptom: `Error: connect ETIMEDOUT 10.30.0.1:443` or `RabbitMQ Management API not ready`.
+- Fix: Ensure the `egress` section of the `NetworkPolicy` allows traffic to the required ports (443 for K8s, 5672/15672 for RabbitMQ).
+
 ---
 
 ## 🔍 Service Inspection
