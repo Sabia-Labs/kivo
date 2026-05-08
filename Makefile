@@ -45,6 +45,7 @@ help:
 	@echo "  make k8s-render     Render Helm templates for local (dry-run)"
 	@echo "  make k8s-namespace  Create the kivo namespace (one-time setup)"
 	@echo "  make clean-k8s     ⚠ Delete kivo + all kivo-ws-* namespaces (dev reset)"
+	@echo "  make staging-reset  ☢ TOTAL RESET of Staging environment"
 	@echo ""
 	@echo "  Utilities"
 	@echo "  ─────────────────────────────────────"
@@ -174,6 +175,12 @@ clean-k8s:
 	else \
 		echo "Aborted."; \
 	fi
+
+## ☢ TOTAL RESET of Staging environment.
+## Wipes databases, reapplies migrations/seeds and fixes architecture split.
+staging-reset:
+	@chmod +x reset_staging.sh
+	./reset_staging.sh
 
 ## ⚠ TOTAL RESET: Returns the environment to factory state.
 ## Stops all processes, deletes all k8s resources, and wipes local databases.
