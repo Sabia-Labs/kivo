@@ -38,7 +38,10 @@ export async function upsertCapabilityCronJob(
     return;
   }
 
-  const triggerUrl = `http://kivo-api.kivo.svc.cluster.local:4000/internal/capabilities/${capability.id}/trigger`;
+  // Use the namespace of the API itself (usually 'kivo' or 'kivo-staging').
+  // If not provided in env, we fall back to 'kivo' as before but ideally we should know where we are.
+  const kivoNamespace = process.env.KIVO_NAMESPACE || "kivo";
+  const triggerUrl = `http://kivo-api.${kivoNamespace}.svc.cluster.local:4000/internal/capabilities/${capability.id}/trigger`;
 
   const cronJob: k8s.V1CronJob = {
     metadata: {

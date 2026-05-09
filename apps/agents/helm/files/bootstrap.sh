@@ -187,12 +187,12 @@ You have direct access to GitHub through native MCP tools.
 Use these tools for repository discovery, issue triage, and pull-request workflows.
 SKILL_EOF
   fi
-
-  # ── Kivo API MCP ─────────────────────────────────────────────────────────
-  echo "==> Configuring Kivo API MCP"
-  KIVO_API_URL="http://kivo-api.kivo.svc.cluster.local:4000/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
-  KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
-  openclaw mcp set kivo "$KIVO_JSON_ARG"
+# ── Kivo API MCP ─────────────────────────────────────────────────────────
+# Runs every boot
+echo "==> Configuring Kivo API MCP"
+KIVO_API_URL="${KIVO_API_URL:-http://kivo-api.kivo.svc.cluster.local:4000}/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
+KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
+openclaw mcp set kivo "$KIVO_JSON_ARG"
 
   # ── Seed profile files (FIRST BOOT ONLY) ─────────────────────────────────
   # Source: /opt/kivo/profiles/{AGENT_PROFILE}/ (baked into the image)

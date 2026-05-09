@@ -91,7 +91,7 @@ spec:
           imagePullPolicy: {{ .Values.controller.image.pullPolicy | default "IfNotPresent" }}
           args:
             - --leader-election-namespace={{ .Values.namespace }}
-            - --api-base-url=http://kivo-api:{{ .Values.kivoApi.port }}
+            - --api-base-url=http://{{ include "kivo.kivoApi.host" . }}:{{ .Values.kivoApi.port }}
             - --agent-image={{ .Values.controller.agentImage | default "ghcr.io/ltreven/kivo-agent:latest" }}
             - --agent-image-pull-policy={{ .Values.controller.agentImagePullPolicy | default "IfNotPresent" }}
             - --consumer-image={{ .Values.controller.consumerImage }}
