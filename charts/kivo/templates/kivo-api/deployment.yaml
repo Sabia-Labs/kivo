@@ -31,6 +31,8 @@ spec:
           imagePullPolicy: {{ .Values.kivoApi.image.pullPolicy }}
           command: ["node", "dist/index.js", "--migrate-only"]
           env:
+            - name: KIVO_NAMESPACE
+              value: {{ .Values.namespace | quote }}
             {{- range $key, $value := .Values.kivoApi.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -129,6 +131,8 @@ spec:
               containerPort: {{ .Values.kivoApi.port }}
               protocol: TCP
           env:
+            - name: KIVO_NAMESPACE
+              value: {{ .Values.namespace | quote }}
             {{- range $key, $value := .Values.kivoApi.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}

@@ -28,7 +28,7 @@ const (
 // pullPolicy is the ImagePullPolicy string (Always|IfNotPresent|Never).
 // consumerImage/consumerPolicy identify the kivo-consumer sidecar image.
 // If the CR spec overrides agent image, the CR values take precedence.
-func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, agentImage, pullPolicy, consumerImage, consumerPolicy string) *appsv1.Deployment {
+func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, agentImage, pullPolicy, consumerImage, consumerPolicy, apiBaseURL string) *appsv1.Deployment {
 	image, policy := resolveImage(cr, agentImage, pullPolicy)
 	fullImage := image
 	if consumerPolicy == "" {
@@ -120,6 +120,11 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 	initEnv := append(sharedEnv, secretEnv...)
 	mainEnv := append(sharedEnv, secretEnv...)
 	mainEnv = append(mainEnv, corev1.EnvVar{Name: "NODE_ENV", Value: "production"})
+
+	if apiBaseURL != "" {
+		initEnv = append(initEnv, corev1.EnvVar{Name: "KIVO_API_URL", Value: apiBaseURL})
+		mainEnv = append(mainEnv, corev1.EnvVar{Name: "KIVO_API_URL", Value: apiBaseURL})
+	}
 
 	// Volume definitions
 	volumes := []corev1.Volume{

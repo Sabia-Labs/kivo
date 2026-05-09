@@ -47,4 +47,16 @@ spec:
       ports:
         - protocol: TCP
           port: {{ .Values.kivoApi.port }}
+    # ── Allow: agents → api (MCP/SSE connection) ─────────────────────────────
+    # Agents in kivo-ws-* namespaces connect to /mcp/sse to expose their tools.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kivo.ai/component: workspace
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-agent
+      ports:
+        - protocol: TCP
+          port: {{ .Values.kivoApi.port }}
 {{- end }}

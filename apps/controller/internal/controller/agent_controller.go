@@ -90,7 +90,7 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	logger.Info("reconciling Deployment")
 	agentImage, pullPolicy := r.resolveAgentImage(ctx)
 	consumerImage, consumerPullPolicy := r.resolveConsumerImage(ctx)
-	desiredDeploy := resources.AgentDeployment(&cr, ownerRef, agentImage, pullPolicy, consumerImage, consumerPullPolicy)
+	desiredDeploy := resources.AgentDeployment(&cr, ownerRef, agentImage, pullPolicy, consumerImage, consumerPullPolicy, r.APIBaseURL)
 	if err := r.createOrUpdateDeployment(ctx, desiredDeploy); err != nil {
 		return r.failWith(ctx, &cr, "DeploymentFailed", err)
 	}
