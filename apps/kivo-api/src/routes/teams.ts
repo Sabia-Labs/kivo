@@ -100,13 +100,13 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
                 soul: role?.soul,
                 identity: role?.identity,
                 agentsInstructions: role?.operatingInstructions,
-                userContext: "", // Will be filled during provisioning or first run
+                userContext: "",
                 memory: "",
                 toolsNotes: "",
                 heartbeat: "",
               };
             })
-          : []; // In the new architecture, we expect the frontend to provide the agent list based on the template recipe
+          : [];
 
       if (agentInputs.length > 0) {
         await tx.insert(agents).values(agentInputs).returning();
@@ -126,7 +126,8 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
               await tx.insert(teamCapabilities).values(
                 templateCaps.map((tc: any) => ({
                   teamId: team.id,
-                  name: tc.capability.nameI18nKey, // We use the i18n key as name for now
+                  name: tc.capability.nameI18nKey,
+                  descriptionI18nKey: tc.capability.descriptionI18nKey,
                   identifier: tc.capability.id,
                   instructions: tc.capability.instructions,
                   inputsDescription: tc.capability.inputsDescription,
@@ -141,7 +142,6 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
           }
         } catch (capErr) {
           console.error(`[teams] Failed to fetch capabilities from Admin API:`, capErr);
-          // Non-blocking error, team creation continues
         }
       }
 
@@ -241,6 +241,169 @@ teamsRouter.delete("/:id", async (req: Request, res: Response, next: NextFunctio
   }
 });
 
-// (Rest of the capabilities and integrations routes remain as they are, 
-// they were already using teamCapabilities table which we kept).
-// ... (I'll keep the existing routes for capabilities and integrations below)
+// ── GET /teams/:id/capabilities ─────────────────────────────────────────────
+teamsRouter.get("/:id/capabilities", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { getCapabilitiesByTeam } = await import("../controllers/capabilitiesController");
+    const rows = await getCapabilitiesByTeam(String(req.params.id));
+    res.json(success(rows));
+  } catch (err) { next(err); }
+});
+
+teamsRouter.post("/:id/capabilities", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const generateSlug = (str: string) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const name = String(req.body.name || "New Capability");
+    const identifier = req.body.identifier ? String(req.body.identifier) : generateSlug(name);
+    
+    const type = req.body.type || "task_template";
+    const tasksWorkflow = req.body.tasksWorkflow || null;
+    let inputsDescription = req.body.inputsDescription ? String(req.body.inputsDescription) : null;
+    
+    if (type === "workflow" && Array.isArray(tasksWorkflow) && tasksWorkflow.length > 0) {
+      const { and } = await import("drizzle-orm");
+      const [firstTask] = await db.select().from(teamCapabilities).where(
+        and(
+          eq(teamCapabilities.teamId, String(req.params.id)),
+          eq(teamCapabilities.identifier, tasksWorkflow[0])
+        )
+      );
+      if (firstTask) {
+        inputsDescription = firstTask.inputsDescription;
+      }
+    }
+
+    const [created] = await db.insert(teamCapabilities).values({
+      teamId: String(req.params.id),
+      name,
+      identifier,
+      instructions: String(req.body.instructions || ""),
+      inputsDescription,
+      expectedOutputsDescription: req.body.expectedOutputsDescription ? String(req.body.expectedOutputsDescription) : null,
+      assignedAgentId: req.body.assignedAgentId ? String(req.body.assignedAgentId) : null,
+      assignedRole: req.body.assignedRole ? String(req.body.assignedRole) : null,
+      isEnabled: Boolean(req.body.isEnabled ?? true),
+      isFavorite: Boolean(req.body.isFavorite ?? false),
+      scheduleConfig: req.body.scheduleConfig || null,
+      tasksWorkflow,
+      type
+    }).returning();
+    
+    res.status(201).json(success(created));
+  } catch (err) { next(err); }
+});
+
+teamsRouter.put("/:id/capabilities/:capId", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { and } = await import("drizzle-orm");
+    const [existing] = await db.select().from(teamCapabilities)
+      .where(and(eq(teamCapabilities.id, String(req.params.capId)), eq(teamCapabilities.teamId, String(req.params.id))));
+      
+    if (!existing) return res.status(404).json(failure("Capability not found"));
+    
+    const updateData: any = {};
+    if (req.body.isEnabled !== undefined) updateData.isEnabled = Boolean(req.body.isEnabled);
+    if (req.body.isFavorite !== undefined) updateData.isFavorite = Boolean(req.body.isFavorite);
+    if (req.body.name !== undefined) updateData.name = String(req.body.name);
+    if (req.body.instructions !== undefined) updateData.instructions = String(req.body.instructions);
+    
+    const [updated] = await db.update(teamCapabilities)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(and(eq(teamCapabilities.id, String(req.params.capId)), eq(teamCapabilities.teamId, String(req.params.id))))
+      .returning();
+      
+    res.json(success(updated));
+  } catch (err) { next(err); }
+});
+
+// ── GET /teams/:id/integrations ─────────────────────────────────────────────
+teamsRouter.get("/:id/integrations", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { integrations } = await import("../db/schema");
+    const rows = await db.select().from(integrations).where(eq(integrations.teamId, String(req.params.id)));
+    res.json(success(rows));
+  } catch (err) { next(err); }
+});
+
+teamsRouter.put("/:id/integrations/:provider", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { integrations, agents: agentsTable, workspaces: wsTable, teams: teamsTable } = await import("../db/schema");
+    const { and } = await import("drizzle-orm");
+    const { applyCredentialsSecret, rolloutRestartDeployment } = await import("../k8s/provisioner");
+    const teamId = String(req.params.id);
+    const provider = String(req.params.provider) as any;
+    
+    const existing = await db.query.integrations.findFirst({
+      where: and(eq(integrations.teamId, teamId), eq(integrations.provider, provider))
+    });
+    
+    let result;
+    if (existing) {
+      const [updated] = await db.update(integrations)
+        .set({ apiKey: req.body.apiKey, metadata: req.body.metadata })
+        .where(eq(integrations.id, existing.id))
+        .returning();
+      result = updated;
+    } else {
+      const [created] = await db.insert(integrations).values({
+        teamId,
+        provider,
+        apiKey: req.body.apiKey,
+        metadata: req.body.metadata
+      }).returning();
+      result = created;
+    }
+    
+    const teamAgents = await getAgentsByTeam(teamId);
+    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
+    const [workspace] = team ? await db.select().from(wsTable).where(eq(wsTable.id, team.workspaceId)) : [];
+    
+    if (workspace && workspace.k8sNamespace) {
+      for (const agent of teamAgents) {
+        const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
+        if (provider === "linear") metadata.linearApiKey = req.body.apiKey;
+        else if (provider === "github") metadata.githubToken = req.body.apiKey;
+        
+        await db.update(agentsTable).set({ metadata, updatedAt: new Date() }).where(eq(agentsTable.id, agent.id));
+        try {
+          await applyCredentialsSecret(workspace.k8sNamespace, agent);
+          await rolloutRestartDeployment(workspace.k8sNamespace, agent.id);
+        } catch {}
+      }
+    }
+    res.json(success(result));
+  } catch (err) { next(err); }
+});
+
+teamsRouter.use("/:teamId/requests", requestsRouter);
+teamsRouter.use("/:teamId/activities", activitiesRouter);
+
+// ── Team Leader Chat ──────────────────────────────────────────────────────────
+teamsRouter.get("/:id/leader-chat", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { leaderChatHistory } = await import("../db/schema");
+    const { desc, and } = await import("drizzle-orm");
+    const rows = await db
+      .select()
+      .from(leaderChatHistory)
+      .where(and(eq(leaderChatHistory.teamId, String(req.params.id)), eq(leaderChatHistory.userId, req.actor!.id)))
+      .orderBy(desc(leaderChatHistory.createdAt))
+      .limit(50);
+    res.json(success(rows.reverse()));
+  } catch (err) { next(err); }
+});
+
+teamsRouter.post("/:id/leader-chat", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { message } = req.body;
+    if (!message) return res.status(400).json(failure("Message is required"));
+    const teamId = String(req.params.id);
+    const userId = req.actor!.id;
+    const { leaderChatHistory } = await import("../db/schema");
+    await db.insert(leaderChatHistory).values({ teamId, userId, message, role: "user" });
+    const { runTeamLeaderChat } = await import("../workflows/teamLeaderChat");
+    const aiResponse = await runTeamLeaderChat(teamId, userId, message);
+    const [saved] = await db.insert(leaderChatHistory).values({ teamId, userId, message: aiResponse, role: "assistant" }).returning();
+    res.json(success(saved));
+  } catch (err) { next(err); }
+});

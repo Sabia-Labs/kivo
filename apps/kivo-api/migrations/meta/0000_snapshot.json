@@ -1,5 +1,5 @@
 {
-  "id": "89067466-a650-4a85-9bb1-683868643951",
+  "id": "47c31d7c-c8aa-4fe2-9f68-d54b8920232c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1237,6 +1237,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "description_i18n_key": {
+          "name": "description_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "identifier": {
           "name": "identifier",

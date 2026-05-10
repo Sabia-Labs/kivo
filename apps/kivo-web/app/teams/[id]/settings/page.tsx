@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 // ── Icons & SVGs ─────────────────────────────────────────────────────────────
 
@@ -50,10 +51,19 @@ interface Integration {
 }
 
 interface Capability {
-  id: string; name: string; identifier: string; instructions: string;
-  inputsDescription: string | null; expectedOutputsDescription: string | null;
-  tasksWorkflow: string[] | null; isEnabled: boolean; scheduleConfig: Record<string, any> | null;
-  assignedAgentId: string | null; assignedRole: string | null; isFavorite: boolean;
+  id: string; 
+  name: string; // This holds the i18n key or raw name
+  descriptionI18nKey: string | null;
+  identifier: string; 
+  instructions: string;
+  inputsDescription: string | null; 
+  expectedOutputsDescription: string | null;
+  tasksWorkflow: string[] | null; 
+  isEnabled: boolean; 
+  scheduleConfig: Record<string, any> | null;
+  assignedAgentId: string | null; 
+  assignedRole: string | null; 
+  isFavorite: boolean;
 }
 
 
@@ -308,9 +318,22 @@ function IntegrationConfig({ providerKey, integration, onSave }: { providerKey: 
 
 export default function TeamSettingsPage() {
   const { token, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const teamId = String(params.id);
+
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    if (!key.includes(".")) return key; // Not a translation key
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (!current || current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"general" | "workflow" | "integrations">("general");
@@ -447,7 +470,12 @@ export default function TeamSettingsPage() {
   if (authLoading || isLoading) return <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>;
 
   const filteredCapabilities = capabilities.filter(c => {
-    const matchesSearch = c.name.toLowerCase().includes(capSearch.toLowerCase()) || c.instructions.toLowerCase().includes(capSearch.toLowerCase());
+    const translatedName = translate(c.name);
+    const translatedInstructions = translate(c.instructions);
+    
+    const matchesSearch = translatedName.toLowerCase().includes(capSearch.toLowerCase()) || 
+                          translatedInstructions.toLowerCase().includes(capSearch.toLowerCase());
+    
     if (!matchesSearch) return false;
     
     if (showOnlyEnabled && !c.isEnabled) return false;
@@ -593,9 +621,9 @@ export default function TeamSettingsPage() {
                           >
                             <Star className={cn("size-4", cap.isFavorite ? "fill-amber-500 text-amber-500" : "")} />
                           </button>
-                          <span className="font-medium text-sm text-foreground">{cap.name}</span>
+                          <span className="font-medium text-sm text-foreground">{translate(cap.name)}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground truncate max-w-lg">{cap.instructions}</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-lg">{translate(cap.descriptionI18nKey || "")}</span>
                       </div>
                       <div className="flex items-center gap-4">
                         <Link href={`/teams/${teamId}/settings/capabilities/${cap.id}`} className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"><Info className="size-3"/> Details</Link>

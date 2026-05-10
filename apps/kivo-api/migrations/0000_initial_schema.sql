@@ -172,6 +172,7 @@ CREATE TABLE "team_capabilities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
 	"name" text NOT NULL,
+	"description_i18n_key" text,
 	"identifier" text NOT NULL,
 	"instructions" text NOT NULL,
 	"inputs_description" text,

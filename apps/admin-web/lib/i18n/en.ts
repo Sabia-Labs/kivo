@@ -506,6 +506,7 @@ export const en = {
       test_coverage: { name: "Improve Test Coverage", desc: "Implement tests for specific system areas." },
       delivery_flow: { name: "Feature Delivery Cycle", desc: "End-to-end flow from Story to Review." },
       open_pr: { name: "Open Pull Request", desc: "Create a PR for the current task." },
+      summary: { name: "Cycle Summary", desc: "Generate a summary of the current work cycle." },
     },
     customer_support: {
       answer: { name: "Answer Ticket", desc: "Provide helpful responses to users." },

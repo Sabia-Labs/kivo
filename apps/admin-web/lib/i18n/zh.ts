@@ -505,6 +505,7 @@ export const zh: Dictionary = {
       test_coverage: { name: "提高测试覆盖率", desc: "为特定系统区域实现测试。" },
       delivery_flow: { name: "功能交付周期", desc: "从故事到审查的端到端流程。" },
       open_pr: { name: "开启 Pull Request", desc: "为当前任务创建 PR。" },
+      summary: { name: "周期总结", desc: "生成当前工作周期的总结报告。" },
     },
     customer_support: {
       answer: { name: "回复工单", desc: "向用户提供有帮助的回复。" },
