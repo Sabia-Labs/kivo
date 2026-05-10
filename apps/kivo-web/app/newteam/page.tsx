@@ -304,7 +304,7 @@ export default function NewTeamPage() {
         agentsToCreate.push({
           name: agentNames[r.role.id]?.[i] || translate(r.role.suggestedNameI18nKey),
           roleId: r.role.id,
-          isLeader: agentKey === leaderAgentKey,
+          isLeader: agentKey === leaderId,
         });
       }
     });
