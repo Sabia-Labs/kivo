@@ -1,210 +1,66 @@
-.PHONY: help kivo-web admin-web kivo-web-install web-kill web-build kivo-api kivo-api-install db-migrate db-seed docker-db agents-test \
-        tilt-up tilt-down k8s-lint k8s-render k8s-namespace clean-k8s clean
+.PHONY: help dev down clean-local staging-reset migrate seed test-agents clean-files ctx-local ctx-staging
 
-# Default target
-help:
-	@echo ""
-	@echo "  Kivo — Dev Commands"
-	@echo ""
-	@echo "  Kivo Web (apps/kivo-web) - Client Portal"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make kivo-web      Start client portal (localhost:3000)"
-	@echo "  make kivo-web-install  Install dependencies"
-	@echo ""
-	@echo "  Admin Web (apps/admin-web) - Marketing/Admin Portal"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make admin-web      Start admin portal (localhost:3001)"
-	@echo "  make admin-install  Install dependencies"
-	@echo ""
-	@echo "  Kivo API (apps/kivo-api)"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make kivo-api      Start App API (localhost:4000)"
-	@echo "  make kivo-api-install  Install dependencies"
-	@echo "  make db-migrate     Run Drizzle migrations"
-	@echo "  make db-seed        Seed with demo data (requires WORKSPACE_ID)"
-	@echo ""
-	@echo "  Admin API (apps/admin-api)"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make admin-api      Start Admin API dev server (localhost:4001)"
-	@echo "  make admin-install  Install Admin API dependencies"
-	@echo "  make admin-migrate  Run Admin Drizzle migrations"
-	@echo ""
-	@echo "  Infrastructure"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make docker-db      Start local PostgreSQL via Docker (kivo & kivo_admin)"
-	@echo ""
-	@echo "  Agents (apps/agents)"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make agents-test    Run agent Helm test deployment"
-	@echo ""
-	@echo "  Kubernetes / Tilt (FOR-53)"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make tilt-up        Start local k8s dev environment (Tilt)"
-	@echo "  make tilt-down      Stop Tilt and clean up local k8s resources"
-	@echo "  make k8s-lint       Lint the Helm chart (all environments)"
-	@echo "  make k8s-render     Render Helm templates for local (dry-run)"
-	@echo "  make k8s-namespace  Create the kivo namespace (one-time setup)"
-	@echo "  make clean-k8s     ⚠ Delete kivo + all kivo-ws-* namespaces (dev reset)"
-	@echo "  make staging-reset  ☢ TOTAL RESET of Staging environment"
-	@echo ""
-	@echo "  Utilities"
-	@echo "  ─────────────────────────────────────"
-	@echo "  make clean          Remove build artifacts and lock files"
-	@echo ""
+# ── CONFIGURATION ─────────────────────────────────────────────────────────────
+LOCAL_CTX = docker-desktop
+STAGING_CTX = gke_sabia-infra_europe-west3_kivo-staging
 
-# ── Web ────────────────────────────────────────────────────────────────────────
+# ── HELP ──────────────────────────────────────────────────────────────────────
+help: ## Show this help
+	@echo "\n  \033[1mKivo Control Interface\033[0m"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
-kivo-web: web-kill
-	cd apps/kivo-web && npm run dev
+# ── CONTEXT MANAGEMENT ────────────────────────────────────────────────────────
+ctx-local: ## Switch to local context
+	kubectl config use-context $(LOCAL_CTX)
 
-kivo-web-install:
-	cd apps/kivo-web && npm install
+ctx-staging: ## Switch to staging context
+	kubectl config use-context $(STAGING_CTX)
 
-admin-web: web-kill
-	cd apps/admin-web && npm run dev
-
-admin-install:
-	cd apps/admin-web && npm install
-
-web-build:
-	cd apps/kivo-web && npm run build
-	cd apps/admin-web && npm run build
-
-web-kill:
-	@pkill -f "next dev" 2>/dev/null || true
-	@rm -rf apps/kivo-web/.next/dev/lock apps/admin-web/.next/dev/lock 2>/dev/null || true
-	@echo "✓ Web dev servers stopped"
-
-# ── API ────────────────────────────────────────────────────────────────────────
-
-kivo-api:
-	cd apps/kivo-api && pnpm dev
-
-kivo-api-install:
-	cd apps/kivo-api && pnpm install
-
-db-generate:
-	cd apps/kivo-api && pnpm db:generate
-
-db-migrate:
-	cd apps/kivo-api && pnpm db:migrate
-
-db-seed:
-	cd apps/kivo-api && pnpm db:seed $(WORKSPACE_ID)
-
-# ── Admin API ──────────────────────────────────────────────────────────────────
-
-admin-api:
-	cd apps/admin-api && npm run dev
-
-admin-install:
-	cd apps/admin-api && npm install
-
-admin-migrate:
-	cd apps/admin-api && npm run db:migrate
-
-admin-seed:
-	cd apps/admin-api && npm run db:seed
-
-docker-db:
-	@docker run --rm --name kivo-postgres \
-		-e POSTGRES_USER=kivo \
-		-e POSTGRES_PASSWORD=kivo \
-		-e POSTGRES_DB=kivo \
-		-p 5432:5432 \
-		-d postgres:16-alpine
-	@echo "Waiting for postgres to start..."
-	@sleep 5
-	@docker exec -it kivo-postgres psql -U kivo -d postgres -c "CREATE DATABASE kivo_admin;" || true
-	@docker attach kivo-postgres
-
-# ── Agents ────────────────────────────────────────────────────────────────────
-
-agents-test:
-	bash apps/agents/tests/test-simple.sh
-
-# ── Kubernetes / Tilt ─────────────────────────────────────────────────────────
-
-## Start the full local k8s environment via Tilt (docker-desktop context required)
-tilt-up:
+# ── LOCAL DEVELOPMENT (Tilt/K8s) ──────────────────────────────────────────────
+dev: ## Start local environment (Tilt)
+	@current_ctx=$$(kubectl config current-context); \
+	if [ "$$current_ctx" != "$(LOCAL_CTX)" ]; then \
+		echo "\033[31mError: Current context is $$current_ctx. Switch to $(LOCAL_CTX) first!\033[0m"; exit 1; \
+	fi
 	tilt up
 
-## Stop Tilt and remove all deployed resources from the local cluster
-tilt-down:
+down: ## Stop Tilt
 	tilt down
-	@echo "→ Removing old agent PVCs from workspace namespaces to ensure fresh state on next boot..."
-	@kubectl get namespace -o name | grep 'namespace/kivo-ws-' | sed 's/namespace\///' | xargs -r -I {} kubectl delete pvc --all -n {} --ignore-not-found
 
-## Lint the Helm chart against all environment values files
-k8s-lint:
-	@echo "→ Linting chart with values-local.yaml..."
-	helm lint charts/kivo -f charts/kivo/values-local.yaml
-	@echo "→ Linting chart with values-staging.yaml..."
-	helm lint charts/kivo -f charts/kivo/values-staging.yaml --set kivoApi.image.tag=lint --set kivoWeb.image.tag=lint --set adminApi.image.tag=lint --set adminWeb.image.tag=lint --set controller.image.tag=lint
-	@echo "→ Linting chart with values-prod.yaml..."
-	helm lint charts/kivo -f charts/kivo/values-prod.yaml --set api.image.tag=lint --set web.image.tag=lint
-	@echo "✓ All Helm lints passed"
-
-## Render and print Helm templates for local (useful for debugging)
-k8s-render:
-	helm template kivo charts/kivo -f charts/kivo/values-local.yaml
-
-## Create the kivo namespace (idempotent — safe to run multiple times)
-k8s-namespace:
-	kubectl create namespace kivo --dry-run=client -o yaml | kubectl apply -f -
-## Delete the kivo namespace AND all kivo-ws-* workspace namespaces.
-## ⚠  DESTRUCTIVE: wipes all agent PVCs, Secrets, and state for every workspace.
-## Use only during local dev to start fresh. Never run against production.
-clean-k8s:
-	@echo ""
-	@echo "  ⚠  WARNING: This will permanently delete:"
-	@echo "     • namespace/kivo           (API, Web, Controller, PostgreSQL, all data)"
-	@echo "     • namespace/kivo-admin     (Admin API, Admin Web)"
-	@echo "     • namespace/infra-messaging (RabbitMQ instances)"
-	@echo "     • namespace/ingress-nginx   (Ingress controller)"
-	@echo "     • namespace/rabbitmq-system (RabbitMQ operator)"
-	@echo "     • all kivo-ws-* namespaces  (agent pods, PVCs, Secrets)"
-	@echo ""
-	@printf "  Type 'yes' to confirm: "; read CONFIRM; \
-	if [ "$$CONFIRM" = "yes" ]; then \
-		echo "→ Deleting infrastructure and app namespaces..."; \
-		kubectl delete namespace kivo kivo-admin infra-messaging ingress-nginx rabbitmq-system --ignore-not-found; \
-		echo "→ Deleting kivo-ws-* namespaces..."; \
-		kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found; \
-		echo "✓ K8s Environment cleaned."; \
-	else \
-		echo "Aborted."; \
+clean-local: ## ⚠ TOTAL WIPE of local K8s (Apps, Namespaces, RabbitMQ, Ingress)
+	@current_ctx=$$(kubectl config current-context); \
+	if [ "$$current_ctx" != "$(LOCAL_CTX)" ]; then \
+		echo "\033[31mFATAL: You are NOT in the local context! Current: $$current_ctx\033[0m"; exit 1; \
 	fi
+	@echo "→ Deleting all local Kivo related namespaces..."
+	kubectl delete namespace kivo kivo-admin infra-messaging ingress-nginx rabbitmq-system --ignore-not-found
+	@echo "→ Deleting ephemeral workspace namespaces..."
+	kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found
+	@echo "✓ Local cluster is clean."
 
-## ☢ TOTAL RESET of Staging environment.
-## Wipes databases, reapplies migrations/seeds and fixes architecture split.
-staging-reset:
+# ── STAGING OPERATIONS (GKE) ──────────────────────────────────────────────────
+staging-reset: ## ☢ TOTAL RESET of Staging (Wipes DBs & Reseeds)
+	@current_ctx=$$(kubectl config current-context); \
+	if [ "$$current_ctx" != "$(STAGING_CTX)" ]; then \
+		echo "\033[31mFATAL: You are NOT in the staging context! Current: $$current_ctx\033[0m"; exit 1; \
+	fi
 	@chmod +x reset_staging.sh
 	./reset_staging.sh
 
-## ⚠ TOTAL RESET: Returns the environment to factory state.
-## Stops all processes, deletes all k8s resources, and wipes local databases.
-factory-reset: web-kill
-	@echo "Starting factory reset..."
-	@make tilt-down || true
-	@make clean-k8s
-	@echo "→ Stopping and removing local PostgreSQL container..."
-	@docker stop kivo-postgres 2>/dev/null || true
-	@docker rm kivo-postgres 2>/dev/null || true
-	@make clean
-	@echo ""
-	@echo "✓ Factory reset complete."
-	@echo "To start fresh:"
-	@echo "  1. make docker-db"
-	@echo "  2. make db-migrate admin-migrate"
-	@echo "  3. make admin-seed"
-	@echo "  4. make tilt-up"
-	@echo ""
+staging-status: ## Check status of staging pods
+	kubectl get pods -n kivo-staging
 
+# ── DATABASE & TOOLS ──────────────────────────────────────────────────────────
+migrate: ## Run Drizzle migrations for both planes (uses LOCAL env vars)
+	cd apps/kivo-api && pnpm db:migrate
+	cd apps/admin-api && npm run db:migrate
 
-# ── Utilities ─────────────────────────────────────────────────────────────────
+seed: ## Seed Application Plane with Meta Configuration
+	cd apps/kivo-api && pnpm db:seed
 
-clean: web-kill
+test-agents: ## Run simple agent deployment test
+	bash apps/agents/tests/test-simple.sh
+
+clean-files: ## Remove build artifacts and lock files
 	rm -rf apps/kivo-web/.next apps/admin-web/.next apps/kivo-api/dist apps/admin-api/dist
-	@echo "✓ Clean done"
-
+	@echo "✓ Build artifacts removed."
