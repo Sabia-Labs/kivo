@@ -21,30 +21,84 @@ export const zh: Dictionary = {
   },
   stats: {
     items: [
-      { label: "活跃智能体", value: "250+" },
-      { label: "已完成任务", value: "12k+" },
-      { label: "平均交付时间", value: "4m" },
-      { label: "正常运行时间", value: "99.9%" },
+      { label: "交付周期加速", value: "10×" },
+      { label: "操作可审计性", value: "100%" },
+      { label: "自主运行", value: "24/7" },
+      { label: "上下文零丢失", value: "0" },
+    ],
+  },
+  governance: {
+    sectionBadge: "结构化自主",
+    sectionTitle: "全方位的控制与可见性。",
+    sectionSubtitle:
+      "灵巢 用受治理、结构化、可量化的执行层取代了随机的聊天机器人交互。您的团队自主运行，但始终处于监督之下。",
+    oldWayTitle: "通用 AI",
+    kivoWayTitle: "灵巢 平台",
+    items: [
+      {
+        old: "不可预测的输出和幻觉",
+        kivo: "严格的基于角色的工作流和护栏",
+      },
+      {
+        old: "没有记忆的孤立对话会话",
+        kivo: "基于 Git 的跨任务持久化记忆",
+      },
+      {
+        old: "黑盒执行",
+        kivo: "实时可观测性和健康评分",
+      },
+      {
+        old: "智能体采取未经批准的操作",
+        kivo: "多级人工参与的审批流程",
+      },
     ],
   },
   howItWorks: {
-    sectionBadge: "工作流程",
-    sectionTitle: "从定义到交付。",
+    sectionBadge: "执行周期",
+    sectionTitle: "灵巢 如何编排工作。",
     steps: [
       {
         number: "01",
-        title: "选择模板",
-        description: "从预配置的团队结构开始，包括正确的人员组合和工作流。",
+        title: "创建您的 AI 团队",
+        description: "部署一个具有明确角色和所有权的角色化智能体小队。",
       },
       {
         number: "02",
-        title: "配置智能体",
-        description: "定义角色、个性并授权给您的智能体。将它们连接到您的工具。",
+        title: "分配工作",
+        description: "分配复杂的任务目标。团队负责人将任务委派给专业智能体。",
       },
       {
         number: "03",
-        title: "监控与交付",
-        description: "实时观察您的团队执行任务、提交 PR 并通过电报汇报进度。",
+        title: "监控与审批",
+        description: "审查进度，批准关键行动，并持续追踪团队健康状况。",
+      },
+    ],
+  },
+  pillars: {
+    sectionBadge: "核心基础设施",
+    sectionTitle: "专为运营纪律而建。",
+    sectionSubtitle:
+      "灵巢 提供必要的基础设施，将 AI 智能体视为负责任的团队成员，而不仅仅是工具。",
+    items: [
+      {
+        title: "工作流图谱",
+        description: "视觉化执行映射确保任务遵循定义的顺序和依赖关系。",
+        icon: "GitMerge",
+      },
+      {
+        title: "持久化记忆",
+        description: "每一个决策、上下文和输出都经过安全版本化并存储。",
+        icon: "Activity",
+      },
+      {
+        title: "审批系统",
+        description: "对智能体在未经人工授权下可执行的操作进行细粒度控制。",
+        icon: "ShieldCheck",
+      },
+      {
+        title: "团队健康评分",
+        description: "实时遥测智能体速度、阻塞项和整体运营效率。",
+        icon: "TrendingUp",
       },
     ],
   },
@@ -94,13 +148,13 @@ export const zh: Dictionary = {
     ],
   },
   cta: {
-    headline: "准备好扩展您的执行力了吗？",
-    subheadline: "加入正在使用 灵巢 以前所未有的速度构建软件和管理运营的前瞻性团队。",
-    ctaPrimary: "开始使用",
+    headline: "立即扩展您的执行力。",
+    subheadline: "在几分钟内部署您的第一个自主 AI 团队，体验结构化的自主权。",
+    ctaPrimary: "部署您的团队",
     ctaSecondary: "联系销售",
   },
   footer: {
-    tagline: "结构。治理。交付。",
+    tagline: "结构。治理. 交付。",
     product: "产品",
     company: "公司",
     legal: "法律",
@@ -131,11 +185,11 @@ export const zh: Dictionary = {
     google: "通过 Google 继续",
     microsoft: "通过 Microsoft 继续",
     noAccount: "还没有账户？",
-    signUp: "立即注册",
+    signUp: "立即开始",
     ssoComingSoon: "SSO 即将上线",
   },
   signup: {
-    title: "组建您的 AI 智能体团队",
+    title: "组建您的智能体团队",
     subtitle: "选择模板，数分钟内完成部署。",
     steps: {
       account: "账户",
@@ -166,7 +220,7 @@ export const zh: Dictionary = {
       templates: {
         starter: {
           icon: "🧩",
-          title: "灵巢 入门版",
+          title: "灵巢 Starter",
           description: "配备一名行政助理，助您轻松开启。简单且灵活。",
         },
         product_delivery: {
@@ -425,7 +479,7 @@ export const zh: Dictionary = {
     viewAgent: "打开智能体",
     newTeam: "新建团队",
     newTeamComingSoon: "新建团队功能即将上线。",
-    workspaceLabel: "工作空间",
+    workspaceLabel: "工作区",
   },
   capabilities: {
     product_delivery: {
