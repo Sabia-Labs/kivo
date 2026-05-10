@@ -45,7 +45,7 @@ function MicrosoftIcon() {
 
 export default function SignupPage() {
   const { login } = useAuth();
-  const { t } = useTranslation();
+  const { lang, t } = useTranslation();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
