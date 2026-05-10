@@ -32,7 +32,7 @@ export function CapabilityForm({
 }: {
   capability: Capability;
   setCapability: (c: Capability) => void;
-  agents: { id: string, name: string, type: string }[];
+  agents: { id: string, name: string, roleId: string }[];
   allCapabilities: Capability[];
   onSave: () => void;
   isSaving: boolean;
