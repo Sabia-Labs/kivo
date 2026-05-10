@@ -20,9 +20,27 @@ function AuthCallbackContent() {
     const isNew = searchParams.get("isNew") === "true";
 
     if (token && userId) {
-      // In a real app we'd fetch full user details if needed, 
-      // but for this example we'll construct a basic user object
-      const user = { id: userId, email: "user@example.com", name: "Kivo User", isAdmin: false };
+      // Decode JWT to get user info
+      let user = { id: userId, email: "user@example.com", name: "Kivo User", isAdmin: false };
+      try {
+        // Decode JWT payload handling UTF-8 characters correctly
+        const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+            .join("")
+        );
+        const payload = JSON.parse(jsonPayload);
+        user = {
+          id: userId,
+          email: payload.email || "user@example.com",
+          name: payload.name || "Kivo User",
+          isAdmin: payload.isAdmin || false
+        };
+      } catch (e) {
+        console.error("Failed to decode token", e);
+      }
       
       login(token, user, workspaceId || null);
       toast.success("Successfully logged in via Google!");

@@ -67,6 +67,13 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Return the Kivo API service hostname
+*/}}
+{{- define "kivo.kivoApi.host" -}}
+{{- printf "kivo-api.%s.svc.cluster.local" .Values.namespace }}
+{{- end }}
+
+{{/*
 Return the PostgreSQL service hostname (always in the app namespace)
 */}}
 {{- define "kivo.postgresql.host" -}}
