@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "@/lib/i18n";
 
 type AgentType = "team_lead" | "software_engineer" | "software_architect" | "product_manager";
 
@@ -60,6 +61,7 @@ function AgentAvatarGroup({ agents }: { agents: Agent[] }) {
 }
 
 function TeamListItem({ team }: { team: Team }) {
+  const { t } = useTranslation();
   return (
     <Link
       href={`/teams/${team.id}`}
@@ -74,7 +76,7 @@ function TeamListItem({ team }: { team: Team }) {
             {team.name}
           </h2>
           <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-            {team.mission || "No mission defined."}
+            {team.mission || t.teamsPage.noMission}
           </p>
         </div>
       </div>
@@ -84,7 +86,7 @@ function TeamListItem({ team }: { team: Team }) {
           <AgentAvatarGroup agents={team.agents} />
         ) : (
           <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-md">
-            Empty Team
+            {t.teamsPage.emptyTeam}
           </span>
         )}
         <div className="flex size-8 items-center justify-center rounded-full bg-muted/50 text-muted-foreground opacity-0 transition-all group-hover:opacity-100 group-hover:bg-primary group-hover:text-primary-foreground hidden sm:flex">
@@ -95,9 +97,11 @@ function TeamListItem({ team }: { team: Team }) {
   );
 }
 
+
 export default function TeamsPage() {
   const { token, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const { t } = useTranslation();
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -109,9 +113,9 @@ export default function TeamsPage() {
     })
       .then((r) => r.json())
       .then((d) => setTeams(d.data ?? []))
-      .catch(() => toast.error("Failed to load teams."))
+      .catch(() => toast.error(t.teamsPage.failedLoad))
       .finally(() => setIsLoading(false));
-  }, [token]);
+  }, [token, t.teamsPage.failedLoad]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -140,13 +144,13 @@ export default function TeamsPage() {
                 {workspaceName}
               </span>
             )}
-            <h1 className="text-3xl font-bold tracking-tight">Your Teams</h1>
-            <p className="text-muted-foreground mt-1">Manage and monitor your engineering squads.</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t.teamsPage.title}</h1>
+            <p className="text-muted-foreground mt-1">{t.teamsPage.subtitle}</p>
           </div>
           <Button asChild>
             <Link href="/newteam">
               <Plus className="size-4 mr-2" />
-              New Team
+              {t.teamsPage.newTeam}
             </Link>
           </Button>
         </div>
@@ -157,13 +161,13 @@ export default function TeamsPage() {
             <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
               <Users className="size-8 text-muted-foreground/60" />
             </div>
-            <h2 className="text-lg font-semibold tracking-tight">No teams found</h2>
+            <h2 className="text-lg font-semibold tracking-tight">{t.teamsPage.noTeams}</h2>
             <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm text-balance">
-              Get started by creating your first team to begin delegating tasks and automating your engineering workflow.
+              {t.teamsPage.noTeamsSubtitle}
             </p>
             <Button asChild variant="outline">
               <Link href="/newteam">
-                Create Team
+                {t.teamsPage.createTeam}
               </Link>
             </Button>
           </div>

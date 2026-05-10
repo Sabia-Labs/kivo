@@ -2,8 +2,8 @@
 id: starter
 emoji: "💼"
 color: "#F1F5F9"
-name_i18n_key: dashboard.newTeam.step3Template.templates.starter.title
-description_i18n_key: dashboard.newTeam.step3Template.templates.starter.description
+name_i18n_key: teams.types.starter.name
+description_i18n_key: teams.types.starter.description
 featured: true
 composition:
   - roleId: executive-assistant

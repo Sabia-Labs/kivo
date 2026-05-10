@@ -54,11 +54,6 @@ spec:
                 profile:
                   type: string
                   description: "Agent role profile. Maps to /opt/kivo/profiles/{profile}/ inside the image."
-                  enum:
-                    - software_engineer
-                    - product_manager
-                    - software_architect
-                    - team_lead
                 operatorName:
                   type: string
                   description: "Name of the human operator this agent works for"

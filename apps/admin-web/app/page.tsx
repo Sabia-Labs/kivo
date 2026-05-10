@@ -27,22 +27,25 @@ const MockDashboard = () => {
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
           </div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <Badge variant="outline" className="h-5 px-1.5 bg-primary/10 text-primary border-primary/20">Active: Engineering</Badge>
+            <Badge variant="outline" className="h-5 px-1.5 bg-primary/10 text-primary border-primary/20">Active: Product Delivery</Badge>
           </div>
         </div>
         
         <div className="p-5 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-sm font-semibold">Sprint Execution</h3>
-              <p className="text-xs text-muted-foreground">Team Lead orchestrating 3 agents</p>
+              <h3 className="text-sm font-semibold">Continuous Delivery</h3>
+              <p className="text-xs text-muted-foreground">Team Lead orchestrating 4 agents</p>
             </div>
             <div className="flex -space-x-2">
-              <div className="w-8 h-8 rounded-full border-2 border-background bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-30">TL</div>
-              <div className="w-8 h-8 rounded-full border-2 border-background bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-20">SE</div>
-              <div className="w-8 h-8 rounded-full border-2 border-background bg-violet-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-10">SA</div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-50" title="Team Lead">TL</div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-amber-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-40" title="Product Manager">PM</div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-violet-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-30" title="Software Architect">SA</div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-indigo-500 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-20" title="Software Engineer 1">SE</div>
+              <div className="w-8 h-8 rounded-full border-2 border-background bg-indigo-400 flex items-center justify-center text-[10px] font-bold text-white shadow-sm z-10" title="Software Engineer 2">SE</div>
             </div>
           </div>
+
           
           <div className="space-y-3">
             <div className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-card/50">

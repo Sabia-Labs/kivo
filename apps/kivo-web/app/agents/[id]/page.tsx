@@ -43,7 +43,7 @@ interface AgentMetadata {
 }
 
 interface Agent {
-  id: string; name: string; type: string;
+  id: string; name: string; roleId: string;
   icon?: string; metadata?: AgentMetadata;
   teamId?: string;
   k8sStatus?: string;
@@ -531,7 +531,7 @@ export default function AgentPage() {
   if (!agent) return null;
 
   const status = computeDisplayStatus(agent);
-  const roleLabel = agent.type.replace("_", " ");
+  const roleLabel = (agent.roleId || "agent").replace(/-/g, " ");
   
   const statusLabels: Record<DisplayStatus, string> = {
     available: "Available", busy: "Processing", blocked: "Blocked",

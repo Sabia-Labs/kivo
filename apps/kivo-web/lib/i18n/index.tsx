@@ -11,6 +11,27 @@ const dictionaries: Record<Language, Dictionary> = { en, zh };
 
 const STORAGE_KEY = "kivo-lang";
 
+/**
+ * Sets a cookie on the base domain to share state between planes (admin and app)
+ */
+function setLanguageCookie(l: Language) {
+  if (typeof document === "undefined") return;
+  
+  // Try to set on base domain (e.g., .kivo.ai) to share between subdomains
+  const domain = window.location.hostname.split('.').slice(-2).join('.');
+  const cookieValue = `kivo_lang=${l}; path=/; domain=.${domain}; max-age=${60*60*24*365}; SameSite=Lax`;
+  document.cookie = cookieValue;
+  
+  // Also set on current domain as fallback
+  document.cookie = `kivo_lang=${l}; path=/; max-age=${60*60*24*365}; SameSite=Lax`;
+}
+
+function getLanguageFromCookie(): Language | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/kivo_lang=([^;]+)/);
+  return (match?.[1] as Language) || null;
+}
+
 interface LanguageContextValue {
   lang: Language;
   setLang: (lang: Language) => void;
@@ -27,15 +48,34 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>("en");
 
   useEffect(() => {
+    // 1. Try URL parameter (strongest signal for plane transition)
+    // 2. Try Cookie (shared between planes)
+    // 3. Try LocalStorage (local plane)
+    // 4. Try Browser Navigator
+    
+    const searchParams = new URLSearchParams(window.location.search);
+    const urlLang = searchParams.get("lang") as Language | null;
+    
+    const cookieLang = getLanguageFromCookie();
     const stored = localStorage.getItem(STORAGE_KEY) as Language | null;
-    if (stored && stored in dictionaries) {
-      setLangState(stored);
+    const browserLang = typeof navigator !== "undefined" ? (navigator.language.split("-")[0] as any) : "en";
+    
+    const finalLang = (urlLang && urlLang in dictionaries) ? urlLang :
+                     (cookieLang && cookieLang in dictionaries) ? cookieLang :
+                     (stored && stored in dictionaries) ? stored :
+                     (browserLang in dictionaries) ? browserLang : "en";
+    
+    setLangState(finalLang);
+    if (urlLang) {
+      localStorage.setItem(STORAGE_KEY, urlLang);
+      setLanguageCookie(urlLang);
     }
   }, []);
 
   const setLang = (l: Language) => {
     setLangState(l);
     localStorage.setItem(STORAGE_KEY, l);
+    setLanguageCookie(l);
   };
 
   return (

@@ -1,18 +1,18 @@
-export type AgentType =
-  | "team_lead"
-  | "software_engineer" | "software_architect"
-  | "product_manager";
-
 export type HealthStatus = "online" | "starting" | "offline";
 
 export type DisplayStatus = "provisioning" | "offline" | "available" | "busy" | "blocked";
 
 export interface Agent {
-  id: string; name: string; type: AgentType;
-  icon?: string; metadata?: { avatarColor?: string };
+  id: string; 
+  name: string; 
+  roleId: string;
+  isLeader?: boolean;
+  icon?: string; 
+  metadata?: { avatarColor?: string };
   k8sStatus?: "pending" | "provisioning" | "running" | "failed" | "terminated" | null;
   availability?: "available" | "busy" | "blocked";
 }
+
 
 export interface Team {
   id: string;

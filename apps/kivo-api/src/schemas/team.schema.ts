@@ -11,13 +11,14 @@ export const createTeamSchema = z.object({
   icon: z.string().optional(),
   mission: z.string().optional(),
   waysOfWorking: z.string().optional(),
-  template: z.string().optional(), // Dynamic team type
+  templateId: z.string().optional(), // Dynamic team type ID
   agents: z
     .array(
       z.object({
         name: z.string().min(1),
-        type: z.string(), // Dynamic agent role
+        roleId: z.string(), // Dynamic agent role ID
         icon: z.string().optional(),
+        isLeader: z.boolean().optional(),
       })
     )
     .optional(),

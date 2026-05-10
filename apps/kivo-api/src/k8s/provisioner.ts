@@ -118,7 +118,7 @@ export async function applyKivoAgentCR(
         "app.kubernetes.io/managed-by": "kivo",
         "kivo.ai/agent-id":            agent.id,
         "kivo.ai/workspace-id":        workspaceId,
-        "kivo.ai/profile":             agent.type,
+        "kivo.ai/profile":             agent.roleId || "agent",
       },
       annotations: {
         "kivo.ai/agent-name": agent.name,
@@ -126,7 +126,7 @@ export async function applyKivoAgentCR(
     },
     spec: {
       agentName:            agent.name,
-      profile:              agent.type,
+      profile:              agent.roleId || "agent",
       operatorName:         String(metadata.operatorName ?? ""),
       teamName:             teamName,
       teamId:               agent.teamId,

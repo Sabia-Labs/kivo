@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, boolean, integer, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, boolean, integer, primaryKey, jsonb } from "drizzle-orm/pg-core";
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const users = pgTable("users", {
@@ -67,4 +67,30 @@ export const teamTypeRoles = pgTable("team_type_roles", {
   isLeader: boolean("is_leader").notNull().default(false),
 }, (t) => ({
   pk: primaryKey({ columns: [t.teamTypeId, t.agentRoleId] }),
+}));
+
+// ── Capabilities (Reference) ────────────────────────────────────────────────
+export const capabilities = pgTable("capabilities", {
+  id: text("id").primaryKey(), // e.g., 'triage-open-tickets'
+  nameI18nKey: text("name_i18n_key").notNull(),
+  descriptionI18nKey: text("description_i18n_key").notNull(),
+  type: text("type").notNull(), // 'task_template' | 'workflow'
+  instructions: text("instructions").notNull(),
+  inputsDescription: text("inputs_description"),
+  expectedOutputsDescription: text("expected_outputs_description"),
+  tasksWorkflow: jsonb("tasks_workflow"), // Array of strings (capability IDs)
+});
+
+// ── Team Type Capabilities (Relationship) ───────────────────────────────
+export const teamTypeCapabilities = pgTable("team_type_capabilities", {
+  teamTypeId: text("team_type_id")
+    .notNull()
+    .references(() => teamTypes.id, { onDelete: "cascade" }),
+  capabilityId: text("capability_id")
+    .notNull()
+    .references(() => capabilities.id, { onDelete: "cascade" }),
+  isFavorite: boolean("is_favorite").notNull().default(false),
+  defaultAssignedRole: text("default_assigned_role").references(() => agentRoles.id),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.teamTypeId, t.capabilityId] }),
 }));

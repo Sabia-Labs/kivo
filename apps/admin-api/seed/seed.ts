@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import { db } from "../src/db/client";
-import { agentRoles, teamTypes, teamTypeRoles } from "../src/db/schema";
+import { agentRoles, teamTypes, teamTypeRoles, capabilities, teamTypeCapabilities } from "../src/db/schema";
 import { eq } from "drizzle-orm";
 
 const DEFINITIONS_DIR = path.join(__dirname, "definitions");
@@ -118,7 +118,76 @@ async function seed() {
     }
   }
 
+  // 4. Sync Capabilities (Recursive)
+  const capabilitiesRootDir = path.join(DEFINITIONS_DIR, "capabilities");
+  
+  function getFilesRecursively(dir: string): string[] {
+    let results: string[] = [];
+    const list = fs.readdirSync(dir);
+    list.forEach(file => {
+      file = path.resolve(dir, file);
+      const stat = fs.statSync(file);
+      if (stat && stat.isDirectory()) {
+        results = results.concat(getFilesRecursively(file));
+      } else if (file.endsWith(".md")) {
+        results.push(file);
+      }
+    });
+    return results;
+  }
+
+  const capabilityFiles = getFilesRecursively(capabilitiesRootDir);
+  console.log(`🔍 Found ${capabilityFiles.length} capabilities.`);
+
+  // Clear all team_type_capabilities first to avoid stale links
+  await db.delete(teamTypeCapabilities);
+
+  for (const filePath of capabilityFiles) {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const { data, content: body } = matter(content);
+
+    const sections = body.split(/^# /m).filter(s => s.trim());
+    const instructions = sections.find(s => s.startsWith("INSTRUCTIONS"))?.replace(/^INSTRUCTIONS\n/, "").trim() || "";
+    const inputsDescription = sections.find(s => s.startsWith("INPUTS"))?.replace(/^INPUTS\n/, "").trim() || "";
+    const expectedOutputsDescription = sections.find(s => s.startsWith("EXPECTED OUTPUTS"))?.replace(/^EXPECTED OUTPUTS\n/, "").trim() || "";
+
+    console.log(`   -> Syncing Capability: ${data.id}`);
+
+    await db.insert(capabilities).values({
+      id: data.id,
+      nameI18nKey: data.name_i18n_key,
+      descriptionI18nKey: data.description_i18n_key,
+      type: data.type,
+      instructions,
+      inputsDescription,
+      expectedOutputsDescription,
+      tasksWorkflow: data.tasks_workflow || [],
+    }).onConflictDoUpdate({
+      target: capabilities.id,
+      set: {
+        nameI18nKey: data.name_i18n_key,
+        descriptionI18nKey: data.description_i18n_key,
+        type: data.type,
+        instructions,
+        inputsDescription,
+        expectedOutputsDescription,
+        tasksWorkflow: data.tasks_workflow || [],
+      }
+    });
+
+    // Create link to Team Type
+    if (data.team_type) {
+      await db.insert(teamTypeCapabilities).values({
+        teamTypeId: data.team_type,
+        capabilityId: data.id,
+        isFavorite: data.featured || false,
+        defaultAssignedRole: data.default_assigned_role,
+      });
+    }
+  }
+
   console.log("✅ Seed complete!");
+
   process.exit(0);
 }
 

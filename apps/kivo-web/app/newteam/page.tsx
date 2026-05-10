@@ -15,18 +15,18 @@ import { useTranslation } from "@/lib/i18n";
 
 type TeamType = {
   id: string;
-  name: string;
-  description: string;
+  nameI18nKey: string;
+  descriptionI18nKey: string;
   featured: boolean;
 };
 
 type AgentRole = {
   id: string;
-  name: string;
-  description: string;
+  nameI18nKey: string;
+  descriptionI18nKey: string;
   emoji: string;
-  backgroundColor: string;
-  suggestedName: string;
+  emojiBgColor: string;
+  suggestedNameI18nKey: string;
 };
 
 type TeamTypeRole = {
@@ -98,7 +98,18 @@ export default function NewTeamPage() {
   const { token, workspaceId } = useAuth();
   const router      = useRouter();
   const { t } = useTranslation();
-  const translate = useCallback((key: string) => (t.db as Record<string, string>)[key] || key, [t.db]);
+  
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
+
 
   // Navigation State
   const [step, setStep] = useState(1);
@@ -173,7 +184,7 @@ export default function NewTeamPage() {
 
           roles.forEach((r) => {
             newQuantities[r.role.id] = 1;
-            newNames[r.role.id] = [translate(r.role.suggestedName)];
+            newNames[r.role.id] = [translate(r.role.suggestedNameI18nKey)];
             if (r.isLeader && !defaultLeader) {
               defaultLeader = `${r.role.id}-0`;
             }
@@ -199,7 +210,7 @@ export default function NewTeamPage() {
       if (qty > current.length) {
         return {
           ...prev,
-          [roleId]: [...current, ...Array(qty - current.length).fill(translate(role.suggestedName))]
+          [roleId]: [...current, ...Array(qty - current.length).fill(translate(role.suggestedNameI18nKey))]
         };
       }
       return { ...prev, [roleId]: current.slice(0, qty) };
@@ -244,7 +255,7 @@ export default function NewTeamPage() {
     if (!suggestedRoles.find(r => r.role.id === role.id)) {
       setSuggestedRoles([...suggestedRoles, { role, isLeader: false }]);
       setQuantities(prev => ({ ...prev, [role.id]: 1 }));
-      setAgentNames(prev => ({ ...prev, [role.id]: [translate(role.suggestedName)] }));
+      setAgentNames(prev => ({ ...prev, [role.id]: [translate(role.suggestedNameI18nKey)] }));
     } else {
       const currentQty = quantities[role.id] || 0;
       updateQuantity(role.id, currentQty + 1, role);
@@ -285,16 +296,20 @@ export default function NewTeamPage() {
     }
 
     // Build agents array
-    const agentsToCreate: { name: string; type: string }[] = [];
+    const agentsToCreate: { name: string; roleId: string; isLeader: boolean }[] = [];
     suggestedRoles.forEach((r) => {
       const qty = quantities[r.role.id] || 0;
       for (let i = 0; i < qty; i++) {
+        const agentKey = `${r.role.id}-${i}`;
         agentsToCreate.push({
-          name: agentNames[r.role.id]?.[i] || translate(r.role.suggestedName),
-          type: r.role.id, // we pass the role ID as the 'type'
+          name: agentNames[r.role.id]?.[i] || translate(r.role.suggestedNameI18nKey),
+          roleId: r.role.id,
+          isLeader: agentKey === leaderId,
         });
       }
     });
+
+
 
     setIsCreating(true);
     try {
@@ -305,10 +320,11 @@ export default function NewTeamPage() {
           workspaceId,
           name: teamName.trim(),
           identifierPrefix: identifierPrefix.toUpperCase(),
-          template: selectedType.id,
+          templateId: selectedType.id,
           agents: agentsToCreate,
         }),
       });
+
       if (!r.ok) {
         const err = await r.json().catch(() => ({}));
         toast.error(err?.error?.message ?? "Failed to create team.");
@@ -347,8 +363,8 @@ export default function NewTeamPage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Create a New Team</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Set up your agent team in a few steps.</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t.teamsPage.createNewTeam}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t.teamsPage.chooseTemplateSubtitle}</p>
           </div>
         </div>
 
@@ -362,13 +378,13 @@ export default function NewTeamPage() {
           {step === 1 && (
             <div className="flex flex-col gap-6" id="newteam-step-1">
               <div>
-                <h2 className="font-semibold text-foreground">Choose a template</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Pick a featured team or search for another type.</p>
+                <h2 className="font-semibold text-foreground">{t.teamsPage.chooseTemplate}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t.teamsPage.chooseTemplateSubtitle}</p>
               </div>
 
               {!searchQuery && featuredTypes.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Featured Templates</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.teamsPage.featuredTemplates}</h3>
                   {featuredTypes.map((tmpl) => {
                     const isSelected = selectedType?.id === tmpl.id;
                     return (
@@ -381,9 +397,9 @@ export default function NewTeamPage() {
                         )}>
                         <div className="flex-1 min-w-0">
                           <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
-                            {translate(tmpl.name)}
+                            {translate(tmpl.nameI18nKey)}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.description)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.descriptionI18nKey)}</p>
                         </div>
                         {isSelected && <Check className="size-4 text-primary shrink-0" />}
                       </button>
@@ -394,12 +410,12 @@ export default function NewTeamPage() {
 
               <div className="flex flex-col gap-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {searchQuery ? "Search Results" : "Search other templates"}
+                  {searchQuery ? t.teamsPage.requests : t.teamsPage.searchOtherTemplates}
                 </h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search templates..."
+                    placeholder={t.teamsPage.searchTemplatesPlaceholder}
                     className="pl-9"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
@@ -425,9 +441,9 @@ export default function NewTeamPage() {
                       )}>
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
-                          {translate(tmpl.name)}
+                          {translate(tmpl.nameI18nKey)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.description)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.descriptionI18nKey)}</p>
                       </div>
                       {isSelected && <Check className="size-4 text-primary shrink-0" />}
                     </button>
@@ -452,7 +468,7 @@ export default function NewTeamPage() {
             <div className="flex flex-col gap-4" id="newteam-step-2">
               <div>
                 <h2 className="font-semibold text-foreground">
-                  {translate(selectedType.name)} — Team Details
+                  {translate(selectedType.nameI18nKey)} — Team Details
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Give your team a name and a short identifier prefix.
@@ -514,15 +530,15 @@ export default function NewTeamPage() {
                         <div className="flex items-center gap-4">
                           <div
                             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
-                            style={{ backgroundColor: role.backgroundColor }}
+                            style={{ backgroundColor: role.emojiBgColor }}
                           >
                             <span className="text-xl select-none">{role.emoji}</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
-                              {translate(role.name)}
+                              {translate(role.nameI18nKey)}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(role.description)}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(role.descriptionI18nKey)}</p>
                           </div>
                           <QuantityControl id={`role-${role.id}`} value={qty}
                             onChange={(v) => updateQuantity(role.id, v, role)} />
@@ -545,7 +561,7 @@ export default function NewTeamPage() {
                                       newNames[i] = e.target.value;
                                       setAgentNames((prev) => ({ ...prev, [role.id]: newNames }));
                                     }}
-                                    placeholder={`${translate(role.name)} name`}
+                                    placeholder={`${translate(role.nameI18nKey)} name`}
                                     className="h-8 text-sm flex-1 bg-background"
                                   />
                                   <Button
@@ -605,12 +621,12 @@ export default function NewTeamPage() {
                               onClick={() => addRoleToSquad(role)}
                               className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent text-left transition-colors"
                             >
-                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm" style={{ backgroundColor: role.backgroundColor }}>
+                              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-sm" style={{ backgroundColor: role.emojiBgColor }}>
                                 {role.emoji}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium">{translate(role.name)}</p>
-                                <p className="text-[10px] text-muted-foreground truncate">{translate(role.description)}</p>
+                                <p className="text-sm font-medium">{translate(role.nameI18nKey)}</p>
+                                <p className="text-[10px] text-muted-foreground truncate">{translate(role.descriptionI18nKey)}</p>
                               </div>
                               <Plus className="h-4 w-4 text-muted-foreground" />
                             </button>

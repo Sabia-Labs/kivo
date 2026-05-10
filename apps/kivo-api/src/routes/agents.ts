@@ -75,18 +75,22 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
     const [agent] = await db
       .insert(agents)
       .values({
-        ...input,
+        teamId: input.teamId,
+        name: input.name,
+        roleId: input.type, // input.type holds the role ID from client
+        icon: input.icon,
         gatewayToken,
         k8sStatus: "pending",
         soul: role?.soul,
         identity: role?.identity,
-        agentsInstructions: role?.agentsInstructions,
-        userContext: role?.userContext,
-        memory: role?.memory,
-        toolsNotes: role?.toolsNotes,
-        heartbeat: role?.heartbeat,
+        agentsInstructions: role?.operatingInstructions,
+        userContext: "",
+        memory: "",
+        toolsNotes: "",
+        heartbeat: "",
       })
       .returning();
+
 
     // ── 4. Provision K8s desired state (non-blocking on errors — agent exists) ─
     try {

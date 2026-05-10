@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { Team, Task, Agent, HealthStatus } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ function computeHealth(a: Agent): HealthStatus {
 
 function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, level?: number }) {
   const { token } = useAuth();
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [subRequests, setSubRequests] = useState<any[]>([]);
@@ -62,8 +64,8 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
   };
 
   const statusLabel = req.status === "completed" 
-    ? (req.resolution === "success" ? "ok" : "failed") 
-    : req.status === "open" ? "created" : req.status.replace("_", " ");
+    ? (req.resolution === "success" ? t.teamsPage.statusLabels.ok : t.teamsPage.statusLabels.failed) 
+    : (t.teamsPage.statusLabels as any)[req.status] || req.status.replace("_", " ");
 
   const statusColorClass = req.status === "draft" ? "bg-muted text-muted-foreground" :
     req.status === "open" ? "bg-blue-500/10 text-blue-500" :
@@ -108,12 +110,12 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
         <div className="flex flex-col w-full">
           {(!hasLoaded && isLoading) && (
             <div className="p-3 text-xs text-muted-foreground text-center" style={{ paddingLeft: `${1 + (level + 1) * 1.5}rem` }}>
-              Loading...
+              {t.teamsPage.loading}
             </div>
           )}
           {hasLoaded && tasks.length === 0 && subRequests.length === 0 && (
             <div className="p-3 text-xs text-muted-foreground/50 italic" style={{ paddingLeft: `${1 + (level + 1) * 1.5}rem` }}>
-              No tasks or nested requests.
+              {t.teamsPage.noTasksOrNested}
             </div>
           )}
           {tasks.map(task => (
@@ -142,9 +144,22 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
 
 export default function TeamDetailPage() {
   const { token, user, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const teamId = String(params.id);
+
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    if (!key.includes(".")) return key; // Not a translation key
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (!current || current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [team, setTeam] = useState<Team | null>(null);
@@ -188,11 +203,14 @@ export default function TeamDetailPage() {
       if (res.ok) {
         const d = await res.json();
         const all: Agent[] = d.data ?? [];
-        all.sort((a, b) => (a.type === "team_lead" ? -1 : b.type === "team_lead" ? 1 : 0));
+        // Sort: Leaders first
+        all.sort((a, b) => (a.isLeader ? -1 : b.isLeader ? 1 : 0));
         setAgents(all);
       }
     } catch {}
   };
+
+
 
   const fetchActivities = async () => {
     try {
@@ -262,9 +280,11 @@ export default function TeamDetailPage() {
 
   if (!team) return null;
 
-  const teamLead = agents.find((a) => a.type === "team_lead");
-  const otherAgents = agents.filter((a) => a.type !== "team_lead");
+  const teamLead = agents.find((a) => a.isLeader);
+  const otherAgents = agents.filter((a) => !a.isLeader);
   const openedRequests = requests.filter(r => r.status !== "completed" && r.status !== "cancelled");
+
+
   
   const displayRequests = requests.filter(r => {
     if (showOnlyMine && r.requesterUserId !== user?.id) return false;
@@ -284,7 +304,7 @@ export default function TeamDetailPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
       <Link href="/teams" className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="size-3.5" />
-        Back to Teams
+        {t.teamsPage.backToTeams}
       </Link>
 
       <header className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between mb-8">
@@ -303,29 +323,29 @@ export default function TeamDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" asChild>
-            <Link href={`/teams/${teamId}/settings`}>Settings</Link>
+            <Link href={`/teams/${teamId}/settings`}>{t.teamsPage.settings}</Link>
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button>
                 <Plus className="size-4 mr-2" />
-                New Request
+                {t.teamsPage.newRequest}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem asChild>
                 <Link href={`/teams/${teamId}/requests/new`} className="cursor-pointer font-medium">
-                  Ask the team anything
+                  {t.teamsPage.askAnything}
                 </Link>
               </DropdownMenuItem>
               {favoriteCapabilities.length > 0 && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">Favorites</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider">{t.teamsPage.favorites}</DropdownMenuLabel>
                   {favoriteCapabilities.map(cap => (
                     <DropdownMenuItem key={cap.id} asChild>
                       <Link href={`/teams/${teamId}/requests/new?capabilityId=${cap.id}`} className="cursor-pointer">
-                        {cap.name}
+                        {translate(cap.name)}
                       </Link>
                     </DropdownMenuItem>
                   ))}
@@ -341,7 +361,7 @@ export default function TeamDetailPage() {
         <section className="mb-8 rounded-xl border border-destructive/20 bg-destructive/10 p-5">
           <div className="flex items-center gap-2 mb-3">
             <AlertCircle className="size-5 text-destructive" />
-            <h2 className="text-sm font-semibold text-destructive">Team Needs Your Help</h2>
+            <h2 className="text-sm font-semibold text-destructive">{t.teamsPage.teamNeedsHelp}</h2>
           </div>
           <div className="flex flex-col gap-2">
             {teamAlerts.map(alert => (
@@ -354,7 +374,7 @@ export default function TeamDetailPage() {
                       href={`/teams/${teamId}/requests/${alert.relatedEntityId}`}
                       className="text-xs font-semibold text-primary hover:underline"
                     >
-                      View Request
+                      {t.teamsPage.viewRequest}
                     </Link>
                     <button
                       onClick={async () => {
@@ -378,14 +398,14 @@ export default function TeamDetailPage() {
                               ? { ...r, status: "cancelled" } 
                               : r
                           ));
-                          toast.success("Request cancelled");
+                          toast.success(t.teamsPage.requestCancelled);
                         } catch (e) {
-                          toast.error("Failed to cancel request");
+                          toast.error(t.teamsPage.failedCancelRequest);
                         }
                       }}
                       className="text-xs font-semibold text-destructive hover:underline"
                     >
-                      Cancel Request
+                      {t.teamsPage.cancelRequest}
                     </button>
                   </div>
                 )}
@@ -403,10 +423,10 @@ export default function TeamDetailPage() {
             <div className="flex items-center justify-between mb-3 px-1">
               <div className="flex items-center gap-2">
                 <Bot className="size-5 text-muted-foreground" />
-                <h3 className="text-sm font-semibold">Squad Chat</h3>
+                <h3 className="text-sm font-semibold">{t.teamsPage.squadChat}</h3>
               </div>
               <Link href={`/teams/${teamId}/agents/new`} className="text-xs font-medium text-primary hover:underline">
-                Add Agent
+                {t.teamsPage.addAgent}
               </Link>
             </div>
             <AgentChatAccordion agents={agents} teamId={teamId} />
@@ -416,60 +436,60 @@ export default function TeamDetailPage() {
             <div className="border-b px-5 py-3 flex items-center justify-between bg-muted/20">
               <div className="flex items-center gap-2">
                 <ListTodo className="size-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold">Requests</h3>
+                <h3 className="text-sm font-semibold">{t.teamsPage.requests}</h3>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground">
                     <Filter className="size-3.5" />
-                    Filters
+                    {t.teamsPage.filters}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Ownership</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t.teamsPage.ownership}</DropdownMenuLabel>
                   <DropdownMenuCheckboxItem 
                     checked={showOnlyMine} 
                     onCheckedChange={setShowOnlyMine}
                   >
-                    Only my requests
+                    {t.teamsPage.onlyMyRequests}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Status</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t.teamsPage.status}</DropdownMenuLabel>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("draft")} 
                     onCheckedChange={() => toggleStatusFilter("draft")}
                   >
-                    Draft
+                    {t.teamsPage.statusLabels.draft}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("open")} 
                     onCheckedChange={() => toggleStatusFilter("open")}
                   >
-                    Created
+                    {t.teamsPage.statusLabels.open}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("in_progress")} 
                     onCheckedChange={() => toggleStatusFilter("in_progress")}
                   >
-                    In Progress
+                    {t.teamsPage.statusLabels.in_progress}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("waiting_user")} 
                     onCheckedChange={() => toggleStatusFilter("waiting_user")}
                   >
-                    Waiting User
+                    {t.teamsPage.statusLabels.waiting_user}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("completed")} 
                     onCheckedChange={() => toggleStatusFilter("completed")}
                   >
-                    Completed
+                    {t.teamsPage.statusLabels.completed}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("cancelled")} 
                     onCheckedChange={() => toggleStatusFilter("cancelled")}
                   >
-                    Cancelled
+                    {t.teamsPage.statusLabels.cancelled}
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -477,7 +497,7 @@ export default function TeamDetailPage() {
             <div className="flex flex-col w-full">
               {displayRequests.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  No requests.
+                  {t.teamsPage.noRequests}
                 </div>
               ) : (
                 displayRequests.map(req => (
@@ -494,21 +514,21 @@ export default function TeamDetailPage() {
           <section className="rounded-xl border bg-card p-5">
             <div className="flex items-center gap-2 mb-4">
               <AlertCircle className="size-4 text-primary" />
-              <h2 className="text-sm font-semibold">Manager Actions</h2>
+              <h2 className="text-sm font-semibold">{t.teamsPage.managerActions}</h2>
             </div>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Agents</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.nav.agents}</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold">{agents.filter(a => computeHealth(a) === "online").length}/{agents.length}</span>
-                  <span className="text-xs text-muted-foreground">Online</span>
+                  <span className="text-xs text-muted-foreground">{t.teamsPage.online}</span>
                 </div>
               </div>
               <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Opened Requests</span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.teamsPage.openedRequests}</span>
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold">{openedRequests.length}</span>
-                  <span className="text-xs text-muted-foreground">in pipeline</span>
+                  <span className="text-xs text-muted-foreground">{t.teamsPage.inPipeline}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5 border border-primary/20">
@@ -516,8 +536,8 @@ export default function TeamDetailPage() {
                   <CheckCircle2 className="size-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">All systems operational</p>
-                  <p className="text-xs text-muted-foreground">Your squad is ready for tasks.</p>
+                  <p className="text-sm font-medium text-foreground">{t.teamsPage.operational}</p>
+                  <p className="text-xs text-muted-foreground">{t.teamsPage.operationalSubtitle}</p>
                 </div>
               </div>
             </div>
@@ -526,11 +546,11 @@ export default function TeamDetailPage() {
           <section className="rounded-xl border bg-card">
             <div className="border-b px-5 py-4 flex items-center gap-2 bg-muted/20">
               <Activity className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Recent Activity</h3>
+              <h3 className="text-sm font-semibold">{t.teamsPage.recentActivity}</h3>
             </div>
             <div className="p-5 flex flex-col gap-4">
               {activities.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">No activity yet</p>
+                <p className="text-xs text-muted-foreground text-center py-4">{t.teamsPage.noActivity}</p>
               ) : (
                 activities.slice(0, 5).map((act) => {
                   const isHuman = act.actorType === "human";
@@ -544,12 +564,12 @@ export default function TeamDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs leading-tight">
-                          <span className="font-medium text-foreground">{isHuman ? "You" : agent?.name || "Agent"}</span>
+                          <span className="font-medium text-foreground">{isHuman ? t.teamsPage.you : agent?.name || "Agent"}</span>
                           {act.activityTitle ? (
                             <span className="text-muted-foreground"> {act.activityTitle}</span>
                           ) : (
                             <>
-                              <span className="text-muted-foreground"> updated </span>
+                              <span className="text-muted-foreground"> {t.teamsPage.updated} </span>
                               <span className="font-medium text-foreground">{title}</span>
                             </>
                           )}

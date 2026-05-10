@@ -11,9 +11,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SmartCapabilitySelect } from "@/components/smart-capability-select";
+import { useTranslation } from "@/lib/i18n";
 
 export default function NewRequestPage() {
   const { token, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const params = useParams();
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const capabilityIdParam = searchParams?.get("capabilityId");
@@ -85,7 +87,7 @@ export default function NewRequestPage() {
         }
       } else {
         // Auto-assign team lead if available
-        const lead = loadedAgents.find((a: any) => a.type === "team_lead");
+        const lead = loadedAgents.find((a: any) => a.isLeader);
         if (lead) {
           setTargetType("agent");
           setTargetAgentId(lead.id);
@@ -118,7 +120,7 @@ export default function NewRequestPage() {
         }),
       });
       if (!res.ok) {
-        setLeaderThought("I'm having trouble analyzing this right now, but feel free to submit!");
+        setLeaderThought(t.teamsPage.failedInsight);
         return;
       }
       const json = await res.json();
@@ -189,7 +191,7 @@ export default function NewRequestPage() {
         setIsLeaderThinking(true);
         const to = setTimeout(() => {
           setIsLeaderThinking(false);
-          setLeaderThought("I have updated the execution plan based on the selected capabilities. Provide details to proceed.");
+          setLeaderThought(t.teamsPage.updatedExecutionPlan);
         }, 1500);
         return () => clearTimeout(to);
       }
@@ -198,13 +200,13 @@ export default function NewRequestPage() {
 
   const handleSubmit = async (status: "draft" | "open") => {
     if (!requestDetails.trim()) {
-      toast.error("Please provide request details.");
+      toast.error(t.teamsPage.requestDetailsRequired);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const finalTitle = title.trim() || "New Request";
+      const finalTitle = title.trim() || t.teamsPage.newRequest;
 
       const endpoint = requestIdParam 
         ? `${API_BASE}/teams/${teamId}/requests/${requestIdParam}`
@@ -229,10 +231,10 @@ export default function NewRequestPage() {
       });
 
       if (!res.ok) {
-        throw new Error((await res.json()).error || `Failed to ${requestIdParam ? "update" : "create"} request`);
+        throw new Error((await res.json()).error || `${t.teamsPage.failedAction} ${requestIdParam ? "update" : "create"} ${t.teamsPage.request}`);
       }
 
-      toast.success(`Request ${status === "draft" ? "saved as draft" : "created successfully"}`);
+      toast.success(status === "draft" ? t.teamsPage.requestDraftSaved : t.teamsPage.requestCreated);
       router.push(`/teams/${teamId}`);
     } catch (err: any) {
       toast.error(err.message);
@@ -241,21 +243,21 @@ export default function NewRequestPage() {
     }
   };
 
-  const leadAgent = agents.find(a => a.type === "team_lead");
+  const leadAgent = agents.find(a => a.isLeader);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
       <Link href={`/teams/${teamId}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="size-3.5" />
-        Back to Team
+        {t.teamsPage.backToTeam}
       </Link>
 
       <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {selectedCapabilityInfo ? selectedCapabilityInfo.name : "Ask the team anything"}
+          {selectedCapabilityInfo ? selectedCapabilityInfo.name : t.teamsPage.askAnything}
         </h1>
         <p className="text-muted-foreground text-sm">
-          {selectedCapabilityInfo ? "Fill in the details below to start this capability." : "What would you like to ask or request?"}
+          {selectedCapabilityInfo ? t.teamsPage.capabilityInfo : t.teamsPage.genericRequestInfo}
         </p>
       </div>
 
@@ -263,7 +265,7 @@ export default function NewRequestPage() {
 
         <div className="space-y-3">
           <Label className="text-sm font-medium">
-            {(!capabilitiesWorkflow.length && suggestedCapability) ? "Matched Capability" : selectedCapabilityInfo ? "Selected Capability" : "Capability"}
+            {(!capabilitiesWorkflow.length && suggestedCapability) ? t.teamsPage.matchedCapability : selectedCapabilityInfo ? t.teamsPage.selectedCapability : t.teamsPage.capability}
           </Label>
           <SmartCapabilitySelect
             value={capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : suggestedCapability}
@@ -277,7 +279,7 @@ export default function NewRequestPage() {
           <textarea
             id="requestDetails"
             className="flex min-h-[160px] w-full rounded-md border border-input bg-background px-4 py-3 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary shadow-sm"
-            placeholder="Provide context, references, or instructions for the team..."
+            placeholder={t.teamsPage.requestPlaceholder}
             value={requestDetails}
             onChange={e => handleDetailsChange(e.target.value)}
             autoFocus
@@ -290,7 +292,7 @@ export default function NewRequestPage() {
             {leadAgent?.icon || "👑"}
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-semibold text-primary mb-1 block">{leadAgent?.name || "Team Lead"}</span>
+            <span className="text-xs font-semibold text-primary mb-1 block">{leadAgent?.name || t.teamsPage.statusLabels.open}</span>
             {isLeaderThinking ? (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground italic h-6">
                 <span className="flex gap-0.5">
@@ -298,14 +300,14 @@ export default function NewRequestPage() {
                   <span className="animate-bounce delay-150">.</span>
                   <span className="animate-bounce delay-300">.</span>
                 </span>
-                analyzing request
+                {t.teamsPage.analyzingRequest}
               </div>
             ) : leaderThought ? (
               <div className="space-y-4 animate-in fade-in slide-in-from-left-2">
                 <p className="text-sm text-foreground leading-relaxed">{leaderThought}</p>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground italic h-6 flex items-center">Waiting for your input...</p>
+              <p className="text-sm text-muted-foreground italic h-6 flex items-center">{t.teamsPage.waitingInput}</p>
             )}
           </div>
         </div>
@@ -314,7 +316,7 @@ export default function NewRequestPage() {
         {title && (
           <div className="space-y-4 pt-4 border-t animate-in fade-in">
             <div className="space-y-2">
-              <Label htmlFor="title" className="text-sm font-medium">Request Title</Label>
+              <Label htmlFor="title" className="text-sm font-medium">{t.teamsPage.requestTitle}</Label>
               <Input
                 id="title"
                 value={title}
@@ -322,7 +324,7 @@ export default function NewRequestPage() {
                   setTitle(e.target.value);
                   setHasUserEditedTitle(true);
                 }}
-                placeholder="Request Title"
+                placeholder={t.teamsPage.requestTitle}
               />
             </div>
           </div>
@@ -339,12 +341,12 @@ export default function NewRequestPage() {
             disabled={isSubmitting}
           >
             <Save className="size-4 mr-2" />
-            Save as draft
+            {t.teamsPage.saveDraft}
           </Button>
 
           <div className="flex gap-3">
             <Button variant="outline" asChild>
-              <Link href={`/teams/${teamId}`}>Cancel</Link>
+              <Link href={`/teams/${teamId}`}>{t.teamsPage.cancel}</Link>
             </Button>
             <Button 
               onClick={() => handleSubmit("open")}
@@ -352,7 +354,7 @@ export default function NewRequestPage() {
               className="px-8 shadow-md"
             >
               <Send className="size-4 mr-2" />
-              Submit Request
+              {t.teamsPage.submitRequest}
             </Button>
           </div>
         </div>

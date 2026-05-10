@@ -45,7 +45,7 @@ function WeChatIcon() {
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { t } = useTranslation();
+  const { lang, t } = useTranslation();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -65,14 +65,14 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(apiErrorMessage(data.error, "Failed to send code"));
+        toast.error(apiErrorMessage(data.error, t.login.failedSendCode));
         return;
       }
       
-      toast.success("Code sent to your email!");
+      toast.success(t.login.sentCode + " " + email);
       setStep(2);
     } catch {
-      toast.error("Network error. Please check your connection.");
+      toast.error("Network error");
     } finally {
       setIsLoading(false);
     }
@@ -93,14 +93,15 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        toast.error(apiErrorMessage(data.error, "Invalid code"));
+        toast.error(apiErrorMessage(data.error, t.login.invalidCode));
         return;
       }
 
       login(data.data.token, data.data.user, data.data.teamId ?? null);
-      toast.success("Welcome back!");
+      toast.success(t.login.welcomeBack);
       const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
-      window.location.href = `/redirect-app?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
+      window.location.href = `/redirect-app?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&lang=${lang}${wsIdParam}`;
+
     } catch {
       toast.error("Network error. Please check your connection.");
     } finally {
@@ -166,9 +167,9 @@ export default function LoginPage() {
                 
                 {step === 2 && (
                   <>
-                    <h1 className="text-xl font-bold">Check your email</h1>
+                    <h1 className="text-xl font-bold">{t.login.checkEmail}</h1>
                     <FieldDescription>
-                      We sent a 4-digit code to <span className="font-medium text-foreground">{email}</span>.
+                      {t.login.sentCode} <span className="font-medium text-foreground">{email}</span>.
                     </FieldDescription>
                   </>
                 )}
@@ -181,7 +182,7 @@ export default function LoginPage() {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t.login.emailPlaceholder}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       autoComplete="email"
@@ -199,7 +200,7 @@ export default function LoginPage() {
                   {isDevMode && (
                     <Field className="mt-2">
                       <Button type="button" variant="secondary" onClick={handleDevLogin} disabled={isLoading}>
-                        <Code className="mr-2 size-4" /> Quick Dev Login (wei.chen)
+                        <Code className="mr-2 size-4" /> {t.login.devLogin} (wei.chen)
                       </Button>
                     </Field>
                   )}
@@ -242,9 +243,9 @@ export default function LoginPage() {
                   <Field>
                     <Button type="submit" disabled={otp.length !== 4 || isLoading}>
                       {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                      Verify Code
+                      {t.login.verifyCode}
                     </Button>
-                    <Button variant="ghost" type="button" onClick={() => setStep(1)} className="mt-2 text-muted-foreground" disabled={isLoading}>Back</Button>
+                    <Button variant="ghost" type="button" onClick={() => setStep(1)} className="mt-2 text-muted-foreground" disabled={isLoading}>{t.login.back}</Button>
                   </Field>
                 </>
               )}

@@ -26,7 +26,7 @@ export async function assignAgentToRequest(
         .where(
           and(
             eq(agents.teamId, teamId),
-            eq(agents.type, targetRole),
+            eq(agents.roleId, targetRole),
             eq(agents.availability, "available" as any)
           )
         );

@@ -97,7 +97,7 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
   // Build team context for assignment
   const team = await getTeamById(state.teamId);
   const teamAgents = await getAgentsByTeam(state.teamId);
-  const teamContext = `Team Name: ${team?.name}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.type}, ID: ${a.id})`).join("\n")}`;
+  const teamContext = `Team Name: ${team?.name}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.roleId}, ID: ${a.id})`).join("\n")}`;
 
   return { task: taskRecord, request: updatedRequest, capability, teamContext };
 }

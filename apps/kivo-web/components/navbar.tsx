@@ -125,7 +125,7 @@ export function Navbar() {
                         className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent"
                       >
                         <Users className="size-4 text-muted-foreground" />
-                        My Teams
+                        {t.nav.myTeams}
                       </Link>
                       <button
                         id="nav-logout"

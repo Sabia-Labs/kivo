@@ -32,7 +32,7 @@ export function CapabilityForm({
 }: {
   capability: Capability;
   setCapability: (c: Capability) => void;
-  agents: { id: string, name: string, type: string }[];
+  agents: { id: string, name: string, roleId: string }[];
   allCapabilities: Capability[];
   onSave: () => void;
   isSaving: boolean;
@@ -151,7 +151,7 @@ export function CapabilityForm({
             >
               Anyone
             </button>
-            {Array.from(new Set(agents.map(a => a.type))).map(role => (
+            {Array.from(new Set(agents.map(a => a.roleId))).map(role => (
               <button
                 key={role}
                 type="button"
