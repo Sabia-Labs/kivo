@@ -296,16 +296,20 @@ export default function NewTeamPage() {
     }
 
     // Build agents array
-    const agentsToCreate: { name: string; roleId: string }[] = [];
+    const agentsToCreate: { name: string; roleId: string; isLeader: boolean }[] = [];
     suggestedRoles.forEach((r) => {
       const qty = quantities[r.role.id] || 0;
       for (let i = 0; i < qty; i++) {
+        const agentKey = `${r.role.id}-${i}`;
         agentsToCreate.push({
           name: agentNames[r.role.id]?.[i] || translate(r.role.suggestedNameI18nKey),
           roleId: r.role.id,
+          isLeader: agentKey === leaderAgentKey,
         });
       }
     });
+
+
 
     setIsCreating(true);
     try {
