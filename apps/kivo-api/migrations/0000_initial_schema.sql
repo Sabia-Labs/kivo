@@ -48,6 +48,7 @@ CREATE TABLE "agents" (
 	"k8s_status" "agent_k8s_status" DEFAULT 'pending',
 	"k8s_resource_name" text,
 	"availability" "agent_availability" DEFAULT 'available' NOT NULL,
+	"is_leader" boolean DEFAULT false NOT NULL,
 	"soul" text,
 	"identity" text,
 	"agents_instructions" text,

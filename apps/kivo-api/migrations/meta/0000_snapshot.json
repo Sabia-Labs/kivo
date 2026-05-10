@@ -1,5 +1,5 @@
 {
-  "id": "cb3eab1c-db9c-478a-a3ec-db36a943ca18",
+  "id": "89067466-a650-4a85-9bb1-683868643951",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -262,6 +262,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'available'"
+        },
+        "is_leader": {
+          "name": "is_leader",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
         },
         "soul": {
           "name": "soul",
