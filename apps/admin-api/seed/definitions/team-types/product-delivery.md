@@ -1,10 +1,10 @@
 ---
 id: product-delivery
-emoji: "🚀"
-color: "#FEF3C7"
 name_i18n_key: dashboard.newTeam.step3Template.templates.engineering.title
 description_i18n_key: dashboard.newTeam.step3Template.templates.engineering.description
 featured: true
+emoji: "🚀"
+color: "#FEF3C7"
 composition:
   - roleId: product-delivery-team-lead
     quantity: 1
@@ -15,11 +15,8 @@ composition:
   - roleId: software-architect
     quantity: 1
     isLeader: false
-  - roleId: backend-engineer
-    quantity: 1
-    isLeader: false
-  - roleId: frontend-engineer
-    quantity: 1
+  - roleId: software-engineer
+    quantity: 2
     isLeader: false
 ---
 
