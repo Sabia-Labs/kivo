@@ -9,6 +9,7 @@ import {
 import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 import { Team, Task, Agent, HealthStatus } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
