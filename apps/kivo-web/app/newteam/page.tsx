@@ -437,9 +437,9 @@ export default function NewTeamPage() {
                       )}>
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
-                          {translate(tmpl.name)}
+                          {translate(tmpl.nameI18nKey)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.description)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.descriptionI18nKey)}</p>
                       </div>
                       {isSelected && <Check className="size-4 text-primary shrink-0" />}
                     </button>
@@ -464,7 +464,7 @@ export default function NewTeamPage() {
             <div className="flex flex-col gap-4" id="newteam-step-2">
               <div>
                 <h2 className="font-semibold text-foreground">
-                  {translate(selectedType.name)} — Team Details
+                  {translate(selectedType.nameI18nKey)} — Team Details
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Give your team a name and a short identifier prefix.
