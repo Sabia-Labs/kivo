@@ -68,7 +68,7 @@ async function fetchContextsNode(state: typeof IngestionState.State) {
   const kivoContext = "Kivo is a platform for deploying and managing autonomous AI developers as containers in a Kubernetes cluster. These agents act as full-stack developers, with state/memory persisted in Git for portability and interaction via Telegram.";
 
   const teamAgents = await getAgentsByTeam(state.teamId);
-  const teamContext = `Team Name: ${team.name}\nMission: ${team.mission}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.type}, ID: ${a.id})`).join("\n")}`;
+  const teamContext = `Team Name: ${team.name}\nMission: ${team.mission}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.roleId}, ID: ${a.id})`).join("\n")}`;
   // TODO: inserir as integracoes que o time tem (github repo, linear, etc)
 
   const otherTeams = await getOtherTeamsInWorkspace(team.workspaceId, state.teamId);
@@ -76,7 +76,7 @@ async function fetchContextsNode(state: typeof IngestionState.State) {
   if (otherTeams.length > 0) {
     const otherTeamsInfo = await Promise.all(otherTeams.map(async ot => {
       const otAgents = await getAgentsByTeam(ot.id);
-      const teamLeaders = otAgents.filter(a => a.type === "team_lead");
+      const teamLeaders = otAgents.filter(a => a.roleId?.includes("lead") || a.roleId?.includes("manager") || a.roleId === "executive-assistant");
       const leaderNames = teamLeaders.map(l => l.name).join(", ");
       return `- ${ot.name} (Prefix: ${ot.identifierPrefix}): Mission: ${ot.mission}. Leaders: ${leaderNames || "None"}`;
     }));

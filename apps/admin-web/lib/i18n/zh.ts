@@ -1,7 +1,7 @@
-import type { Dictionary } from "./en";
+import { Dictionary } from "./en";
 
 export const zh: Dictionary = {
-  brand: "灵鸟",
+  brand: "灵巢",
   nav: {
     about: "关于我们",
     contactSales: "联系销售",
@@ -12,94 +12,39 @@ export const zh: Dictionary = {
     agents: "智能体",
     logout: "退出登录",
   },
-        hero: {
-    badge: "AI智能体团队，以最佳实践管理",
-    headline: "卓越的团队执行力，\n触手可及。",
-    subheadline:
-      "灵鸟 以世界级的组织管理纪律部署自主AI智能体团队——无论您从事哪个领域，都能让您的智能体团队像管理良好的人类组织一样在AI速度下交付成果。",
-    ctaPrimary: "立即开始",
+  hero: {
+    badge: "AI 智能体团队，以最佳实践管理",
+    headline: "按需提供团队卓越表现。",
+    subheadline: "灵巢 以世界级的组织管理纪律部署自主 AI 智能体团队 —— 无论您从事哪个领域，都能让您的智能体团队像管理良好的人类组织一样交付成果。",
+    ctaPrimary: "开始使用",
     ctaSecondary: "联系销售",
   },
   stats: {
     items: [
-      { value: "10×", label: "更快的执行周期" },
-      { value: "100%", label: "操作的完全可审计性" },
-      { value: "24/7", label: "自主运行" },
-      { value: "0", label: "任务间的上下文丢失" },
-    ],
-  },
-  governance: {
-    sectionBadge: "结构化自主",
-    sectionTitle: "在各个层级实现可见与控制。",
-    sectionSubtitle:
-      "灵鸟取代了即兴的聊天机器人交互，提供了一个受治理的、结构化的和可衡量的执行层。您的团队可以自主运行，但绝不脱离监督。",
-    oldWayTitle: "通用 AI",
-    kivoWayTitle: "灵鸟平台",
-    items: [
-      {
-        old: "不可预测的输出和幻觉",
-        kivo: "严格的基于角色的工作流和护栏",
-      },
-      {
-        old: "没有记忆的孤立聊天会话",
-        kivo: "基于 Git 的跨任务持久化记忆",
-      },
-      {
-        old: "黑盒执行",
-        kivo: "实时可观测性和健康评分",
-      },
-      {
-        old: "智能体在未经批准的情况下采取行动",
-        kivo: "多级人在环路 (Human-in-the-loop) 审批",
-      },
+      { label: "活跃智能体", value: "250+" },
+      { label: "已完成任务", value: "12k+" },
+      { label: "平均交付时间", value: "4m" },
+      { label: "正常运行时间", value: "99.9%" },
     ],
   },
   howItWorks: {
-    sectionBadge: "执行周期",
-    sectionTitle: "灵鸟如何编排工作。",
+    sectionBadge: "工作流程",
+    sectionTitle: "从定义到交付。",
     steps: [
       {
         number: "01",
-        title: "创建您的 AI 团队",
-        description: "部署具有明确角色和所有权的结构化智能体小队。",
+        title: "选择模板",
+        description: "从预配置的团队结构开始，包括正确的人员组合和工作流。",
       },
       {
         number: "02",
-        title: "分配工作",
-        description: "分配复杂的目标。团队负责人将任务委派给专业的智能体。",
+        title: "配置智能体",
+        description: "定义角色、个性并授权给您的智能体。将它们连接到您的工具。",
       },
       {
         number: "03",
-        title: "监控与审批",
-        description: "审查进度，批准关键操作，并持续跟踪团队的健康状况。",
-      },
-    ],
-  },
-  pillars: {
-    sectionBadge: "核心基础设施",
-    sectionTitle: "为运营纪律而构建。",
-    sectionSubtitle:
-      "灵鸟提供了必要的基础设施，将 AI 智能体视为负责任的团队成员，而不仅仅是工具。",
-    items: [
-      {
-        title: "工作流图",
-        description: "可视化执行映射确保任务遵循既定的顺序和依赖关系。",
-        icon: "GitMerge",
-      },
-      {
-        title: "持久化记忆",
-        description: "每一个决策、上下文和输出都会被安全地进行版本控制和存储。",
-        icon: "Activity",
-      },
-      {
-        title: "审批系统",
-        description: "细粒度控制智能体在没有人类明确同意的情况下可以执行的操作。",
-        icon: "ShieldCheck",
-      },
-      {
-        title: "团队健康评分",
-        description: "提供关于智能体速度、阻碍因素和整体运营效率的实时遥测。",
-        icon: "TrendingUp",
+        title: "监控与交付",
+        description: "实时观察您的团队执行任务、提交 PR 并通过电报汇报进度。",
       },
     ],
   },
@@ -134,51 +79,48 @@ export const zh: Dictionary = {
       },
     ],
   },
-
-  },
   controlPlane: {
     sectionBadge: "控制平面",
     sectionTitle: "您掌控团队表现的驾驶舱。",
     sectionSubtitle:
-      "灵鸟控制平面为领导者提供了一个单一的界面，用于配置智能体团队、设置护栏、监控健康状况，并保持对您的 AI 劳动力的完全控制权。",
+      "灵巢 控制平面为领导者提供了一个单一的界面，用于配置智能体团队、设置护栏、监控健康状况，并保持对您的 AI 劳动力的完全控制权。",
     features: [
-      "每个智能体和操作类型的多级审批规则",
-      "实时团队健康评分和活动日志",
-      "每个团队和任务的成本归因",
+      "按智能体和操作类型设置多级审批规则",
+      "实时团队健康评分与活动日志",
+      "按团队和任务的成本归归因",
       "符合您运营规范的工作流模板",
-      "即时回滚和智能体替换",
-      "持久化记忆 —— 团队始终可从 Git 恢复",
+      "即时回滚与智能体替换",
+      "持久记忆 —— 团队始终可从 Git 恢复",
     ],
   },
   cta: {
-    headline: "立即扩展您的执行能力。",
-    subheadline:
-      "在几分钟内启动您的第一个自主 AI 团队，体验结构化的自主性。",
-    ctaPrimary: "部署您的团队",
+    headline: "准备好扩展您的执行力了吗？",
+    subheadline: "加入正在使用 灵巢 以前所未有的速度构建软件和管理运营的前瞻性团队。",
+    ctaPrimary: "开始使用",
     ctaSecondary: "联系销售",
   },
   footer: {
     tagline: "结构。治理。交付。",
     product: "产品",
     company: "公司",
-    legal: "法律条款",
+    legal: "法律",
     links: {
-      features: "功能介绍",
-      pricing: "产品定价",
-      docs: "开发文档",
+      features: "功能",
+      pricing: "价格",
+      docs: "文档",
       changelog: "更新日志",
       about: "关于我们",
       blog: "博客",
-      careers: "加入我们",
+      careers: "招贤纳士",
       contact: "联系我们",
       privacy: "隐私政策",
       terms: "服务条款",
     },
-    copyright: "© 2026 灵鸟。保留所有权利。",
+    copyright: "© 2026 灵巢。保留所有权利。",
   },
   login: {
     title: "欢迎回来",
-    subtitle: "登录您的 灵鸟 账户",
+    subtitle: "登录您的 灵巢 账户",
     emailLabel: "电子邮件",
     emailPlaceholder: "you@company.com",
     passwordLabel: "密码",
@@ -186,19 +128,19 @@ export const zh: Dictionary = {
     signIn: "登录",
     continueWithEmail: "通过邮箱继续",
     orContinueWith: "或通过以下方式继续",
-    google: "通过 Google 登录",
-    microsoft: "通过 Microsoft 登录",
+    google: "通过 Google 继续",
+    microsoft: "通过 Microsoft 继续",
     noAccount: "还没有账户？",
     signUp: "立即注册",
     ssoComingSoon: "SSO 即将上线",
   },
   signup: {
-    title: "组建您的AI智能体团队",
+    title: "组建您的 AI 智能体团队",
     subtitle: "选择模板，数分钟内完成部署。",
     steps: {
       account: "账户",
-      workspace: "工作区",
-      team: "团队配置",
+      workspace: "工作空间",
+      team: "您的团队",
     },
     step1: {
       title: "创建您的账户",
@@ -212,8 +154,8 @@ export const zh: Dictionary = {
       orSignUpWith: "或通过以下方式注册",
     },
     step2: {
-      title: "命名您的工作区",
-      workspaceLabel: "工作区名称",
+      title: "命名您的工作空间",
+      workspaceLabel: "工作空间名称",
       workspacePlaceholder: "示例科技有限公司",
       next: "继续",
       back: "返回",
@@ -224,7 +166,7 @@ export const zh: Dictionary = {
       templates: {
         starter: {
           icon: "🧩",
-          title: "Kivo 入门版",
+          title: "灵巢 入门版",
           description: "配备一名行政助理，助您轻松开启。简单且灵活。",
         },
         product_delivery: {
@@ -258,18 +200,17 @@ export const zh: Dictionary = {
           description: "保护您的业务并确保合规。",
         },
       },
-
       next: "继续",
       back: "返回",
     },
     step4Starter: {
-      title: "配置您的 灵鸟 Starter 团队",
+      title: "配置您的 灵巢 Starter 团队",
       subtitle: "为您的团队命名并指定一位领导者。",
       teamNameLabel: "团队名称",
       teamNamePlaceholder: "例如：运营、研究、战略…",
       teamPrefixLabel: "团队缩写 (ID前缀)",
       teamPrefixPlaceholder: "例如：OPS、RES、STR…",
-      teamPrefixHint: "用于任务ID (例如：OPS-1, OPS-2)。",
+      teamPrefixHint: "用于任务 ID (例如：OPS-1, OPS-2)。",
       launch: "创建团队",
       back: "返回",
     },
@@ -279,7 +220,7 @@ export const zh: Dictionary = {
       roles: {
         engineer: {
           title: "软件工程师",
-          description: "实现功能、编写测试、按照您的SDLC提交PR。",
+          description: "实现功能、编写测试、按照您的 SDLC 提交 PR。",
         },
         architect: {
           title: "软件架构师",
@@ -291,7 +232,7 @@ export const zh: Dictionary = {
         },
       },
       pmFixedBadge: "必须保留",
-      kivoPmTitle: "灵鸟 组长",
+      kivoPmTitle: "灵巢 组长",
       kivoPmHint: "您团队的协调者和负责人。每个团队有且仅有一名组长。",
       agentNamePlaceholder: "智能体名称",
       launch: "创建团队",
@@ -398,21 +339,20 @@ export const zh: Dictionary = {
       finance_manager: "帕特",
       legal_counsel: "德鲁",
     },
-
     telegram: {
       sectionTitle: "Telegram",
       notConfigured: "未配置",
       configured: "已配置",
       step1Title: "创建 Telegram 机器人",
       step1Hint: "打开 Telegram，向 @BotFather 发送消息，输入 /newbot，按步骤操作后将返回的 Token 粘贴到下方。",
-      botTokenLabel: "Bot Token",
+      botTokenLabel: "机器人 Token",
       botTokenPlaceholder: "123456789:AAF…",
       botTokenSave: "连接机器人",
       registering: "正在注册机器人…",
       step2Title: "机器人注册成功！",
       step2Hint: "您的机器人已在 Telegram 上激活。请输入配对码以关联此智能体。",
       pairingCodeLabel: "配对码",
-      pairingCodePlaceholder: "智能体提供的6位配对码",
+      pairingCodePlaceholder: "6位配对码",
       pairingCodeSave: "配对智能体",
       complete: "Telegram 配置完成",
       changeToken: "更换 Token",
@@ -486,8 +426,8 @@ export const zh: Dictionary = {
     newTeam: "新建团队",
     newTeamComingSoon: "新建团队功能即将上线。",
     workspaceLabel: "工作空间",
-    },
-    capabilities: {
+  },
+  capabilities: {
     product_delivery: {
       triage: { name: "整理待办事项", desc: "组织并精炼项目待办事项。" },
       create_story: { name: "创建用户故事", desc: "将需求转化为详细的用户故事。" },
@@ -519,6 +459,5 @@ export const zh: Dictionary = {
     legal: {
       review: { name: "合同审查", desc: "分析协议的风险和保护。" },
     },
-    },
-    };
-
+  },
+};

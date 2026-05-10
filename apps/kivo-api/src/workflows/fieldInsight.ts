@@ -56,7 +56,7 @@ async function fetchContextsNode(state: typeof FieldInsightState.State) {
   if (!team) throw new Error("Team not found");
 
   const teamAgents = await getAgentsByTeam(state.teamId);
-  const teamContext = `Team Name: ${team.name}\nMission: ${team.mission}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.type})`).join("\n")}`;
+  const teamContext = `Team Name: ${team.name}\nMission: ${team.mission}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.roleId})`).join("\n")}`;
 
   const capabilities = await getCapabilitiesByTeam(state.teamId);
   const capabilitiesSummary = capabilities.map(c => `- ${c.name} (ID: ${c.identifier}): ${c.instructions} (Inputs required: ${c.inputsDescription})`).join("\n");

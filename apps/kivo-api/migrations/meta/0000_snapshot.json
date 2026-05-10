@@ -1,5 +1,5 @@
 {
-  "id": "f892ed67-97a7-4b17-8886-a239cfe36f5e",
+  "id": "cb3eab1c-db9c-478a-a3ec-db36a943ca18",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -137,17 +137,23 @@
           "primaryKey": true,
           "notNull": true
         },
-        "name": {
-          "name": "name",
+        "name_i18n_key": {
+          "name": "name_i18n_key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
+        "description_i18n_key": {
+          "name": "description_i18n_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "suggested_name_i18n_key": {
+          "name": "suggested_name_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "emoji": {
           "name": "emoji",
@@ -155,25 +161,29 @@
           "primaryKey": false,
           "notNull": true
         },
-        "background_color": {
-          "name": "background_color",
+        "emoji_bg_color": {
+          "name": "emoji_bg_color",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "suggested_name": {
-          "name": "suggested_name",
+        "soul": {
+          "name": "soul",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'agent_default_name'"
+          "notNull": true
         },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
+        "identity": {
+          "name": "identity",
+          "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": true
+        },
+        "operating_instructions": {
+          "name": "operating_instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         }
       },
       "indexes": {},
@@ -207,11 +217,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "type": {
-          "name": "type",
+        "role_id": {
+          "name": "role_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "icon": {
           "name": "icon",
@@ -253,6 +263,54 @@
           "notNull": true,
           "default": "'available'"
         },
+        "soul": {
+          "name": "soul",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "identity": {
+          "name": "identity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agents_instructions": {
+          "name": "agents_instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_context": {
+          "name": "user_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "memory": {
+          "name": "memory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "daily_logs": {
+          "name": "daily_logs",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tools_notes": {
+          "name": "tools_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "heartbeat": {
+          "name": "heartbeat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -281,6 +339,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "agents_role_id_agent_roles_id_fk": {
+          "name": "agents_role_id_agent_roles_id_fk",
+          "tableFrom": "agents",
+          "tableTo": "agent_roles",
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -523,6 +594,71 @@
         "integrations_team_id_teams_id_fk": {
           "name": "integrations_team_id_teams_id_fk",
           "tableFrom": "integrations",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.leader_chat_history": {
+      "name": "leader_chat_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "message": {
+          "name": "message",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "leader_chat_history_team_id_teams_id_fk": {
+          "name": "leader_chat_history_team_id_teams_id_fk",
+          "tableFrom": "leader_chat_history",
           "tableTo": "teams",
           "columnsFrom": [
             "team_id"
@@ -1231,118 +1367,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.team_meta_capabilities": {
-      "name": "team_meta_capabilities",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "team_type_id": {
-          "name": "team_type_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "identifier": {
-          "name": "identifier",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "instructions": {
-          "name": "instructions",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "inputs_description": {
-          "name": "inputs_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "expected_outputs_description": {
-          "name": "expected_outputs_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "tasks_workflow": {
-          "name": "tasks_workflow",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "type": {
-          "name": "type",
-          "type": "capability_type",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'task_template'"
-        },
-        "is_candidate": {
-          "name": "is_candidate",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "is_favorite": {
-          "name": "is_favorite",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "team_meta_capabilities_team_type_id_team_types_id_fk": {
-          "name": "team_meta_capabilities_team_type_id_team_types_id_fk",
-          "tableFrom": "team_meta_capabilities",
-          "tableTo": "team_types",
-          "columnsFrom": [
-            "team_type_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.team_type_roles": {
       "name": "team_type_roles",
       "schema": "",
@@ -1359,19 +1383,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
         "is_leader": {
           "name": "is_leader",
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {},
@@ -1427,17 +1451,29 @@
           "primaryKey": true,
           "notNull": true
         },
-        "name": {
-          "name": "name",
+        "name_i18n_key": {
+          "name": "name_i18n_key",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
+        "description_i18n_key": {
+          "name": "description_i18n_key",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "featured": {
           "name": "featured",
@@ -1450,20 +1486,13 @@
           "name": "mission",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "ways_of_working": {
           "name": "ways_of_working",
           "type": "text",
           "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
+          "notNull": true
         }
       },
       "indexes": {},
@@ -1521,12 +1550,11 @@
           "primaryKey": false,
           "notNull": false
         },
-        "template": {
-          "name": "template",
+        "template_id": {
+          "name": "template_id",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'starter'"
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1556,6 +1584,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "teams_template_id_team_types_id_fk": {
+          "name": "teams_template_id_team_types_id_fk",
+          "tableFrom": "teams",
+          "tableTo": "team_types",
+          "columnsFrom": [
+            "template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -1699,16 +1740,6 @@
         "running",
         "failed",
         "terminated"
-      ]
-    },
-    "public.agent_type": {
-      "name": "agent_type",
-      "schema": "public",
-      "values": [
-        "team_lead",
-        "software_engineer",
-        "product_manager",
-        "software_architect"
       ]
     },
     "public.capability_type": {

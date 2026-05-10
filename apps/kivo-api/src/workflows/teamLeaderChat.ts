@@ -41,14 +41,17 @@ const ChatState = Annotation.Root({
 
 async function fetchContextNode(state: typeof ChatState.State) {
   // 1. Fetch the Team Leader agent
-  const [leader] = await db
+  const allAgents = await db
     .select()
     .from(agents)
-    .where(and(eq(agents.teamId, state.teamId), eq(agents.type, "team_lead")));
+    .where(eq(agents.teamId, state.teamId));
+
+  const leader = allAgents.find(a => a.roleId?.includes("lead") || a.roleId?.includes("manager") || a.roleId === "executive-assistant");
 
   if (!leader) {
     throw new Error("Team Leader not found for this team");
   }
+
 
   // 2. Fetch Chat History (last 10 messages)
   const history = await db

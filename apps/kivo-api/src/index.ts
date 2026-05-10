@@ -83,8 +83,12 @@ app.use(errorHandler);
 
 const HOST = process.env.HOST ?? "127.0.0.1";
 
-app.listen(PORT, HOST, () => {
+app.listen(PORT, HOST, async () => {
   console.log(`🚀 Kivo API running on http://${HOST}:${PORT}`);
+
+  // ── Template Seed (Sync from Control Plane) ─────────────────────────────────
+  const { runTemplateSeed } = await import("./lib/templateSeed");
+  await runTemplateSeed();
 
   // Startup: RabbitMQ reprovisioning safety net
   // Ensures that even if RabbitMQ is reset (e.g. Tilt restart), all local tenants have their vhosts/users.

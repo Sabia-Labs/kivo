@@ -5,15 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1777976527218,
-      "tag": "0000_flaky_hercules",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1778140333187,
-      "tag": "0001_futuristic_sunset_bain",
+      "when": 1778425659862,
+      "tag": "0000_initial_schema",
       "breakpoints": true
     }
   ]
