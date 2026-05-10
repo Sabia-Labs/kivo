@@ -484,14 +484,15 @@ export default function RequestDetailsPage() {
               onChange={e => setTitle(e.target.value)} 
               autoFocus
               className="text-3xl font-bold h-14 w-full px-4"
-              placeholder={t.teamsPage.whatToAskPlaceholder}
+              placeholder={t?.teamsPage?.whatToAskPlaceholder}
               onKeyDown={e => {
                 if (e.key === "Enter") {
                   setIsEditingTitle(false);
-                  if (title !== request.title) handleUpdateTitle();
+                  if (title !== request?.title) handleUpdateTitle();
                 }
               }}
             />
+
             <Button size="icon" variant="ghost" className="shrink-0" onClick={() => {
               setIsEditingTitle(false);
               if (title !== request.title) handleUpdateTitle();
@@ -514,26 +515,26 @@ export default function RequestDetailsPage() {
           <p className="text-xs text-muted-foreground flex items-center gap-2 px-1">
             <span className={cn(
               "px-2 py-0.5 rounded-full font-medium capitalize",
-              request.status === "draft" ? "bg-muted text-muted-foreground" :
-              request.status === "open" ? "bg-blue-500/10 text-blue-500" :
-              request.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
-              request.status === "completed" ? (
-                request.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+              request?.status === "draft" ? "bg-muted text-muted-foreground" :
+              request?.status === "open" ? "bg-blue-500/10 text-blue-500" :
+              request?.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
+              request?.status === "completed" ? (
+                request?.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
               ) :
               "bg-emerald-500/10 text-emerald-500"
             )}>
-              {request.status === "completed" 
-                ? (request.resolution === "success" ? "ok" : "failed") 
-                : request.status}
+              {request?.status === "completed" 
+                ? (request?.resolution === "success" ? t?.teamsPage?.statusLabels?.ok : t?.teamsPage?.statusLabels?.failed) 
+                : (t?.teamsPage?.statusLabels as any)?.[request?.status || ""] || request?.status || "..."}
             </span>
             <span>•</span>
             <span>
-              {t.teamsPage.createdBy} <span className="font-semibold text-foreground">{request.requesterUserId ? t.teamsPage.you : (agents.find(a => a.id === request.requesterAgentId)?.name || "Unknown")}</span> {t.teamsPage.on} {new Date(request.createdAt).toLocaleString()}
+              {t?.teamsPage?.createdBy} <span className="font-semibold text-foreground">{request?.requesterUserId ? (t?.teamsPage?.you || "You") : (agents?.find(a => a.id === request?.requesterAgentId)?.name || "Unknown")}</span> {t?.teamsPage?.on} {request?.createdAt ? new Date(request.createdAt).toLocaleString() : "..."}
             </span>
           </p>
-          {request.status === "completed" && (
+          {request?.status === "completed" && (
             <Button size="sm" variant="outline" onClick={handleReopen} disabled={isSubmitting}>
-              {t.teamsPage.reopenRequest}
+              {t?.teamsPage?.reopenRequest}
             </Button>
           )}
         </div>
@@ -546,28 +547,27 @@ export default function RequestDetailsPage() {
           <div className="rounded-xl border bg-card p-6 space-y-6">
             <div className="grid gap-6">
 
-              {/* What was asked */}
               <div className="space-y-2">
-                <Label>{t.teamsPage.whatWasAsked}</Label>
+                <Label>{t?.teamsPage?.whatWasAsked}</Label>
                 <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
-                  {request.requestDetails || <span className="text-muted-foreground italic">{t.teamsPage.noDetails}</span>}
+                  {request?.requestDetails || <span className="text-muted-foreground italic">{t?.teamsPage?.noDetails}</span>}
                 </div>
               </div>
 
 
 
               {/* Response */}
-              {request.status !== "created" && request.response && (
+              {request?.status !== "created" && request?.response && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-2">
-                      {t.teamsPage.response}
-                      {request.status === "completed" && (
+                      {t?.teamsPage?.response}
+                      {request?.status === "completed" && (
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          request.resolution === "success" ? t.teamsPage.statusLabels.ok : t.teamsPage.statusLabels.failed
+                          request?.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
                         )}>
-                          {request.resolution === "success" ? t.teamsPage.success : t.teamsPage.failed}
+                          {request?.resolution === "success" ? t?.teamsPage?.success : t?.teamsPage?.failed}
                         </span>
                       )}
                     </Label>
@@ -597,15 +597,15 @@ export default function RequestDetailsPage() {
 
               <div className="flex items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <Label className="shrink-0">{request.status === "completed" ? t.teamsPage.capabilitiesUsed : t.teamsPage.suggestedCapabilities}</Label>
+                  <Label className="shrink-0">{request?.status === "completed" ? t?.teamsPage?.capabilitiesUsed : t?.teamsPage?.suggestedCapabilities}</Label>
                   <div className="flex items-center gap-2 overflow-x-auto flex-nowrap min-w-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {capabilitiesWorkflow.length === 0 ? (
-                      <span className="text-sm text-muted-foreground italic shrink-0">{t.teamsPage.none}</span>
+                      <span className="text-sm text-muted-foreground italic shrink-0">{t?.teamsPage?.none}</span>
                     ) : (
                       capabilitiesWorkflow.map(capIdRaw => {
                         const capId = typeof capIdRaw === 'object' && capIdRaw !== null ? (capIdRaw as any).identifier : String(capIdRaw);
                         const capName = typeof capIdRaw === 'object' && capIdRaw !== null ? (capIdRaw as any).name : capId;
-                        const cap = capabilities.find(c => c.identifier === capId);
+                        const cap = capabilities?.find(c => c.identifier === capId);
                         return (
                           <span key={capId} className="px-3 py-1 text-xs rounded-full border bg-muted/50 shrink-0 whitespace-nowrap">
                             {cap ? translate(cap.name) : capName}
@@ -615,9 +615,9 @@ export default function RequestDetailsPage() {
                     )}
                   </div>
                 </div>
-                {request.state && request.state.length > 0 && (
+                {request?.state && request?.state.length > 0 && (
                   <Button variant="outline" size="sm" onClick={() => setShowContextModal(true)} className="h-7 px-3 text-xs shrink-0">
-                    {t.teamsPage.contextState}
+                    {t?.teamsPage?.contextState}
                   </Button>
                 )}
               </div>
