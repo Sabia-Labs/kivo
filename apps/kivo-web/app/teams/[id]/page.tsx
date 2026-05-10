@@ -333,7 +333,7 @@ export default function TeamDetailPage() {
                   {favoriteCapabilities.map(cap => (
                     <DropdownMenuItem key={cap.id} asChild>
                       <Link href={`/teams/${teamId}/requests/new?capabilityId=${cap.id}`} className="cursor-pointer">
-                        {cap.name}
+                        {translate(cap.name)}
                       </Link>
                     </DropdownMenuItem>
                   ))}
