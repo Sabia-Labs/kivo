@@ -149,6 +149,18 @@ export default function TeamDetailPage() {
   const router = useRouter();
   const teamId = String(params.id);
 
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    if (!key.includes(".")) return key; // Not a translation key
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (!current || current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [team, setTeam] = useState<Team | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
