@@ -526,6 +526,7 @@ export const en = {
     noRequests: "No requests.",
     managerActions: "Manager Actions",
     online: "Online",
+    openedRequests: "Opened Requests",
     inPipeline: "in pipeline",
     operational: "All systems operational",
     operationalSubtitle: "Your squad is ready for tasks.",

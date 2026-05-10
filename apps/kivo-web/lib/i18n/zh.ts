@@ -528,6 +528,7 @@ export const zh: Dictionary = {
     noRequests: "暂无请求。",
     managerActions: "管理操作",
     online: "在线",
+    openedRequests: "活跃请求",
     inPipeline: "处理中",
     operational: "所有系统运行正常",
     operationalSubtitle: "您的小队已准备好处理任务。",
