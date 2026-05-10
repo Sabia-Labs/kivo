@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { LangSwitcher } from "@/components/lang-switcher";
 import { NotificationBell } from "@/components/notification-bell";
+import { useTranslation } from "@/lib/i18n";
 
 /**
  * Logged-in application navbar. Used in authenticated app pages.
@@ -15,6 +16,7 @@ import { NotificationBell } from "@/components/notification-bell";
  */
 export function AppNavbar() {
   const { user, logout } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -111,7 +113,7 @@ export function AppNavbar() {
                       onClick={() => setDropdownOpen(false)}
                     >
                       <User className="size-4 text-muted-foreground" />
-                      Profile
+                      {t.nav.profile}
                     </button>
                     <button
                       id="app-nav-logout"
@@ -119,8 +121,9 @@ export function AppNavbar() {
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
                     >
                       <LogOut className="size-4" />
-                      Log out
+                      {t.nav.logout}
                     </button>
+
                   </div>
                 </div>
               </>

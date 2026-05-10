@@ -18,6 +18,7 @@ export const createTeamSchema = z.object({
         name: z.string().min(1),
         roleId: z.string(), // Dynamic agent role ID
         icon: z.string().optional(),
+        isLeader: z.boolean().optional(),
       })
     )
     .optional(),

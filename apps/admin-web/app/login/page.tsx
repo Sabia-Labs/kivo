@@ -99,9 +99,9 @@ export default function LoginPage() {
 
       login(data.data.token, data.data.user, data.data.teamId ?? null);
       toast.success(t.login.welcomeBack);
-
       const wsIdParam = data.data.teamId ? `&workspaceId=${data.data.teamId}` : "";
-      window.location.href = `/redirect-app?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}${wsIdParam}`;
+      window.location.href = `/redirect-app?token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&lang=${lang}${wsIdParam}`;
+
     } catch {
       toast.error("Network error. Please check your connection.");
     } finally {

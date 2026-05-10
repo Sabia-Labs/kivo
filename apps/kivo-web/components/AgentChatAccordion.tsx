@@ -159,6 +159,7 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
         const isOpen = openAgentId === agent.id;
         const health = computeHealth(agent.k8sStatus);
         const newChatTrigger = newChatTriggers[agent.id] || 0;
+        const isLeader = agent.isLeader;
         
         return (
           <div key={agent.id} className="rounded-xl border bg-card overflow-hidden shadow-sm transition-all">
@@ -182,10 +183,10 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
                 <div>
                   <div className="flex items-center gap-1.5">
                     <p className="text-sm font-semibold">{agent.name}</p>
-                    {agent.type === "team_lead" && <Crown className="size-3 text-amber-500" />}
+                    {isLeader && <Crown className="size-3 text-amber-500" />}
                   </div>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest mt-0.5">
-                    {agent.type.replace("_", " ")}
+                    {(agent.roleId || "agent").replace(/-/g, " ")}
                   </p>
                 </div>
               </div>
@@ -218,7 +219,7 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
             
             {isOpen && (
               <div className="h-[400px] flex flex-col bg-background/50">
-                {agent.type === "team_lead" ? (
+                {isLeader ? (
                   <TeamLeaderChatArea teamId={teamId} token={token || ""} newChatTrigger={newChatTrigger} />
                 ) : (
                   <AgentChatArea 
@@ -239,3 +240,4 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
     </div>
   );
 }
+

@@ -363,8 +363,8 @@ export default function NewTeamPage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Create a New Team</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Set up your agent team in a few steps.</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t.teamsPage.createNewTeam}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t.teamsPage.chooseTemplateSubtitle}</p>
           </div>
         </div>
 
@@ -378,13 +378,13 @@ export default function NewTeamPage() {
           {step === 1 && (
             <div className="flex flex-col gap-6" id="newteam-step-1">
               <div>
-                <h2 className="font-semibold text-foreground">Choose a template</h2>
-                <p className="mt-1 text-sm text-muted-foreground">Pick a featured team or search for another type.</p>
+                <h2 className="font-semibold text-foreground">{t.teamsPage.chooseTemplate}</h2>
+                <p className="mt-1 text-sm text-muted-foreground">{t.teamsPage.chooseTemplateSubtitle}</p>
               </div>
 
               {!searchQuery && featuredTypes.length > 0 && (
                 <div className="flex flex-col gap-3">
-                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Featured Templates</h3>
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.teamsPage.featuredTemplates}</h3>
                   {featuredTypes.map((tmpl) => {
                     const isSelected = selectedType?.id === tmpl.id;
                     return (
@@ -410,12 +410,12 @@ export default function NewTeamPage() {
 
               <div className="flex flex-col gap-3">
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {searchQuery ? "Search Results" : "Search other templates"}
+                  {searchQuery ? t.teamsPage.requests : t.teamsPage.searchOtherTemplates}
                 </h3>
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search templates..."
+                    placeholder={t.teamsPage.searchTemplatesPlaceholder}
                     className="pl-9"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}

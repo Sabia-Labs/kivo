@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { metaRouter } from "./routes/meta";
 import { authRouter } from "./routes/auth";
+import { internalRouter } from "./routes/internal";
 import { success, failure } from "./lib/response";
 
 const app = express();
@@ -19,6 +20,8 @@ app.get("/health", (_req, res) => {
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use("/meta", metaRouter);
 app.use("/auth", authRouter);
+app.use("/internal/v1", internalRouter);
+
 
 // ── Error Handler ─────────────────────────────────────────────────────────────
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {

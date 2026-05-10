@@ -155,6 +155,7 @@ export const agents = pgTable("agents", {
   k8sStatus: agentK8sStatusEnum("k8s_status").default("pending"),
   k8sResourceName: text("k8s_resource_name"),
   availability: agentAvailabilityEnum("availability").notNull().default("available"),
+  isLeader: boolean("is_leader").notNull().default(false),
   /** Personality and boundaries */
   soul: text("soul"),
   /** Role details and mission */

@@ -137,7 +137,7 @@ export default function SignupPage() {
       
       // Redirect to kivo-web for team creation
       const workspaceId = data.data.workspace.id;
-      window.location.href = `/redirect-app?path=/newteam&token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}`;
+      window.location.href = `/redirect-app?path=/newteam&token=${data.data.token}&user=${encodeURIComponent(JSON.stringify(data.data.user))}&workspaceId=${workspaceId}&lang=${lang}`;
     } catch {
       toast.error("Network error");
     } finally {

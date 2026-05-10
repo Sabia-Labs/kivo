@@ -94,6 +94,7 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
                 teamId: team.id,
                 name: a.name,
                 roleId: a.roleId,
+                isLeader: a.isLeader || false,
                 icon: a.icon || role?.emoji,
                 gatewayToken: randomBytes(32).toString("base64url"),
                 soul: role?.soul,

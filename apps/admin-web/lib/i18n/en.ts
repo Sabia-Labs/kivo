@@ -188,6 +188,14 @@ export const en = {
     noAccount: "Don't have an account?",
     signUp: "Get Started",
     ssoComingSoon: "SSO coming soon",
+    checkEmail: "Check your email",
+    sentCode: "We sent a 4-digit code to",
+    verifyCode: "Verify Code",
+    back: "Back",
+    invalidCode: "Invalid code",
+    failedSendCode: "Failed to send code",
+    welcomeBack: "Welcome back!",
+    devLogin: "Quick Dev Login",
   },
   signup: {
     title: "Build your agent team",
@@ -207,6 +215,10 @@ export const en = {
       passwordPlaceholder: "Min. 8 characters",
       next: "Continue",
       orSignUpWith: "or sign up with",
+      termsText: "By clicking continue, you agree to our",
+      termsLink: "Terms of Service",
+      privacyLink: "Privacy Policy",
+      and: "and",
     },
     step2: {
       title: "Name your workspace",
@@ -214,6 +226,7 @@ export const en = {
       workspacePlaceholder: "Acme Corp",
       next: "Continue",
       back: "Back",
+      taken: "This workspace is already taken.",
     },
     step3: {
       title: "Choose your team template",
