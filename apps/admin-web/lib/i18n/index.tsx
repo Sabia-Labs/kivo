@@ -32,6 +32,18 @@ function getLanguageFromCookie(): Language | null {
   return (match?.[1] as Language) || null;
 }
 
+interface LanguageContextValue {
+  lang: Language;
+  setLang: (lang: Language) => void;
+  t: Dictionary;
+}
+
+const LanguageContext = createContext<LanguageContextValue>({
+  lang: "en",
+  setLang: () => {},
+  t: en,
+});
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Language>("en");
 
