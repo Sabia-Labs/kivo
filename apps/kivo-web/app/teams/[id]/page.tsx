@@ -144,6 +144,7 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
 
 export default function TeamDetailPage() {
   const { token, user, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const teamId = String(params.id);
