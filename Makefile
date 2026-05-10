@@ -1,4 +1,4 @@
-.PHONY: help dev down clean-local staging-reset migrate seed test-agents clean-files ctx-local ctx-staging local-db-studio local-admin-studio staging-db-studio staging-admin-studio argo-ui gcloud-auth
+.PHONY: help dev down clean-local staging-reset migrate seed test-agents clean-files ctx-local ctx-staging local-db-studio local-admin-db-studio staging-db-studio staging-admin-db-studio argo-ui gcloud-auth
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 LOCAL_CTX = docker-desktop
@@ -59,33 +59,33 @@ argo-ui: gcloud-auth ## Open ArgoCD UI (Port-forward + Credentials)
 	@echo "🔐 Initial Admin Password:"
 	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo ""
 	@echo "🚀 Opening ArgoCD at http://localhost:8080 (User: admin)"
-	.PHONY: help dev down clean-local staging-reset migrate seed test-agents clean-files ctx-local ctx-staging local-db-studio local-admin-db-studio staging-db-studio staging-admin-db-studio argo-ui gcloud-auth
-	...
-	# ── DATABASE & STUDIO (LOCAL) ─────────────────────────────────────────────────
-	local-db-studio: ## Open Drizzle Studio for Application Plane (Local)
-		(cd apps/kivo-api && pnpm drizzle-kit studio)
+	@kubectl port-forward svc/argocd-server -n argocd 8080:443
 
-	local-admin-db-studio: ## Open Drizzle Studio for Control Plane (Local)
-		(cd apps/admin-api && DATABASE_URL_ADMIN="postgres://kivo:kivo@localhost:5432/kivo_admin" npx drizzle-kit studio)
+# ── DATABASE & STUDIO (LOCAL) ─────────────────────────────────────────────────
+local-db-studio: ## Open Drizzle Studio for Application Plane (Local)
+	(cd apps/kivo-api && pnpm drizzle-kit studio)
 
-	# ── DATABASE & STUDIO (STAGING) ───────────────────────────────────────────────
-	staging-db-studio: gcloud-auth ## Open Drizzle Studio for Staging App Plane (Local Port-forward)
-		@echo "🔌 Starting port-forward to staging DB..."
-		@kubectl port-forward svc/kivo-db-postgresql 5433:5432 -n $(STAGING_NAMESPACE) > /dev/null 2>&1 & \
-		PF_PID=$$!; \
-		echo "🚀 Starting Studio (Ctrl+C to stop)..."; \
-		trap "kill $$PF_PID" EXIT; \
-		DB_PWD=$$(kubectl get secret kivo-db-credentials -n $(STAGING_NAMESPACE) -o jsonpath='{.data.DATABASE_URL}' | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g'); \
-		(cd apps/kivo-api && DATABASE_URL="postgresql://postgres:$$DB_PWD@localhost:5433/kivo" pnpm drizzle-kit studio)
+local-admin-db-studio: ## Open Drizzle Studio for Control Plane (Local)
+	(cd apps/admin-api && DATABASE_URL_ADMIN="postgres://kivo:kivo@localhost:5432/kivo_admin" npx drizzle-kit studio)
 
-	staging-admin-db-studio: gcloud-auth ## Open Drizzle Studio for Staging Control Plane (Local Port-forward)
-		@echo "🔌 Starting port-forward to staging DB..."
-		@kubectl port-forward svc/kivo-db-postgresql 5433:5432 -n $(STAGING_NAMESPACE) > /dev/null 2>&1 & \
-		PF_PID=$$!; \
-		echo "🚀 Starting Studio (Ctrl+C to stop)..."; \
-		trap "kill $$PF_PID" EXIT; \
-		DB_PWD=$$(kubectl get secret kivo-db-credentials -n $(STAGING_NAMESPACE) -o jsonpath='{.data.DATABASE_URL}' | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g'); \
-		(cd apps/admin-api && DATABASE_URL_ADMIN="postgresql://postgres:$$DB_PWD@localhost:5433/kivo_admin" npx drizzle-kit studio)
+# ── DATABASE & STUDIO (STAGING) ───────────────────────────────────────────────
+staging-db-studio: gcloud-auth ## Open Drizzle Studio for Staging App Plane (Local Port-forward)
+	@echo "🔌 Starting port-forward to staging DB..."
+	@kubectl port-forward svc/kivo-db-postgresql 5433:5432 -n $(STAGING_NAMESPACE) > /dev/null 2>&1 & \
+	PF_PID=$$!; \
+	echo "🚀 Starting Studio (Ctrl+C to stop)..."; \
+	trap "kill $$PF_PID" EXIT; \
+	DB_PWD=$$(kubectl get secret kivo-db-credentials -n $(STAGING_NAMESPACE) -o jsonpath='{.data.DATABASE_URL}' | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g'); \
+	(cd apps/kivo-api && DATABASE_URL="postgresql://postgres:$$DB_PWD@localhost:5433/kivo" pnpm drizzle-kit studio)
+
+staging-admin-db-studio: gcloud-auth ## Open Drizzle Studio for Staging Control Plane (Local Port-forward)
+	@echo "🔌 Starting port-forward to staging DB..."
+	@kubectl port-forward svc/kivo-db-postgresql 5433:5432 -n $(STAGING_NAMESPACE) > /dev/null 2>&1 & \
+	PF_PID=$$!; \
+	echo "🚀 Starting Studio (Ctrl+C to stop)..."; \
+	trap "kill $$PF_PID" EXIT; \
+	DB_PWD=$$(kubectl get secret kivo-db-credentials -n $(STAGING_NAMESPACE) -o jsonpath='{.data.DATABASE_URL}' | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g'); \
+	(cd apps/admin-api && DATABASE_URL_ADMIN="postgresql://postgres:$$DB_PWD@localhost:5433/kivo_admin" npx drizzle-kit studio)
 
 migrate: ## Run Drizzle migrations for both planes (Local)
 	(cd apps/kivo-api && pnpm db:migrate)
