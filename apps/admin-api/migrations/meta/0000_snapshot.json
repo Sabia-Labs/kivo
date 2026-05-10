@@ -1,9 +1,212 @@
 {
-  "id": "2464eab0-0adc-4d3b-9b41-bbd92c855d7b",
+  "id": "3160f5bb-d277-4ae8-ab2a-0f832486ff6b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.agent_roles": {
+      "name": "agent_roles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name_i18n_key": {
+          "name": "name_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_i18n_key": {
+          "name": "description_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "suggested_name_i18n_key": {
+          "name": "suggested_name_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji_bg_color": {
+          "name": "emoji_bg_color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "soul": {
+          "name": "soul",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "identity": {
+          "name": "identity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "operating_instructions": {
+          "name": "operating_instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.team_type_roles": {
+      "name": "team_type_roles",
+      "schema": "",
+      "columns": {
+        "team_type_id": {
+          "name": "team_type_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agent_role_id": {
+          "name": "agent_role_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "is_leader": {
+          "name": "is_leader",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "team_type_roles_team_type_id_team_types_id_fk": {
+          "name": "team_type_roles_team_type_id_team_types_id_fk",
+          "tableFrom": "team_type_roles",
+          "tableTo": "team_types",
+          "columnsFrom": [
+            "team_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_type_roles_agent_role_id_agent_roles_id_fk": {
+          "name": "team_type_roles_agent_role_id_agent_roles_id_fk",
+          "tableFrom": "team_type_roles",
+          "tableTo": "agent_roles",
+          "columnsFrom": [
+            "agent_role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "team_type_roles_team_type_id_agent_role_id_pk": {
+          "name": "team_type_roles_team_type_id_agent_role_id_pk",
+          "columns": [
+            "team_type_id",
+            "agent_role_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.team_types": {
+      "name": "team_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name_i18n_key": {
+          "name": "name_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_i18n_key": {
+          "name": "description_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "emoji": {
+          "name": "emoji",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "featured": {
+          "name": "featured",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "mission": {
+          "name": "mission",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ways_of_working": {
+          "name": "ways_of_working",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.users": {
       "name": "users",
       "schema": "",
@@ -14,6 +217,12 @@
           "primaryKey": true,
           "notNull": true,
           "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "email": {
           "name": "email",
