@@ -2,8 +2,8 @@
 id: customer-support
 emoji: "🎧"
 color: "#FFE2E2"
-name_i18n_key: dashboard.newTeam.step3Template.templates.customer_support.title
-description_i18n_key: dashboard.newTeam.step3Template.templates.customer_support.description
+name_i18n_key: teams.types.customer-support.name
+description_i18n_key: teams.types.customer-support.description
 featured: true
 composition:
   - roleId: support-lead

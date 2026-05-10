@@ -500,6 +500,38 @@ export const en = {
     newTeamComingSoon: "Creating new teams is coming soon.",
     workspaceLabel: "Workspace",
   },
+  teams: {
+    types: {
+      starter: {
+        name: "Kivo Starter",
+        description: "An executive assistant to get you going. Simple and flexible.",
+      },
+      "product-delivery": {
+        name: "Product Delivery",
+        description: "Full software delivery squad with SDLC discipline.",
+      },
+      "customer-support": {
+        name: "Customer Support",
+        description: "Automated support team for your users.",
+      },
+      sales: {
+        name: "Sales & Revenue",
+        description: "Drive growth and manage your sales pipeline.",
+      },
+      marketing: {
+        name: "Marketing & Growth",
+        description: "Build your brand and generate demand.",
+      },
+      finance: {
+        name: "Finance",
+        description: "Manage your budget and financial health.",
+      },
+      legal: {
+        name: "Legal",
+        description: "Protect your business and ensure compliance.",
+      },
+    },
+  },
   capabilities: {
     product_delivery: {
       triage: { name: "Triage Backlog", desc: "Organize and refine the project backlog." },

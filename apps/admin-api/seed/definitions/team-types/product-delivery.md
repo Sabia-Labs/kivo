@@ -1,7 +1,7 @@
 ---
 id: product-delivery
-name_i18n_key: dashboard.newTeam.step3Template.templates.engineering.title
-description_i18n_key: dashboard.newTeam.step3Template.templates.engineering.description
+name_i18n_key: teams.types.product-delivery.name
+description_i18n_key: teams.types.product-delivery.description
 featured: true
 emoji: "🚀"
 color: "#FEF3C7"
