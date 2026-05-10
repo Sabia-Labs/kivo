@@ -1,8 +1,6 @@
 import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
-import * as dotenv from "dotenv";
-import * as path from "path";
 import { getTeamById } from "../controllers/teamsController";
 import { getCapabilitiesByTeam, getCapabilityByIdentifier } from "../controllers/capabilitiesController";
 import { getAgentsByTeam } from "../controllers/agentsController";
@@ -12,11 +10,10 @@ import { eq, and } from "drizzle-orm";
 import { tool } from "@langchain/core/tools";
 // @ts-ignore
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
+
 let llmInstance: ChatOpenAI | null = null;
 function getLlm() {
   if (!llmInstance) {
-    dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-    
     const apiKey = process.env.OPENAI_API_KEY || process.env.PLATFORM_OPENAI_API_KEY;
     if (!apiKey) {
       console.warn("[field-insight] CRITICAL: Both OPENAI_API_KEY and PLATFORM_OPENAI_API_KEY are missing from environment.");
@@ -59,7 +56,9 @@ async function fetchContextsNode(state: typeof FieldInsightState.State) {
   const teamContext = `Team Name: ${team.name}\nMission: ${team.mission}\nAgents:\n${teamAgents.map(a => `- ${a.name} (Role: ${a.roleId})`).join("\n")}`;
 
   const capabilities = await getCapabilitiesByTeam(state.teamId);
-  const capabilitiesSummary = capabilities.map(c => `- ${c.name} (ID: ${c.identifier}): ${c.instructions} (Inputs required: ${c.inputsDescription})`).join("\n");
+  // Filter out capabilities that don't have instructions yet
+  const validCaps = capabilities.filter(c => c.instructions);
+  const capabilitiesSummary = validCaps.map(c => `- ${c.name} (ID: ${c.identifier}): ${c.instructions} (Inputs required: ${c.inputsDescription || 'None'})`).join("\n");
 
   return {
     teamContext,
@@ -69,15 +68,15 @@ async function fetchContextsNode(state: typeof FieldInsightState.State) {
 }
 
 const classificationSchema = z.object({
-  isSimpleQuestion: z.boolean().describe("True if the request is just a simple question (e.g. asking about the team, asking to search the web, a greeting) that doesn't warrant creating a formal operational request.")
+  isSimpleQuestion: z.boolean().describe("True if the request is just a simple question (e.g. asking about the team, status of tasks, general info) that doesn't warrant creating a formal operational request.")
 });
 
 async function classifyRequestNode(state: typeof FieldInsightState.State) {
-  if (state.requestDetails.trim().length < 10) {
-    return { classification: { isSimpleQuestion: false } }; // Too short, assume operational/typing
+  if (state.requestDetails.trim().length < 5) {
+    return { classification: { isSimpleQuestion: true } }; // Too short, treat as greeting/noise
   }
 
-  const prompt = `Based on the following user input, determine if this is just a simple question or conversational greeting, OR if it is an operational request for work to be done.
+  const prompt = `Based on the following user input, determine if this is just a simple question, greeting, or status check OR if it is an operational request for work to be done.
   
   User input: "${state.requestDetails}"
   `;
@@ -136,11 +135,9 @@ async function answerSimpleQuestionNode(state: typeof FieldInsightState.State) {
   Team Context:
   ${state.teamContext}
   
-  Respond as the Team Leader. Be cool, friendly, and concise. 
-  If the user asks about the status of requests or tasks, use your tools to check the database and provide an accurate answer based on the returned data.
-  Otherwise, give them the answer if you can based on the team context, or a polite generic response. 
-  Add a brief encouraging note at the end like: "This one is easy. Even I can answer it right now... But feel free to open up a new request if you need actual work done." or similar.
-  Keep it under 3-4 sentences.`;
+  Respond as the Team Leader. Be helpful, professional and concise. 
+  If they ask for status, use your tools. If they just say hi, say hi back and explain what the team can do.
+  Keep it under 3 sentences.`;
 
   const agent = createReactAgent({
     llm: getLlm(),
@@ -158,22 +155,19 @@ async function answerSimpleQuestionNode(state: typeof FieldInsightState.State) {
 
 const capabilityMatchSchema = z.object({
   matchedCapabilityIdentifier: z.string().optional().nullable().describe("The identifier of the matched capability from the list, if any."),
-  isNewActivity: z.boolean().describe("Whether this looks like a completely new activity the team hasn't explicitly defined a capability for."),
-  suggestedTitle: z.string().optional().nullable().describe("A concise 3-6 word title summarizing the user's request.")
+  suggestedTitle: z.string().optional().nullable().describe("A concise title for the request.")
 });
 
 async function matchCapabilityNode(state: typeof FieldInsightState.State) {
-  if (!state.capabilitiesSummary) {
+  if (!state.capabilitiesSummary || state.capabilitiesSummary.length < 10) {
     return { 
-      leaderThought: "This activity is new to the team. We will learn from it. Please make sure to provide all necessary details!" 
+      leaderThought: "I'm ready to help. Please provide more details about your request so I can coordinate the team." 
     };
   }
 
-  const prompt = `Find the best team capability that fits the user's request, or determine if it's a new activity.
+  const prompt = `Find the best team capability for: "${state.requestDetails}"
   
-  User Request: "${state.requestDetails}"
-  
-  Current Team Capabilities:
+  Available Capabilities:
   ${state.capabilitiesSummary}
   `;
 
@@ -188,43 +182,31 @@ async function matchCapabilityNode(state: typeof FieldInsightState.State) {
   }
 
   return { 
-    leaderThought: "This activity seems new to the team. We will learn from it! Just ensure you've provided enough details for us to start.",
+    leaderThought: "This seems like a new type of activity for us. Provide all details and I will assign it to the right specialist.",
     suggestedTitle: result.suggestedTitle || null
   };
 }
 
-const evaluateInputsSchema = z.object({
-  hasSufficientInputs: z.boolean().describe("True if the user provided enough information to fulfill the capability's required inputs."),
-  missingInputsMessage: z.string().optional().nullable().describe("If inputs are insufficient, a friendly message asking for the specific missing details."),
-  successSummary: z.string().optional().nullable().describe("If inputs are sufficient, a brief encouraging summary of what the team will do."),
-  suggestedTitle: z.string().optional().nullable().describe("A concise 3-6 word title summarizing the user's request.")
-});
-
 async function evaluateMatchedCapabilityNode(state: typeof FieldInsightState.State) {
-  if (!state.matchedCapability) {
-    return {}; // Handled by matchCapabilityNode if new activity
-  }
+  if (!state.matchedCapability) return {};
 
-  const prompt = `The user wants to use the capability: "${state.matchedCapability.name}".
-  Capability Required Inputs: ${state.matchedCapability.inputsDescription || "None specified"}
+  const prompt = `The user wants to use: "${state.matchedCapability.name}".
+  Needs: ${state.matchedCapability.inputsDescription || "General context"}
   
-  User Request Details: "${state.requestDetails}"
+  Input: "${state.requestDetails}"
   
-  Evaluate if the user has provided enough information based on the Required Inputs.
-  If NOT, write a friendly message (missingInputsMessage) as the Team Leader asking for the specific missing info.
-  If YES, write a brief encouraging summary (successSummary) of what will be done.
-  Start the message by acknowledging the capability, e.g., "The team knows how to do this. We have a template for '${state.matchedCapability.name}'."
-  `;
+  Evaluate if the input is sufficient. If not, ask for what's missing. If yes, summarize the plan. 
+  Respond as a Team Leader.`;
 
-  const structuredLlm = getLlm().withStructuredOutput(evaluateInputsSchema);
+  const structuredLlm = getLlm().withStructuredOutput(z.object({
+    isSufficient: z.boolean(),
+    message: z.string()
+  }));
   const result = await structuredLlm.invoke(prompt);
 
-  const thought = result.hasSufficientInputs ? result.successSummary : result.missingInputsMessage;
-
   return { 
-    leaderThought: thought || "",
-    suggestedCapabilityIdentifier: state.matchedCapability.identifier,
-    suggestedTitle: result.suggestedTitle || state.suggestedTitle || null
+    leaderThought: result.message,
+    suggestedCapabilityIdentifier: state.matchedCapability.identifier
   };
 }
 
@@ -234,46 +216,33 @@ async function evaluateSelectedCapabilityNode(state: typeof FieldInsightState.St
     cap = await getCapabilityByIdentifier(state.teamId, state.capabilityIdentifier);
   }
 
-  if (!cap) {
-    return { leaderThought: "I see you selected a capability, but I couldn't find its details. Please provide as much context as possible." };
-  }
+  if (!cap) return { leaderThought: "I couldn't find the details for the selected capability. Please describe what you need." };
 
-  const prompt = `The user selected the capability: "${cap.name}".
-  Capability Required Inputs: ${cap.inputsDescription || "None specified"}
+  const prompt = `The user selected: "${cap.name}".
+  Needs: ${cap.inputsDescription || "General context"}
+  Input: "${state.requestDetails}"
   
-  User Request Details: "${state.requestDetails}"
-  
-  Evaluate if the user has provided enough information based on the Required Inputs.
-  If NOT, write a friendly message (missingInputsMessage) as the Team Leader asking for the specific missing info.
-  If YES, write a brief encouraging summary (successSummary) of what will be done.
-  `;
+  Evaluate and respond as Team Leader.`;
 
-  const structuredLlm = getLlm().withStructuredOutput(evaluateInputsSchema);
+  const structuredLlm = getLlm().withStructuredOutput(z.object({
+    message: z.string()
+  }));
   const result = await structuredLlm.invoke(prompt);
 
-  const thought = result.hasSufficientInputs ? result.successSummary : result.missingInputsMessage;
-
   return { 
-    leaderThought: thought || "Looks good to me.",
-    suggestedTitle: result.suggestedTitle || null,
+    leaderThought: result.message,
     suggestedCapabilityIdentifier: cap.identifier
   };
 }
 
 function routeAfterClassification(state: typeof FieldInsightState.State) {
-  if (state.classification?.isSimpleQuestion) {
-    return "answerSimpleQuestion";
-  }
-  if (state.capabilityIdentifier) {
-    return "evaluateSelectedCapability";
-  }
+  if (state.classification?.isSimpleQuestion) return "answerSimpleQuestion";
+  if (state.capabilityIdentifier) return "evaluateSelectedCapability";
   return "matchCapability";
 }
 
 function routeAfterMatchCapability(state: typeof FieldInsightState.State) {
-  if (state.matchedCapability) {
-    return "evaluateMatchedCapability";
-  }
+  if (state.matchedCapability) return "evaluateMatchedCapability";
   return END;
 }
 
@@ -284,7 +253,6 @@ const workflow = new StateGraph(FieldInsightState)
   .addNode("evaluateSelectedCapability", evaluateSelectedCapabilityNode)
   .addNode("matchCapability", matchCapabilityNode)
   .addNode("evaluateMatchedCapability", evaluateMatchedCapabilityNode)
-  
   .addEdge(START, "fetchContexts")
   .addEdge("fetchContexts", "classifyRequest")
   .addConditionalEdges("classifyRequest", routeAfterClassification)
