@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "@/lib/i18n";
 
 function SmartCapabilitySelect({ 
   value, 
@@ -132,6 +133,7 @@ function SmartCapabilitySelect({
 
 function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, level?: number }) {
   const { token } = useAuth();
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [tasks, setTasks] = useState<any[]>([]);
   const [subRequests, setSubRequests] = useState<any[]>([]);
@@ -161,8 +163,8 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
   };
 
   const statusLabel = req.status === "completed" 
-    ? (req.resolution === "success" ? "ok" : "failed") 
-    : req.status === "open" ? "created" : req.status.replace("_", " ");
+    ? (req.resolution === "success" ? t.teamsPage.statusLabels.ok : t.teamsPage.statusLabels.failed) 
+    : (t.teamsPage.statusLabels as any)[req.status] || req.status.replace("_", " ");
 
   const statusColorClass = req.status === "draft" ? "bg-muted text-muted-foreground" :
     req.status === "open" ? "bg-blue-500/10 text-blue-500" :
@@ -207,14 +209,15 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
         <div className="flex flex-col w-full">
           {(!hasLoaded && isLoading) && (
             <div className="p-3 text-xs text-muted-foreground text-center" style={{ paddingLeft: `${1 + (level + 1) * 1.5}rem` }}>
-              Loading...
+              {t.teamsPage.loading}
             </div>
           )}
           {hasLoaded && tasks.length === 0 && subRequests.length === 0 && (
             <div className="p-3 text-xs text-muted-foreground/50 italic" style={{ paddingLeft: `${1 + (level + 1) * 1.5}rem` }}>
-              No tasks or nested requests.
+              {t.teamsPage.noTasksOrNested}
             </div>
           )}
+
           {tasks.map(task => (
             <Link 
               key={task.id} 
@@ -241,6 +244,7 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
 
 export default function RequestDetailsPage() {
   const { token, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const teamId = String(params.id);
@@ -446,7 +450,7 @@ export default function RequestDetailsPage() {
       <div className="flex items-center justify-between mb-6">
         <Link href={`/teams/${teamId}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground">
           <ArrowLeft className="size-3.5" />
-          Back to Team
+          {t.teamsPage.backToTeam}
         </Link>
         <Button 
           variant="ghost" 
@@ -454,7 +458,7 @@ export default function RequestDetailsPage() {
           onClick={handleDelete}
           disabled={isSubmitting}
           className="h-8 px-2 text-red-500/60 hover:text-red-500 hover:bg-red-500/10 transition-colors"
-          title="Delete Request"
+          title={t.teamsPage.deleteRequest}
         >
           <Trash2 className="size-4" />
         </Button>
@@ -468,7 +472,7 @@ export default function RequestDetailsPage() {
               onChange={e => setTitle(e.target.value)} 
               autoFocus
               className="text-3xl font-bold h-14 w-full px-4"
-              placeholder="What would you like to ask the team?"
+              placeholder={t.teamsPage.whatToAskPlaceholder}
               onKeyDown={e => {
                 if (e.key === "Enter") {
                   setIsEditingTitle(false);
@@ -512,12 +516,12 @@ export default function RequestDetailsPage() {
             </span>
             <span>•</span>
             <span>
-              Created by <span className="font-semibold text-foreground">{request.requesterUserId ? "You" : (agents.find(a => a.id === request.requesterAgentId)?.name || "Unknown")}</span> on {new Date(request.createdAt).toLocaleString()}
+              {t.teamsPage.createdBy} <span className="font-semibold text-foreground">{request.requesterUserId ? t.teamsPage.you : (agents.find(a => a.id === request.requesterAgentId)?.name || "Unknown")}</span> {t.teamsPage.on} {new Date(request.createdAt).toLocaleString()}
             </span>
           </p>
           {request.status === "completed" && (
             <Button size="sm" variant="outline" onClick={handleReopen} disabled={isSubmitting}>
-              Reopen Request
+              {t.teamsPage.reopenRequest}
             </Button>
           )}
         </div>
@@ -532,9 +536,9 @@ export default function RequestDetailsPage() {
 
               {/* What was asked */}
               <div className="space-y-2">
-                <Label>What was asked</Label>
+                <Label>{t.teamsPage.whatWasAsked}</Label>
                 <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
-                  {request.requestDetails || <span className="text-muted-foreground italic">No details provided.</span>}
+                  {request.requestDetails || <span className="text-muted-foreground italic">{t.teamsPage.noDetails}</span>}
                 </div>
               </div>
 
@@ -545,13 +549,13 @@ export default function RequestDetailsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="flex items-center gap-2">
-                      Response
+                      {t.teamsPage.response}
                       {request.status === "completed" && (
                         <span className={cn(
                           "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                          request.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
+                          request.resolution === "success" ? t.teamsPage.statusLabels.ok : t.teamsPage.statusLabels.failed
                         )}>
-                          {request.resolution === "success" ? "Success" : "Failed"}
+                          {request.resolution === "success" ? t.teamsPage.success : t.teamsPage.failed}
                         </span>
                       )}
                     </Label>
@@ -579,13 +583,12 @@ export default function RequestDetailsPage() {
 
 
 
-              {/* Capabilities & State */}
               <div className="flex items-center justify-between gap-4 w-full">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <Label className="shrink-0">{request.status === "completed" ? "Capabilities used" : "Suggested Capabilities"}</Label>
+                  <Label className="shrink-0">{request.status === "completed" ? t.teamsPage.capabilitiesUsed : t.teamsPage.suggestedCapabilities}</Label>
                   <div className="flex items-center gap-2 overflow-x-auto flex-nowrap min-w-0" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
                     {capabilitiesWorkflow.length === 0 ? (
-                      <span className="text-sm text-muted-foreground italic shrink-0">None.</span>
+                      <span className="text-sm text-muted-foreground italic shrink-0">{t.teamsPage.none}</span>
                     ) : (
                       capabilitiesWorkflow.map(capIdRaw => {
                         const capId = typeof capIdRaw === 'object' && capIdRaw !== null ? (capIdRaw as any).identifier : String(capIdRaw);
@@ -602,7 +605,7 @@ export default function RequestDetailsPage() {
                 </div>
                 {request.state && request.state.length > 0 && (
                   <Button variant="outline" size="sm" onClick={() => setShowContextModal(true)} className="h-7 px-3 text-xs shrink-0">
-                    Context / State
+                    {t.teamsPage.contextState}
                   </Button>
                 )}
               </div>
@@ -614,52 +617,52 @@ export default function RequestDetailsPage() {
             <div className="border-b px-5 py-3 flex items-center justify-between bg-muted/20">
               <div className="flex items-center gap-2">
                 <ListTodo className="size-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold">Tasks & Sub-requests</h3>
+                <h3 className="text-sm font-semibold">{t.teamsPage.tasksAndSubRequests}</h3>
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground">
                     <Filter className="size-3.5" />
-                    Filters
+                    {t.teamsPage.filters}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Status</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t.teamsPage.status}</DropdownMenuLabel>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("draft")} 
                     onCheckedChange={() => toggleStatusFilter("draft")}
                   >
-                    Draft
+                    {t.teamsPage.statusLabels.draft}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("open")} 
                     onCheckedChange={() => toggleStatusFilter("open")}
                   >
-                    Created
+                    {t.teamsPage.statusLabels.open}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("in_progress")} 
                     onCheckedChange={() => toggleStatusFilter("in_progress")}
                   >
-                    In Progress
+                    {t.teamsPage.statusLabels.in_progress}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("waiting_user")} 
                     onCheckedChange={() => toggleStatusFilter("waiting_user")}
                   >
-                    Waiting User
+                    {t.teamsPage.statusLabels.waiting_user}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("completed")} 
                     onCheckedChange={() => toggleStatusFilter("completed")}
                   >
-                    Completed
+                    {t.teamsPage.statusLabels.completed}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
                     checked={statusFilter.includes("cancelled")} 
                     onCheckedChange={() => toggleStatusFilter("cancelled")}
                   >
-                    Cancelled
+                    {t.teamsPage.statusLabels.cancelled}
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -667,7 +670,7 @@ export default function RequestDetailsPage() {
             <div className="flex flex-col w-full">
               {tasks.length === 0 && childRequests.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
-                  No tasks or sub-requests.
+                  {t.teamsPage.noTasksOrSubRequests}
                 </div>
               ) : (
                 <>
@@ -701,13 +704,13 @@ export default function RequestDetailsPage() {
           <section className="rounded-xl border bg-card flex flex-col h-[500px]">
             <div className="border-b px-5 py-4 flex items-center gap-2 bg-muted/20">
               <MessageSquare className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Comments & Updates</h3>
+              <h3 className="text-sm font-semibold">{t.teamsPage.commentsAndUpdates}</h3>
             </div>
             
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {comments.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">
-                  No comments yet.
+                  {t.teamsPage.noComments}
                 </div>
               ) : (
                 comments.map(c => {
@@ -722,7 +725,7 @@ export default function RequestDetailsPage() {
                       <div className="flex-1 space-y-1">
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-foreground">
-                            {isHuman ? "You" : agent?.name || "Agent"}
+                            {isHuman ? t.teamsPage.you : agent?.name || "Agent"}
                           </span>
                           <span className="text-[10px] text-muted-foreground">
                             {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -740,7 +743,7 @@ export default function RequestDetailsPage() {
 
             <div className="p-4 border-t bg-muted/10">
               <textarea
-                placeholder="Add a comment..."
+                placeholder={t.teamsPage.addCommentPlaceholder}
                 className="w-full min-h-[80px] p-3 text-sm rounded-md border border-input bg-background resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={newComment}
                 onChange={e => setNewComment(e.target.value)}
@@ -757,7 +760,7 @@ export default function RequestDetailsPage() {
                   disabled={!newComment.trim() || isSubmittingComment}
                   onClick={handleSubmitComment}
                 >
-                  Post Comment
+                  {t.teamsPage.postComment}
                 </Button>
               </div>
             </div>
@@ -766,12 +769,12 @@ export default function RequestDetailsPage() {
           <section className="rounded-xl border bg-card flex flex-col h-[500px]">
             <div className="border-b px-5 py-4 flex items-center gap-2 bg-muted/20">
               <Activity className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Activities</h3>
+              <h3 className="text-sm font-semibold">{t.teamsPage.activities}</h3>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {activities.length === 0 ? (
                 <div className="text-center py-8 text-sm text-muted-foreground">
-                  No activities yet.
+                  {t.teamsPage.noActivities}
                 </div>
               ) : (
                 activities.map((act) => {
@@ -786,12 +789,12 @@ export default function RequestDetailsPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs leading-tight">
-                          <span className="font-medium text-foreground">{isHuman ? "You" : agent?.name || "Agent"}</span>
+                          <span className="font-medium text-foreground">{isHuman ? t.teamsPage.you : agent?.name || "Agent"}</span>
                           {act.activityTitle ? (
                             <span className="text-muted-foreground"> {act.activityTitle}</span>
                           ) : (
                             <>
-                              <span className="text-muted-foreground"> updated </span>
+                              <span className="text-muted-foreground"> {t.teamsPage.updated} </span>
                               <span className="font-medium text-foreground">{title}</span>
                             </>
                           )}

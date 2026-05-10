@@ -94,11 +94,11 @@ export default function SignupPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        toast.error(apiErrorMessage(data.error, "Failed to send code"));
+        toast.error(apiErrorMessage(data.error, t.login.failedSendCode));
         return;
       }
       
-      toast.success("Code sent to your email!");
+      toast.success(t.login.sentCode + " " + email);
       setStep(2);
     } catch {
       toast.error("Network error");
@@ -125,14 +125,15 @@ export default function SignupPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        toast.error(apiErrorMessage(data.error, "Invalid code or signup failed"));
+        toast.error(apiErrorMessage(data.error, t.login.invalidCode));
         return;
       }
       
       // Store locally in admin-web
       login(data.data.token, data.data.user, data.data.workspace.id);
       
-      toast.success("Account created!");
+      toast.success(t.setup.successTitle);
+
       
       // Redirect to kivo-web for team creation
       const workspaceId = data.data.workspace.id;
@@ -176,9 +177,9 @@ export default function SignupPage() {
                 )}
                 {step === 2 && (
                   <>
-                    <h1 className="text-xl font-bold">Check your email</h1>
+                    <h1 className="text-xl font-bold">{t.login.checkEmail}</h1>
                     <FieldDescription>
-                      We sent a 4-digit code to <span className="font-medium text-foreground">{email}</span>.
+                      {t.login.sentCode} <span className="font-medium text-foreground">{email}</span>.
                     </FieldDescription>
                   </>
                 )}
@@ -191,7 +192,7 @@ export default function SignupPage() {
                     <div className="relative">
                       <Input 
                         id="workspace" 
-                        placeholder="acme-inc" 
+                        placeholder={t.signup.step2.workspacePlaceholder} 
                         value={workspaceName} 
                         onChange={(e) => setWorkspaceName(e.target.value)} 
                         required 
@@ -204,13 +205,13 @@ export default function SignupPage() {
                       </div>
                     </div>
                     {workspaceAvailable === false && (
-                      <span className="text-xs font-medium text-destructive mt-1">This workspace is already taken.</span>
+                      <span className="text-xs font-medium text-destructive mt-1">{t.signup.step2.taken}</span>
                     )}
                   </Field>
 
                   <Field>
                     <FieldLabel htmlFor="email">{t.signup.step1.emailLabel}</FieldLabel>
-                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                    <Input id="email" type="email" placeholder={t.signup.step1.emailPlaceholder} value={email} onChange={(e) => setEmail(e.target.value)} required />
                   </Field>
 
                   <Field className="mt-2">
@@ -241,7 +242,7 @@ export default function SignupPage() {
                     </div>
                   </Field>
                   <FieldDescription className="text-center px-6 mt-4">
-                    By clicking continue, you agree to our <a href="#" className="underline hover:text-primary">Terms of Service</a> and <a href="#" className="underline hover:text-primary">Privacy Policy</a>.
+                    {t.signup.step1.termsText} <a href="#" className="underline hover:text-primary">{t.signup.step1.termsLink}</a> {t.signup.step1.and} <a href="#" className="underline hover:text-primary">{t.signup.step1.privacyLink}</a>.
                   </FieldDescription>
                 </>
               )}
@@ -261,9 +262,9 @@ export default function SignupPage() {
                   <Field>
                     <Button type="submit" disabled={otp.length !== 4 || isLoading}>
                       {isLoading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-                      Verify Code
+                      {t.login.verifyCode}
                     </Button>
-                    <Button variant="ghost" type="button" onClick={() => setStep(1)} className="mt-2 text-muted-foreground" disabled={isLoading}>Back</Button>
+                    <Button variant="ghost" type="button" onClick={() => setStep(1)} className="mt-2 text-muted-foreground" disabled={isLoading}>{t.login.back}</Button>
                   </Field>
                 </>
               )}
