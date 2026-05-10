@@ -21,7 +21,7 @@ export default function CapabilityPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [agents, setAgents] = useState<{id: string, name: string, type: string}[]>([]);
+  const [agents, setAgents] = useState<{id: string, name: string, roleId: string}[]>([]);
   const [allCapabilities, setAllCapabilities] = useState<Capability[]>([]);
   const [capability, setCapability] = useState<Capability>({
     id: "new", name: "", identifier: "", instructions: "", inputsDescription: "", 

@@ -19,7 +19,7 @@ export default function CapabilityWizardPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [agents, setAgents] = useState<{id: string, name: string, type: string}[]>([]);
+  const [agents, setAgents] = useState<{id: string, name: string, roleId: string}[]>([]);
   const [allCapabilities, setAllCapabilities] = useState<Capability[]>([]);
   
   const [step, setStep] = useState<1 | 2>(1);
