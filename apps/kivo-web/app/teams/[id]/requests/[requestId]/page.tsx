@@ -596,7 +596,7 @@ export default function RequestDetailsPage() {
                         const cap = capabilities.find(c => c.identifier === capId);
                         return (
                           <span key={capId} className="px-3 py-1 text-xs rounded-full border bg-muted/50 shrink-0 whitespace-nowrap">
-                            {cap ? cap.name : capName}
+                            {cap ? translate(cap.name) : capName}
                           </span>
                         );
                       })
@@ -779,7 +779,7 @@ export default function RequestDetailsPage() {
               ) : (
                 activities.map((act) => {
                   const isHuman = act.actorType === "human";
-                  const agent = isHuman ? null : agents.find((a) => a.id === act.actorId);
+                  const agent = isHuman ? null : agents?.find((a) => a.id === act.actorId);
                   const title = act.activityTitle || act.payload?.title || act.entityId?.substring(0, 8) || act.requestId?.substring(0, 8) || act.taskId?.substring(0, 8) || "an item";
                   
                   return (
