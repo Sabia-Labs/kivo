@@ -69,6 +69,18 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
     }
 
     const result = await db.transaction(async (tx) => {
+      // 0. Fetch template defaults if applicable
+      let defaultMission = input.mission;
+      let defaultWays = input.waysOfWorking;
+
+      if (input.templateId) {
+        const [template] = await tx.select().from(teamTypes).where(eq(teamTypes.id, input.templateId));
+        if (template) {
+          if (!defaultMission) defaultMission = template.mission;
+          if (!defaultWays) defaultWays = template.waysOfWorking;
+        }
+      }
+
       // 1. Create Team
       const [team] = await tx
         .insert(teams)
@@ -76,8 +88,8 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
           workspaceId: workspaceId as string,
           name: input.name,
           identifierPrefix: input.identifierPrefix,
-          mission: input.mission,
-          waysOfWorking: input.waysOfWorking,
+          mission: defaultMission,
+          waysOfWorking: defaultWays,
           templateId: input.templateId,
         })
         .returning();
