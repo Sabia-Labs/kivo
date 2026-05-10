@@ -250,6 +250,18 @@ export default function RequestDetailsPage() {
   const teamId = String(params.id);
   const requestId = String(params.requestId);
 
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    if (!key.includes(".")) return key; // Not a translation key
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (!current || current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [request, setRequest] = useState<any>(null);
   const [agents, setAgents] = useState<any[]>([]);

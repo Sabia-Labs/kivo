@@ -87,7 +87,7 @@ export default function NewRequestPage() {
         }
       } else {
         // Auto-assign team lead if available
-        const lead = loadedAgents.find((a: any) => a.type === "team_lead");
+        const lead = loadedAgents.find((a: any) => a.isLeader);
         if (lead) {
           setTargetType("agent");
           setTargetAgentId(lead.id);
@@ -243,7 +243,7 @@ export default function NewRequestPage() {
     }
   };
 
-  const leadAgent = agents.find(a => a.type === "team_lead");
+  const leadAgent = agents.find(a => a.isLeader);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
@@ -292,7 +292,7 @@ export default function NewRequestPage() {
             {leadAgent?.icon || "👑"}
           </div>
           <div className="flex-1 min-w-0">
-            <span className="text-xs font-semibold text-primary mb-1 block">{leadAgent?.name || "Team Lead"}</span>
+            <span className="text-xs font-semibold text-primary mb-1 block">{leadAgent?.name || t.teamsPage.statusLabels.open}</span>
             {isLeaderThinking ? (
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground italic h-6">
                 <span className="flex gap-0.5">
