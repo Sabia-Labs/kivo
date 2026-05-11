@@ -56,6 +56,15 @@ spec:
         - protocol: TCP
           port: 443
 
+    # Allow connection to Control Plane (Admin API) for configuration sync
+    - to:
+        - podSelector:
+            matchLabels:
+              {{- include "kivo.adminApi.selectorLabels" . | nindent 14 }}
+      ports:
+        - protocol: TCP
+          port: 4001
+
     {{- if .Values.postgresql.embedded }}
     # Allow connection to embedded PostgreSQL
     - to:
