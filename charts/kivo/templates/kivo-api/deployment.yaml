@@ -68,6 +68,36 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: RESEND_API_KEY
                   optional: true
+            - name: RABBITMQ_MANAGEMENT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_MANAGEMENT_URL
+                  optional: true
+            - name: RABBITMQ_AMQP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_AMQP_HOST
+                  optional: true
+            - name: RABBITMQ_AMQP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_AMQP_PORT
+                  optional: true
+            - name: RABBITMQ_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_ADMIN_USER
+                  optional: true
+            - name: RABBITMQ_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_ADMIN_PASSWORD
+                  optional: true
             {{- end }}
             {{- if .Values.postgresql.embedded }}
             - name: DATABASE_URL
@@ -121,6 +151,36 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: RESEND_API_KEY
+                  optional: true
+            - name: RABBITMQ_MANAGEMENT_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_MANAGEMENT_URL
+                  optional: true
+            - name: RABBITMQ_AMQP_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_AMQP_HOST
+                  optional: true
+            - name: RABBITMQ_AMQP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_AMQP_PORT
+                  optional: true
+            - name: RABBITMQ_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_ADMIN_USER
+                  optional: true
+            - name: RABBITMQ_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: RABBITMQ_ADMIN_PASSWORD
                   optional: true
             {{- end }}
             {{- if .Values.postgresql.embedded }}
