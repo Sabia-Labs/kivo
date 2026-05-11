@@ -21,7 +21,7 @@ import { getAgentsByTeam } from "../controllers/agentsController";
 
 export const teamsRouter = Router();
 
-const ADMIN_API_URL = process.env.ADMIN_API_INTERNAL_URL || "http://kivo-admin-api.kivo-admin:4001";
+const ADMIN_API_URL = process.env.ADMIN_API_INTERNAL_URL || "http://kivo-admin-api:4001";
 const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 
 // ── GET /teams/mine ──────────────────────────────────────────────────────────

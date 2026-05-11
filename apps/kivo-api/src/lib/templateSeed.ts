@@ -2,7 +2,7 @@ import { db } from "../db/client";
 import { agentRoles, teamTypes, teamTypeRoles } from "../db/schema";
 import { eq } from "drizzle-orm";
 
-const ADMIN_API_URL = process.env.ADMIN_API_INTERNAL_URL || "http://kivo-admin-api.kivo-admin:4001";
+const ADMIN_API_URL = process.env.ADMIN_API_INTERNAL_URL || "http://kivo-admin-api:4001";
 const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 
 export async function runTemplateSeed() {
