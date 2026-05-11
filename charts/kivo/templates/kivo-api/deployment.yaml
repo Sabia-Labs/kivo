@@ -74,19 +74,7 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: PLATFORM_OPENAI_API_KEY
                   optional: true
-            - name: PLATFORM_OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
-                  optional: true
             - name: GEMINI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
-                  optional: true
-            - name: PLATFORM_GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
@@ -181,19 +169,7 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: PLATFORM_OPENAI_API_KEY
                   optional: true
-            - name: PLATFORM_OPENAI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
-                  optional: true
             - name: GEMINI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
-                  optional: true
-            - name: PLATFORM_GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
@@ -242,4 +218,3 @@ spec:
           resources:
             {{- toYaml .Values.kivoApi.resources | nindent 12 }}
 {{- end }}
-
