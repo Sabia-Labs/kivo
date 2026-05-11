@@ -26,6 +26,7 @@ kivoApi:
     RABBITMQ_AMQP_PORT: "5672"
     RABBITMQ_ADMIN_USER: "default_user_NNXCNkR1HkmQ1haCg-8"
     RABBITMQ_ADMIN_PASSWORD: "NMbnC7eBcarhFHXgRi2B3WMMdBWUnROI"
+    ADMIN_API_INTERNAL_URL: "http://kivo-admin-api:4001"
   existingSecret: kivo-api-staging-secret
   databaseSecret: kivo-db-credentials
   runMigrations: false
