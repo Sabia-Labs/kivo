@@ -80,36 +80,6 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: PLATFORM_GEMINI_API_KEY
                   optional: true
-            - name: RABBITMQ_MANAGEMENT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_MANAGEMENT_URL
-                  optional: true
-            - name: RABBITMQ_AMQP_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_AMQP_HOST
-                  optional: true
-            - name: RABBITMQ_AMQP_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_AMQP_PORT
-                  optional: true
-            - name: RABBITMQ_ADMIN_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_ADMIN_USER
-                  optional: true
-            - name: RABBITMQ_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_ADMIN_PASSWORD
-                  optional: true
             {{- else if .Values.postgresql.embedded }}
             - name: DATABASE_URL
               value: {{ include "kivo.postgresql.connectionString" . | quote }}
@@ -174,36 +144,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: PLATFORM_GEMINI_API_KEY
-                  optional: true
-            - name: RABBITMQ_MANAGEMENT_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_MANAGEMENT_URL
-                  optional: true
-            - name: RABBITMQ_AMQP_HOST
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_AMQP_HOST
-                  optional: true
-            - name: RABBITMQ_AMQP_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_AMQP_PORT
-                  optional: true
-            - name: RABBITMQ_ADMIN_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_ADMIN_USER
-                  optional: true
-            - name: RABBITMQ_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: RABBITMQ_ADMIN_PASSWORD
                   optional: true
             {{- else if .Values.postgresql.embedded }}
             {{- /* Local: DATABASE_URL built from embedded PostgreSQL values */}}
