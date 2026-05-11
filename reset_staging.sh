@@ -44,7 +44,7 @@ cd apps/kivo-api && pnpm install && pnpm db:migrate && pnpm db:seed && cd ../..
 echo "🏗 Running migrations and SEED for Admin API (Control Plane)..."
 cd apps/admin-api && npm install && npm run db:migrate && npm run db:seed && cd ../..
 
-echo "🛠 Creating/Updating separate Secret for Admin API..."
+echo "🛠 Creating/Updating separate Secret for Admin API DB..."
 NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@kivo-db-postgresql:5432/kivo_admin" | base64)
 kubectl apply -f - <<EOF
 apiVersion: v1
@@ -56,6 +56,23 @@ type: Opaque
 data:
   DATABASE_URL_ADMIN: $NEW_URL_ADMIN
 EOF
+
+echo "🔐 Ensuring INTERNAL_SERVICE_TOKEN exists for inter-service sync..."
+# Try to get existing token from cluster to avoid rotation on every reset
+EXISTING_TOKEN=$(kubectl get secret kivo-api-staging-secret -n $NAMESPACE -o jsonpath='{.data.INTERNAL_SERVICE_TOKEN}' 2>/dev/null | base64 -d || echo "")
+if [ -z "$EXISTING_TOKEN" ]; then
+    echo "   -> Generating new internal service token..."
+    INTERNAL_TOKEN=$(openssl rand -base64 32)
+else
+    echo "   -> Using existing internal service token."
+    INTERNAL_TOKEN="$EXISTING_TOKEN"
+fi
+
+# Surgical patch to add/update the token without wiping other keys (like JWT_SECRET)
+B64_TOKEN=$(echo -n "$INTERNAL_TOKEN" | base64 | tr -d '\n')
+kubectl patch secret kivo-api-staging-secret -n $NAMESPACE --type='json' -p="[{\"op\": \"replace\", \"path\": \"/data/INTERNAL_SERVICE_TOKEN\", \"value\": \"$B64_TOKEN\"}]" 2>/dev/null || \
+kubectl patch secret kivo-api-staging-secret -n $NAMESPACE --type='json' -p="[{\"op\": \"add\", \"path\": \"/data/INTERNAL_SERVICE_TOKEN\", \"value\": \"$B64_TOKEN\"}]" 2>/dev/null || \
+kubectl create secret generic kivo-api-staging-secret -n $NAMESPACE --from-literal=INTERNAL_SERVICE_TOKEN="$INTERNAL_TOKEN" --dry-run=client -o yaml | kubectl apply -f -
 
 echo "📈 Scaling up apps..."
 kubectl scale deployment kivo-api kivo-admin-api kivo-web kivo-admin-web -n $NAMESPACE --replicas=1
