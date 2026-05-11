@@ -26,6 +26,9 @@ metaRouter.get("/team-types", async (req: Request, res: Response, next: NextFunc
       .from(teamTypes)
       .$dynamic();
     
+    // DEBUG: Log the generated SQL to investigate 'column name does not exist' errors
+    console.log("[DEBUG] /meta/team-types SQL:", query.toSQL());
+    
     if (search && typeof search === 'string') {
       // Search in ID or i18n key since actual name is client-side
       query = query.where(or(
