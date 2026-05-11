@@ -11,7 +11,20 @@ metaRouter.get("/team-types", async (req: Request, res: Response, next: NextFunc
   try {
     const { search } = req.query;
     
-    let query = db.select().from(teamTypes).$dynamic();
+    // Explicitly select columns to avoid 'column name does not exist' errors from stale build artifacts
+    let query = db
+      .select({
+        id: teamTypes.id,
+        nameI18nKey: teamTypes.nameI18nKey,
+        descriptionI18nKey: teamTypes.descriptionI18nKey,
+        emoji: teamTypes.emoji,
+        color: teamTypes.color,
+        featured: teamTypes.featured,
+        mission: teamTypes.mission,
+        waysOfWorking: teamTypes.waysOfWorking,
+      })
+      .from(teamTypes)
+      .$dynamic();
     
     if (search && typeof search === 'string') {
       // Search in ID or i18n key since actual name is client-side
@@ -35,7 +48,17 @@ metaRouter.get("/team-types/:id/roles", async (req: Request, res: Response, next
 
     const rolesWithLeader = await db
       .select({
-        role: agentRoles,
+        role: {
+          id: agentRoles.id,
+          nameI18nKey: agentRoles.nameI18nKey,
+          descriptionI18nKey: agentRoles.descriptionI18nKey,
+          suggestedNameI18nKey: agentRoles.suggestedNameI18nKey,
+          emoji: agentRoles.emoji,
+          emojiBgColor: agentRoles.emojiBgColor,
+          soul: agentRoles.soul,
+          identity: agentRoles.identity,
+          operatingInstructions: agentRoles.operatingInstructions,
+        },
         isLeader: teamTypeRoles.isLeader,
         quantity: teamTypeRoles.quantity,
       })
@@ -53,7 +76,21 @@ metaRouter.get("/team-types/:id/roles", async (req: Request, res: Response, next
 metaRouter.get("/agent-roles", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { search } = req.query;
-    let query = db.select().from(agentRoles).$dynamic();
+    
+    let query = db
+      .select({
+        id: agentRoles.id,
+        nameI18nKey: agentRoles.nameI18nKey,
+        descriptionI18nKey: agentRoles.descriptionI18nKey,
+        suggestedNameI18nKey: agentRoles.suggestedNameI18nKey,
+        emoji: agentRoles.emoji,
+        emojiBgColor: agentRoles.emojiBgColor,
+        soul: agentRoles.soul,
+        identity: agentRoles.identity,
+        operatingInstructions: agentRoles.operatingInstructions,
+      })
+      .from(agentRoles)
+      .$dynamic();
     
     if (search && typeof search === 'string') {
       query = query.where(or(
