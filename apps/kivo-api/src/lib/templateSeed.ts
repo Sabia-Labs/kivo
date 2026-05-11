@@ -7,7 +7,7 @@ const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 
 export async function runTemplateSeed() {
   if (!INTERNAL_TOKEN) {
-    console.warn("[template-seed] INTERNAL_SERVICE_TOKEN not set. Skipping sync. Please check your .env file.");
+    console.error("❌ [template-seed] INTERNAL_SERVICE_TOKEN not set. Sync skipped! Meta configuration (Team Types) will be missing.");
     return;
   }
 

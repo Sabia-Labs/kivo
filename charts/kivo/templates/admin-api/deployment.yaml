@@ -54,6 +54,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.adminApi.existingSecret }}
                   key: JWT_SECRET
+            - name: INTERNAL_SERVICE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.adminApi.existingSecret }}
+                  key: INTERNAL_SERVICE_TOKEN
+                  optional: true
             - name: GOOGLE_CLIENT_ID
               valueFrom:
                 secretKeyRef:
