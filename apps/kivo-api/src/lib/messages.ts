@@ -72,3 +72,42 @@ export function buildTeamRequestFinishedMessage(completedRequest: { identifier: 
   Review the result of this request. Since this request was created as part of your work on another task/request, you must now continue your work based on these new findings or deliverables. 
   Update the original task or request you are working on, and proceed to the next steps of your plan.`;
 }
+
+/**
+ * Replaces placeholders in agent soul, identity, and instructions.
+ */
+export function replacePlaceholders(
+  text: string | null | undefined,
+  vars: {
+    agent_name?: string;
+    team_name?: string;
+    team_id?: string;
+    operator_name?: string;
+    mission?: string;
+  }
+): string {
+  if (!text) return "";
+  let result = text;
+
+  if (vars.agent_name) {
+    result = result.replace(/\{\{agent_name\}\}/g, vars.agent_name);
+    result = result.replace(/\$\{AGENT_NAME\}/g, vars.agent_name);
+  }
+  if (vars.team_name) {
+    result = result.replace(/\{\{team_name\}\}/g, vars.team_name);
+    result = result.replace(/\$\{TEAM_NAME\}/g, vars.team_name);
+  }
+  if (vars.team_id) {
+    result = result.replace(/\{\{team_id\}\}/g, vars.team_id);
+    result = result.replace(/\$\{TEAM_ID\}/g, vars.team_id);
+  }
+  if (vars.operator_name) {
+    result = result.replace(/\{\{operator_name\}\}/g, vars.operator_name);
+    result = result.replace(/\$\{AGENT_OPERATOR_NAME\}/g, vars.operator_name);
+  }
+  if (vars.mission) {
+    result = result.replace(/\{\{mission\}\}/g, vars.mission);
+    result = result.replace(/\$\{MISSION\}/g, vars.mission);
+  }
+  return result;
+}

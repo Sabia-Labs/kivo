@@ -89,59 +89,6 @@ app.listen(PORT, HOST, async () => {
   // ── Template Seed (Sync from Control Plane) ─────────────────────────────────
   const { runTemplateSeed } = await import("./lib/templateSeed");
   await runTemplateSeed();
-
-  // Startup: RabbitMQ reprovisioning safety net
-  // Ensures that even if RabbitMQ is reset (e.g. Tilt restart), all local tenants have their vhosts/users.
-  if (process.env.DISABLE_RABBIT_STARTUP_REPROVISION !== "true") {
-    const delayMs = Number(process.env.RABBIT_STARTUP_DELAY_MS ?? 30_000);
-    setTimeout(async () => {
-      try {
-        const { provisionTenant, checkManagementApiReady } = await import("./lib/rabbitmq");
-        const { applyRabbitMQCredentialsSecret, rolloutRestartDeployment } = await import("./k8s/provisioner");
-        const { db }                = await import("./db/client");
-        const { workspaces, agents, teams } = await import("./db/schema");
-        const { eq }                = await import("drizzle-orm");
-
-        let apiReady = false;
-        while (!apiReady) {
-          apiReady = await checkManagementApiReady();
-          if (apiReady) break;
-          console.warn("[startup] RabbitMQ Management API not ready. Retrying in 10s...");
-          await new Promise(r => setTimeout(r, 10_000));
-        }
-
-        console.log("[startup] RabbitMQ ready. Syncing tenant infrastructure...");
-
-        // Note: We use the local logical 'workspaces' table which tracks workspaces served by this cell.
-        const allWorkspaces = await db.select().from(workspaces);
-        let provisioned = 0;
-
-        for (const ws of allWorkspaces) {
-          if (!ws.k8sNamespace) continue;
-          try {
-            const creds = await provisionTenant(ws.id);
-            await applyRabbitMQCredentialsSecret(ws.k8sNamespace, creds);
-
-            const wsAgents = await db
-              .select({ id: agents.id })
-              .from(agents)
-              .innerJoin(teams, eq(teams.id, agents.teamId))
-              .where(eq(teams.workspaceId, ws.id));
-
-            for (const agent of wsAgents) {
-              try { await rolloutRestartDeployment(ws.k8sNamespace, agent.id); } catch {}
-            }
-            provisioned++;
-          } catch (err) {
-            console.error(`[startup] Failed to reprovision workspace ${ws.id}:`, err);
-          }
-        }
-        console.log(`[startup] RabbitMQ sync complete — ${provisioned} workspaces verified.`);
-      } catch (err) {
-        console.error("[startup] RabbitMQ provisioning hook crashed:", err);
-      }
-    }, delayMs);
-  }
 });
 
 export default app;
