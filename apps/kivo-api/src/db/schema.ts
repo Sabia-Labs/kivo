@@ -79,6 +79,11 @@ export const agentRoles = pgTable("agent_roles", {
   soul: text("soul").notNull(),
   identity: text("identity").notNull(),
   operatingInstructions: text("operating_instructions").notNull(),
+  userContext: text("user_context").notNull().default(""),
+  memory: text("memory").notNull().default(""),
+  toolsNotes: text("tools_notes").notNull().default(""),
+  heartbeat: text("heartbeat").notNull().default(""),
+  agentsBase: text("agents_base").notNull().default(""),
 });
 
 export const teamTypes = pgTable("team_types", {
@@ -149,29 +154,16 @@ export const agents = pgTable("agents", {
   name: text("name").notNull(),
   /** Refers to agentRoles.id */
   roleId: text("role_id").references(() => agentRoles.id),
+  /** The agent's emoji icon */
   icon: text("icon"),
+  /** The agent's custom background color */
+  bgColor: text("bg_color"),
   metadata: jsonb("metadata"),
   gatewayToken: text("gateway_token"),
   k8sStatus: agentK8sStatusEnum("k8s_status").default("pending"),
   k8sResourceName: text("k8s_resource_name"),
   availability: agentAvailabilityEnum("availability").notNull().default("available"),
   isLeader: boolean("is_leader").notNull().default(false),
-  /** Personality and boundaries */
-  soul: text("soul"),
-  /** Role details and mission */
-  identity: text("identity"),
-  /** Operating rules */
-  agentsInstructions: text("agents_instructions"),
-  /** Operator context */
-  userContext: text("user_context"),
-  /** Long-term memory */
-  memory: text("memory"),
-  /** Daily activity logs */
-  dailyLogs: jsonb("daily_logs"),
-  /** Tools and conventions */
-  toolsNotes: text("tools_notes"),
-  /** Periodic checks */
-  heartbeat: text("heartbeat"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

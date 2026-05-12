@@ -1,4 +1,4 @@
-.PHONY: help dev down clean-local staging-reset migrate seed test-agents clean-files ctx-local ctx-staging local-db-studio local-admin-db-studio staging-db-studio staging-admin-db-studio argo-ui gcloud-auth
+.PHONY: help dev down clean-local staging-reset migrate seed clean-files ctx-local ctx-staging local-db-studio local-admin-db-studio staging-db-studio staging-admin-db-studio argo-ui gcloud-auth
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 LOCAL_CTX = docker-desktop
@@ -95,8 +95,6 @@ seed: ## Seed Application Plane with Meta Configuration (Local)
 	(cd apps/kivo-api && pnpm db:seed)
 
 # ── UTILS ─────────────────────────────────────────────────────────────────────
-test-agents: ## Run simple agent deployment test
-	bash apps/agents/tests/test-simple.sh
 
 clean-files: ## Remove build artifacts and lock files
 	rm -rf apps/kivo-web/.next apps/admin-web/.next apps/kivo-api/dist apps/admin-api/dist

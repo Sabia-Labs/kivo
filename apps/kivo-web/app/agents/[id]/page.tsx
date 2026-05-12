@@ -399,14 +399,52 @@ export default function AgentPage() {
   type BrainField = "soul" | "identity" | "agentsInstructions";
   const [editingBrainField, setEditingBrainField] = useState<BrainField | null>(null);
   const [brainContent, setBrainContent] = useState("");
-  const [isSavingBrain, setIsSavingBrain] = useState(false);
-
-
+  const [isFetchingLive, setIsFetchingLive] = useState(false);
 
   const authHeaders = useCallback((): HeadersInit => ({
     "Content-Type": "application/json",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   }), [token]);
+
+  const fetchLiveFile = useCallback(async (filename: string) => {
+    setIsFetchingLive(true);
+    try {
+      const r = await fetch(`${API_BASE}/agents/${agentId}/files/${filename}`, { headers: authHeaders() });
+      if (r.ok) {
+        const d = await r.json();
+        return d.data.content;
+      }
+      return null;
+    } catch (err) {
+      console.error("Failed to fetch live file:", err);
+      return null;
+    } finally {
+      setIsFetchingLive(false);
+    }
+  }, [agentId, authHeaders]);
+
+  const openBrainEditor = async (field: BrainField) => {
+    setEditingBrainField(field);
+    setBrainContent(""); // Clear before loading
+
+    const filenameMap: Record<BrainField, string> = {
+      soul: "SOUL.md",
+      identity: "IDENTITY.md",
+      agentsInstructions: "PROCESS.MD"
+    };
+
+    const liveContent = await fetchLiveFile(filenameMap[field]);
+    
+    if (liveContent !== null) {
+      setBrainContent(liveContent);
+    } else {
+      // Fallback to DB data (while migrating or if pod is down)
+      if (field === "soul") setBrainContent(agent?.soul ?? "");
+      else if (field === "identity") setBrainContent(agent?.identity ?? "");
+      else if (field === "agentsInstructions") setBrainContent(agent?.agentsInstructions ?? "");
+      toast.info("Showing cached data (Agent pod unreachable)");
+    }
+  };
 
   const fetchAgent = useCallback(async () => {
     try {
@@ -462,35 +500,6 @@ export default function AgentPage() {
     setIcon(newIcon);
     setColor(newColor);
     saveSettings({ icon: newIcon, metadata: { avatarColor: newColor } });
-  };
-
-
-
-  const openBrainEditor = (field: BrainField) => {
-    setEditingBrainField(field);
-    if (field === "soul") setBrainContent(agent?.soul ?? "");
-    else if (field === "identity") setBrainContent(agent?.identity ?? "");
-    else if (field === "agentsInstructions") setBrainContent(agent?.agentsInstructions ?? "");
-  };
-
-  const saveBrainContent = async () => {
-    if (!editingBrainField || !agent) return;
-    setIsSavingBrain(true);
-    try {
-      const r = await fetch(`${API_BASE}/agents/${agentId}`, {
-        method: "PUT", headers: authHeaders(),
-        body: JSON.stringify({
-          [editingBrainField]: brainContent
-        }),
-      });
-      if (!r.ok) throw new Error();
-      const d = await r.json();
-      setAgent(d.data);
-      toast.success(`${editingBrainField.toUpperCase()} updated.`);
-      setEditingBrainField(null);
-    } catch {
-      toast.error("Failed to update brain.");
-    } finally { setIsSavingBrain(false); }
   };
 
   const saveTelegramToken = async (newToken: string) => {
@@ -672,36 +681,42 @@ export default function AgentPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "soul" && "ring-2 ring-primary")} onClick={() => openBrainEditor("soul")}>
                 <span className="font-semibold mb-1">SOUL</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Defines personality, values, tone, and behavioral boundaries.</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Live view of the agent's personality, values and boundaries.</span>
               </Button>
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "identity" && "ring-2 ring-primary")} onClick={() => openBrainEditor("identity")}>
                 <span className="font-semibold mb-1">IDENTITY</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Contains surface-level details like name, role, and voice.</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Live view of name, role, mission and voice definitions.</span>
               </Button>
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "agentsInstructions" && "ring-2 ring-primary")} onClick={() => openBrainEditor("agentsInstructions")}>
-                <span className="font-semibold mb-1">AGENTS</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Operational instructions and rules governing agent behavior.</span>
+                <span className="font-semibold mb-1">PROCESS</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Live view of operational rules and behavior instructions.</span>
               </Button>
             </div>
 
             {editingBrainField && (
               <div className="mt-5 border rounded-xl p-4 bg-muted/10 animate-in fade-in slide-in-from-top-2">
                  <div className="flex justify-between items-center mb-3">
-                    <h4 className="font-semibold text-sm tracking-wide uppercase">{editingBrainField} Content</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-sm tracking-wide uppercase">{editingBrainField} Content</h4>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">READ-ONLY</span>
+                    </div>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingBrainField(null)}><X className="size-4" /></Button>
                  </div>
-                 <textarea 
-                   value={brainContent} 
-                   onChange={e => setBrainContent(e.target.value)}
-                   className="w-full min-h-[250px] p-4 text-sm font-mono bg-background border rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 resize-y"
-                   placeholder={`Write the markdown content for ${editingBrainField.toUpperCase()} here...`}
-                 />
-                 <div className="mt-3 flex justify-end">
-                   <Button onClick={saveBrainContent} disabled={isSavingBrain}>
-                     {isSavingBrain ? <Loader2 className="size-4 animate-spin mr-2" /> : <Save className="size-4 mr-2" />}
-                     Save
-                   </Button>
-                 </div>
+                 
+                 {isFetchingLive ? (
+                   <div className="flex flex-col items-center justify-center min-h-[250px] bg-background border rounded-md gap-3">
+                     <Loader2 className="size-8 animate-spin text-primary/40" />
+                     <p className="text-xs text-muted-foreground animate-pulse">Reading from agent disk...</p>
+                   </div>
+                 ) : (
+                   <div className="w-full min-h-[250px] p-4 text-sm font-mono bg-background border rounded-md overflow-auto whitespace-pre-wrap">
+                     {brainContent || <span className="text-muted-foreground italic">No content found.</span>}
+                   </div>
+                 )}
+                 
+                 <p className="mt-3 text-[10px] text-muted-foreground italic text-right">
+                   This data is fetched live from the agent's persistent storage.
+                 </p>
               </div>
             )}
           </div>

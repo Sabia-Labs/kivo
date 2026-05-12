@@ -118,13 +118,6 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
                 isLeader: a.isLeader || false,
                 icon: a.icon || role?.emoji,
                 gatewayToken: randomBytes(32).toString("base64url"),
-                soul: replacePlaceholders(role?.soul, placeholderVars),
-                identity: replacePlaceholders(role?.identity, placeholderVars),
-                agentsInstructions: replacePlaceholders(role?.operatingInstructions, placeholderVars),
-                userContext: "",
-                memory: "",
-                toolsNotes: "",
-                heartbeat: "",
               };
             })
           : [];

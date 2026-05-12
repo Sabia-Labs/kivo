@@ -1,6 +1,0 @@
-apiVersion: v2
-name: kivo
-description: Helm chart for deploying the Kivo OpenClaw-based agents
-version: 0.1.0
-appVersion: "0.1.0"
-type: application

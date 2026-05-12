@@ -1,5 +1,5 @@
 {
-  "id": "47c31d7c-c8aa-4fe2-9f68-d54b8920232c",
+  "id": "c2d97044-1f68-45ff-8576-cdc6d6256757",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -184,6 +184,41 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "user_context": {
+          "name": "user_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "memory": {
+          "name": "memory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "tools_notes": {
+          "name": "tools_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "heartbeat": {
+          "name": "heartbeat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "agents_base": {
+          "name": "agents_base",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
         }
       },
       "indexes": {},
@@ -229,6 +264,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "bg_color": {
+          "name": "bg_color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
@@ -269,54 +310,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
-        },
-        "soul": {
-          "name": "soul",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "identity": {
-          "name": "identity",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "agents_instructions": {
-          "name": "agents_instructions",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_context": {
-          "name": "user_context",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "memory": {
-          "name": "memory",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "daily_logs": {
-          "name": "daily_logs",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "tools_notes": {
-          "name": "tools_notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "heartbeat": {
-          "name": "heartbeat",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -618,71 +611,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.leader_chat_history": {
-      "name": "leader_chat_history",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "team_id": {
-          "name": "team_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "message": {
-          "name": "message",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "leader_chat_history_team_id_teams_id_fk": {
-          "name": "leader_chat_history_team_id_teams_id_fk",
-          "tableFrom": "leader_chat_history",
-          "tableTo": "teams",
-          "columnsFrom": [
-            "team_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.messages": {
       "name": "messages",
       "schema": "",
@@ -716,6 +644,12 @@
         "token_count": {
           "name": "token_count",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivered_at": {
+          "name": "delivered_at",
+          "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false
         },

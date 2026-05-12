@@ -34,7 +34,12 @@ CREATE TABLE "agent_roles" (
 	"emoji_bg_color" text NOT NULL,
 	"soul" text NOT NULL,
 	"identity" text NOT NULL,
-	"operating_instructions" text NOT NULL
+	"operating_instructions" text NOT NULL,
+	"user_context" text DEFAULT '' NOT NULL,
+	"memory" text DEFAULT '' NOT NULL,
+	"tools_notes" text DEFAULT '' NOT NULL,
+	"heartbeat" text DEFAULT '' NOT NULL,
+	"agents_base" text DEFAULT '' NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "agents" (
@@ -43,20 +48,13 @@ CREATE TABLE "agents" (
 	"name" text NOT NULL,
 	"role_id" text,
 	"icon" text,
+	"bg_color" text,
 	"metadata" jsonb,
 	"gateway_token" text,
 	"k8s_status" "agent_k8s_status" DEFAULT 'pending',
 	"k8s_resource_name" text,
 	"availability" "agent_availability" DEFAULT 'available' NOT NULL,
 	"is_leader" boolean DEFAULT false NOT NULL,
-	"soul" text,
-	"identity" text,
-	"agents_instructions" text,
-	"user_context" text,
-	"memory" text,
-	"daily_logs" jsonb,
-	"tools_notes" text,
-	"heartbeat" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -92,21 +90,13 @@ CREATE TABLE "integrations" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "leader_chat_history" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"team_id" uuid NOT NULL,
-	"user_id" text NOT NULL,
-	"message" text NOT NULL,
-	"role" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "messages" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"conversation_id" uuid NOT NULL,
 	"role" "message_role" NOT NULL,
 	"content" text NOT NULL,
 	"token_count" integer,
+	"delivered_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -248,7 +238,6 @@ ALTER TABLE "comments" ADD CONSTRAINT "comments_task_id_tasks_id_fk" FOREIGN KEY
 ALTER TABLE "comments" ADD CONSTRAINT "comments_request_id_requests_id_fk" FOREIGN KEY ("request_id") REFERENCES "public"."requests"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "conversations" ADD CONSTRAINT "conversations_agent_id_agents_id_fk" FOREIGN KEY ("agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "integrations" ADD CONSTRAINT "integrations_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "leader_chat_history" ADD CONSTRAINT "leader_chat_history_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_conversations_id_fk" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

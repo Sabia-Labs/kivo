@@ -9,7 +9,7 @@
 #   1. Run openclaw non-interactive onboarding
 #   2. Configure Telegram channel
 #   3. Configure MCP servers (Linear, GitHub) — paths baked into image
-#   4. Seed profile files from /opt/kivo/profiles/{AGENT_PROFILE}/ to PVC
+#   4. Fetch dynamic profile files from Kivo API to PVC
 #      ↳ Files evolve on the PVC after first boot; never overwritten here.
 #   5. Touch .bootstrapped to prevent re-seeding on restart
 # ─────────────────────────────────────────────────────────────────────────────
@@ -24,35 +24,7 @@ mkdir -p "$OPENCLAW_CONFIG_DIR/workspace"
 # MCP packages are pre-installed in the image (no npm install at runtime)
 MCP_PACKAGES_DIR="${MCP_PACKAGES_DIR:-/opt/mcp-packages}"
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
-escape_sed_replacement() {
-  printf '%s' "$1" | sed -e 's/[&|\\]/\\&/g'
-}
-
-render_profile_file() {
-  src_file="$1"
-  dst_file="$2"
-
-  if command -v envsubst >/dev/null 2>&1; then
-    envsubst <"$src_file" >"$dst_file"
-    return
-  fi
-
-  safe_operator="$(escape_sed_replacement "${AGENT_OPERATOR_NAME:-}")"
-  safe_profile="$(escape_sed_replacement "${AGENT_PROFILE:-}")"
-  safe_agent="$(escape_sed_replacement "${AGENT_NAME:-}")"
-  safe_team="$(escape_sed_replacement "${TEAM_NAME:-}")"
-  safe_id="$(escape_sed_replacement "${AGENT_ID:-}")"
-
-  sed \
-    -e "s|\${AGENT_OPERATOR_NAME}|${safe_operator}|g" \
-    -e "s|\${AGENT_PROFILE}|${safe_profile}|g" \
-    -e "s|\${AGENT_NAME}|${safe_agent}|g" \
-    -e "s|\${TEAM_NAME}|${safe_team}|g" \
-    -e "s|\${AGENT_ID}|${safe_id}|g" \
-    "$src_file" >"$dst_file"
-}
 
 # ── Main (first-boot gate) ────────────────────────────────────────────────────
 
@@ -121,30 +93,49 @@ if [ ! -f "$OPENCLAW_CONFIG_DIR/.bootstrapped" ]; then
 EOF
 
   # ── Seed profile files (FIRST BOOT ONLY) ─────────────────────────────────
-  # Source: /opt/kivo/profiles/{AGENT_PROFILE}/ (baked into the image)
+  # Source: Kivo API (dynamic from database templates)
   # Destination: $OPENCLAW_CONFIG_DIR/workspace/
   #
   # IMPORTANT: These files will evolve over time on the PVC.
   # This block runs ONCE. The .bootstrapped flag prevents re-seeding on restart.
-  # DO NOT add logic here that overwrites existing workspace files.
-  PROFILE_SRC="/opt/kivo/profiles/${AGENT_PROFILE:-}"
-  if [ -d "$PROFILE_SRC" ]; then
-    echo "==> Seeding profile files from $PROFILE_SRC (first boot only)"
-    for f in AGENTS.md IDENTITY.md SOUL.md USER.md PROCESS.MD MEMORY.md HEARTBEAT.md SAFETY.md TOOLS.md; do
-      if [ -f "$PROFILE_SRC/$f" ]; then
-        render_profile_file "$PROFILE_SRC/$f" "$OPENCLAW_CONFIG_DIR/workspace/$f"
-      fi
-    done
-  else
-    echo "==> No profile directory found at $PROFILE_SRC; writing minimal fallback"
-    cat >"$OPENCLAW_CONFIG_DIR/workspace/AGENTS.md" <<EOF
-# ${AGENT_NAME:-OpenClaw Agent}
+  
+  echo "==> Fetching dynamic bootstrap files from Kivo API..."
+  BOOTSTRAP_URL="${KIVO_API_INTERNAL_URL}/internal/v1/agents/${AGENT_ID}/bootstrap-data"
+  
+  node -e "
+const fs = require('fs');
+const path = require('path');
 
-You are a helpful AI assistant running in Kubernetes.
-Profile: ${AGENT_PROFILE:-unknown}
-Operator: ${AGENT_OPERATOR_NAME:-}
-EOF
-  fi
+async function fetchBootstrap() {
+  const url = '$BOOTSTRAP_URL';
+  const token = process.env.INTERNAL_SERVICE_TOKEN;
+  const workspace = '$OPENCLAW_CONFIG_DIR/workspace';
+
+  console.log('Fetching from: ' + url);
+  try {
+    const res = await fetch(url, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()));
+    
+    const json = await res.json();
+    if (json.error) throw new Error(json.error.message || 'API reported failure');
+
+    const files = json.data.files;
+    for (const [filename, content] of Object.entries(files)) {
+      const fullPath = path.join(workspace, filename);
+      console.log('  -> Writing ' + filename);
+      fs.writeFileSync(fullPath, content);
+    }
+    console.log('Bootstrap files written successfully.');
+  } catch (err) {
+    console.error('Failed to fetch bootstrap data:', err.message);
+    process.exit(1);
+  }
+}
+
+fetchBootstrap();
+"
 
   # ── Seed shared skills (FIRST BOOT ONLY) ─────────────────────────────────
   SHARED_SKILLS_SRC="/opt/kivo/profiles/shared/skills"

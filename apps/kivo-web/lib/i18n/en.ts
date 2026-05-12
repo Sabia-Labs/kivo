@@ -598,6 +598,9 @@ export const en = {
     submitRequest: "Submit Request",
     failedInsight: "I'm having trouble analyzing this right now, but feel free to submit!",
     updatedExecutionPlan: "I have updated the execution plan based on the selected capabilities. Provide details to proceed.",
+    exploreAllTemplates: "Explore all available templates",
+    hideAdditionalTemplates: "Hide additional templates",
+    moreTemplates: "More Templates",
     statusLabels: {
       draft: "Draft",
       open: "Created",

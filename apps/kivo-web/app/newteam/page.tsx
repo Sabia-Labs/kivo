@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, Cpu, Minus, Plus, Search, Star, UserPlus } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Cpu, Grid, Minus, Plus, Search, Star, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +122,7 @@ export default function NewTeamPage() {
   const [teamTypes, setTeamTypes] = useState<TeamType[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isFetchingTypes, setIsFetchingTypes] = useState(true);
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
 
   // Form State
   const [selectedType, setSelectedType] = useState<TeamType | null>(null);
@@ -349,6 +350,7 @@ export default function NewTeamPage() {
   };
 
   const featuredTypes = !searchQuery ? teamTypes.filter(t => t.featured) : [];
+  const nonFeaturedTypes = !searchQuery ? teamTypes.filter(t => !t.featured) : [];
 
   return (
     <div className="flex min-h-[calc(100vh-4rem)] items-start justify-center bg-muted/20 px-4 py-12">
@@ -474,6 +476,52 @@ export default function NewTeamPage() {
                   Continue
                 </Button>
               </div>
+
+              {!searchQuery && nonFeaturedTypes.length > 0 && (
+                <div className="flex flex-col gap-3 mt-2 pt-4 border-t border-border">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTemplates(!showAllTemplates)}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+                  >
+                    <Grid className="size-3.5" />
+                    <span>{showAllTemplates ? t.teamsPage.hideAdditionalTemplates : `${t.teamsPage.exploreAllTemplates} (${teamTypes.length})`}</span>
+                    <ChevronDown className={cn("size-3.5 transition-transform duration-200", showAllTemplates && "rotate-180")} />
+                  </button>
+
+                  {showAllTemplates && (
+                    <div className="flex flex-col gap-3 mt-2 animate-in slide-in-from-top-2 duration-300">
+                      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t.teamsPage.moreTemplates}</h3>
+                      {nonFeaturedTypes.map((tmpl) => {
+                        const isSelected = selectedType?.id === tmpl.id;
+                        return (
+                          <button key={tmpl.id}
+                            type="button"
+                            onClick={() => setSelectedType(tmpl)}
+                            className={cn(
+                              "flex items-center gap-4 rounded-xl border p-4 text-left transition-all",
+                              isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40"
+                            )}>
+                            <div 
+                              className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg shadow-sm"
+                              style={{ backgroundColor: tmpl.color || "#F1F5F9" }}
+                            >
+                              {tmpl.emoji || "👥"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
+                                {translate(tmpl.nameI18nKey)}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-1">{translate(tmpl.descriptionI18nKey)}</p>
+                            </div>
+                            {isSelected && <Check className="size-4 text-primary shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

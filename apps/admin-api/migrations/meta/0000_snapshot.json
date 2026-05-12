@@ -1,5 +1,5 @@
 {
-  "id": "3160f5bb-d277-4ae8-ab2a-0f832486ff6b",
+  "id": "138c09b1-16b6-4761-8fa6-c235bda9806f",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -61,11 +61,193 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "user_context": {
+          "name": "user_context",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "memory": {
+          "name": "memory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "tools_notes": {
+          "name": "tools_notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "heartbeat": {
+          "name": "heartbeat",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "agents_base": {
+          "name": "agents_base",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.capabilities": {
+      "name": "capabilities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name_i18n_key": {
+          "name": "name_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description_i18n_key": {
+          "name": "description_i18n_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "instructions": {
+          "name": "instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inputs_description": {
+          "name": "inputs_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expected_outputs_description": {
+          "name": "expected_outputs_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tasks_workflow": {
+          "name": "tasks_workflow",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.team_type_capabilities": {
+      "name": "team_type_capabilities",
+      "schema": "",
+      "columns": {
+        "team_type_id": {
+          "name": "team_type_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "capability_id": {
+          "name": "capability_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_favorite": {
+          "name": "is_favorite",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "default_assigned_role": {
+          "name": "default_assigned_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "team_type_capabilities_team_type_id_team_types_id_fk": {
+          "name": "team_type_capabilities_team_type_id_team_types_id_fk",
+          "tableFrom": "team_type_capabilities",
+          "tableTo": "team_types",
+          "columnsFrom": [
+            "team_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_type_capabilities_capability_id_capabilities_id_fk": {
+          "name": "team_type_capabilities_capability_id_capabilities_id_fk",
+          "tableFrom": "team_type_capabilities",
+          "tableTo": "capabilities",
+          "columnsFrom": [
+            "capability_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_type_capabilities_default_assigned_role_agent_roles_id_fk": {
+          "name": "team_type_capabilities_default_assigned_role_agent_roles_id_fk",
+          "tableFrom": "team_type_capabilities",
+          "tableTo": "agent_roles",
+          "columnsFrom": [
+            "default_assigned_role"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "team_type_capabilities_team_type_id_capability_id_pk": {
+          "name": "team_type_capabilities_team_type_id_capability_id_pk",
+          "columns": [
+            "team_type_id",
+            "capability_id"
+          ]
+        }
+      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},

@@ -598,6 +598,9 @@ export const pt = {
     submitRequest: "Enviar Solicitação",
     failedInsight: "Estou tendo problemas para analisar isso agora, mas sinta-se à vontade para enviar!",
     updatedExecutionPlan: "Atualizei o plano de execução com base nas capacidades selecionadas. Forneça detalhes para prosseguir.",
+    exploreAllTemplates: "Explorar todos os templates disponíveis",
+    hideAdditionalTemplates: "Ocultar templates adicionais",
+    moreTemplates: "Mais Templates",
     statusLabels: {
       draft: "Rascunho",
       open: "Criada",

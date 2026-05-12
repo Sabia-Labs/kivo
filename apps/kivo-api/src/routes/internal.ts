@@ -1,7 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
-import { agents, workspaces, teams, users } from "../db/schema";
+import { agents, workspaces, teams, users, agentRoles } from "../db/schema";
 import { success, failure } from "../lib/response";
 import { rolloutRestartDeployment, ensureNamespace, workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { teamCapabilities, tasks, requests, conversations, messages, activities } from "../db/schema";
@@ -9,7 +9,7 @@ import { createTaskInternal } from "./tasks";
 import { randomBytes } from "crypto";
 import { desc, and, sql } from "drizzle-orm";
 import { assignAgentToRequest } from "../lib/agent-assignment";
-import { buildTeamRequestMessage } from "../lib/messages";
+import { buildTeamRequestMessage, replacePlaceholders } from "../lib/messages";
 /**
  * Internal routes — NOT exposed via the external Ingress.
  * Protected by NetworkPolicy: only the Agent Controller pod can reach these.
@@ -61,6 +61,99 @@ internalRouter.post(
       });
 
       res.status(201).json(success({ userId, workspaceId }));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * GET /internal/v1/agents/:id/bootstrap-data
+ * 
+ * Retorna os arquivos iniciais para o PVC do agente (IDENTITY, SOUL, etc).
+ * Chamado pelo bootstrap.sh no primeiro boot do Pod.
+ */
+internalRouter.get(
+  "/v1/agents/:id/bootstrap-data",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      console.log(`[internal] Bootstrap data requested for agent ${id}`);
+
+      const [agent] = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.id, String(id)))
+        .limit(1);
+
+      if (!agent) {
+        console.warn(`[internal] Bootstrap failed: Agent ${id} not found`);
+        res.status(404).json(failure("Agent not found"));
+        return;
+      }
+
+      const [team] = await db
+        .select()
+        .from(teams)
+        .where(eq(teams.id, agent.teamId))
+        .limit(1);
+
+      if (!team) {
+        console.warn(`[internal] Bootstrap failed: Team ${agent.teamId} not found for agent ${id}`);
+        res.status(404).json(failure("Team not found"));
+        return;
+      }
+
+      const [workspace] = await db
+        .select()
+        .from(workspaces)
+        .where(eq(workspaces.id, team.workspaceId))
+        .limit(1);
+
+      const [user] = workspace 
+        ? await db.select().from(users).where(eq(users.id, workspace.userId)).limit(1)
+        : [null];
+
+      // Busca o template original da role
+      const [role] = agent.roleId 
+        ? await db.select().from(agentRoles).where(eq(agentRoles.id, agent.roleId)).limit(1)
+        : [null];
+
+      if (!role) {
+        console.warn(`[internal] Bootstrap failed: Role template ${agent.roleId} not found for agent ${id}`);
+        res.status(404).json(failure("Role template not found"));
+        return;
+      }
+
+      console.log(`[internal] Successfully generated bootstrap files for agent ${agent.name} (${id})`);
+
+      const placeholderVars = {
+        agent_name: agent.name,
+        team_name: team.name,
+        team_id: team.id,
+        operator_name: user?.name || "Operator",
+        mission: team.mission || "",
+      };
+
+      // Monta o mapa de arquivos para o OpenClaw (lendo das colunas do banco)
+      const files: Record<string, string> = {
+        "IDENTITY.md": replacePlaceholders(role.identity, placeholderVars),
+        "SOUL.md": replacePlaceholders(role.soul, placeholderVars),
+        "AGENTS.md": replacePlaceholders(
+          `${role.agentsBase}\n\n# OPERATING INSTRUCTIONS\n\n${role.operatingInstructions}`, 
+          placeholderVars
+        ),
+        "USER.md": replacePlaceholders(role.userContext, placeholderVars),
+        "MEMORY.md": replacePlaceholders(role.memory, placeholderVars),
+        "TOOLS.md": replacePlaceholders(role.toolsNotes, placeholderVars),
+        "HEARTBEAT.md": replacePlaceholders(role.heartbeat, placeholderVars),
+      };
+
+      res.json(success({ 
+        agentId: agent.id,
+        roleId: agent.roleId,
+        files 
+      }));
     } catch (err) {
       next(err);
     }

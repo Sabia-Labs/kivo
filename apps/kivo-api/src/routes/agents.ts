@@ -17,6 +17,7 @@ import {
   execInAgentPod,
   getKivoAgentStatus,
   deliverMessageToAgent,
+  getAgentPodIP,
 } from "../k8s/provisioner";
 
 export const agentsRouter = Router();
@@ -52,19 +53,6 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
 
     const gatewayToken = randomBytes(32).toString("base64url");
 
-    const { agentRoles: agentRolesSchema } = await import("../db/schema");
-    const [role] = await db.select().from(agentRolesSchema).where(eq(agentRolesSchema.id, input.type));
-
-    const [user] = await db.select().from(users).where(eq(users.id, workspace.userId));
-
-    const placeholderVars = {
-      agent_name: input.name,
-      team_name: team.name,
-      team_id: input.teamId,
-      operator_name: user?.name || "Operator",
-      mission: team.mission || "",
-    };
-
     const [agent] = await db
       .insert(agents)
       .values({
@@ -73,14 +61,8 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
         roleId: input.type,
         icon: input.icon,
         gatewayToken,
+        metadata: input.metadata || {},
         k8sStatus: "pending",
-        soul: replacePlaceholders(role?.soul, placeholderVars),
-        identity: replacePlaceholders(role?.identity, placeholderVars),
-        agentsInstructions: replacePlaceholders(role?.operatingInstructions, placeholderVars),
-        userContext: "",
-        memory: "",
-        toolsNotes: "",
-        heartbeat: "",
       })
       .returning();
 
@@ -154,11 +136,59 @@ agentsRouter.get("/:id", async (req: Request, res: Response, next: NextFunction)
     }
 
     const { gatewayToken: _gt, ...safeAgent } = agent as any;
+    
+    // Sanitize metadata to hide token and add status flags for UI
     if (safeAgent.metadata) {
-      const { telegramBotToken: _tok, ...safeMeta } = safeAgent.metadata as Record<string, unknown>;
+      const { telegramBotToken: _tok, ...safeMeta } = safeAgent.metadata;
       safeAgent.metadata = { ...safeMeta, hasTelegramToken: Boolean(_tok) };
     }
+
     res.json(success({ ...safeAgent, k8sLiveStatus: liveStatus }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /agents/:id/files/:filename ───────────────────────────────────────────
+/**
+ * Busca um arquivo do workspace do agente diretamente do disco dele (via sidecar).
+ * Permite que a UI mostre a identidade real e evoluída do agente.
+ */
+agentsRouter.get("/:id/files/:filename", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id, filename } = req.params;
+    const agentId = String(id);
+
+    const [agent] = await db.select().from(agents).where(eq(agents.id, agentId)).limit(1);
+    if (!agent) return res.status(404).json(failure("Agent not found"));
+
+    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId)).limit(1);
+    const workspaceId = team?.workspaceId;
+    if (!workspaceId) return res.status(404).json(failure("Workspace not found"));
+
+    const namespace = workspaceNamespace(workspaceId);
+    const podIP = await getAgentPodIP(namespace, agent.id);
+    
+    if (!podIP) {
+      return res.status(503).json(failure("Agent pod not reachable or not running"));
+    }
+
+    const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
+    const url = `http://${podIP}:43124/v1/files/${filename}`;
+
+    const sidecarRes = await fetch(url, {
+      headers: {
+        "x-internal-token": INTERNAL_TOKEN || "",
+      },
+    });
+
+    if (!sidecarRes.ok) {
+      const errorData = await sidecarRes.json().catch(() => ({ error: "sidecar_error" })) as any;
+      return res.status(sidecarRes.status).json(failure(errorData.error || "Failed to fetch file from agent"));
+    }
+
+    const data = await sidecarRes.json();
+    res.json(success(data));
   } catch (err) {
     next(err);
   }
@@ -182,45 +212,92 @@ agentsRouter.put("/:id", async (req: Request, res: Response, next: NextFunction)
       .update(agents)
       .set({
         ...input,
-        metadata: input.metadata
-          ? { ...((existing.metadata as Record<string, unknown>) ?? {}), ...(input.metadata as Record<string, unknown>) }
-          : existing.metadata,
         updatedAt: new Date(),
       })
       .where(eq(agents.id, String(req.params.id)))
       .returning();
 
-    const oldToken = (existing.metadata as Record<string, unknown> | null)?.telegramBotToken;
-    const newToken = (updated.metadata  as Record<string, unknown> | null)?.telegramBotToken;
-
-    if (newToken !== oldToken) {
-      await db
-        .update(agents)
-        .set({
-          metadata: {
-            ...((updated.metadata as Record<string, unknown>) ?? {}),
-            telegramStatus: "pending_pairing",
-          },
-          updatedAt: new Date(),
-        })
-        .where(eq(agents.id, updated.id));
-
+    // If Telegram token was updated, we need to restart the agent pod
+    // so it picks up the new credentials secret.
+    if (input.metadata?.telegramBotToken && input.metadata.telegramBotToken !== (existing.metadata as any)?.telegramBotToken) {
       try {
         const [team] = await db.select().from(teams).where(eq(teams.id, updated.teamId));
-        const [workspace] = team
-          ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId))
-          : [];
-
+        const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
         if (workspace?.k8sNamespace) {
+          // 1. Upsert credentials Secret with new token
           await applyCredentialsSecret(workspace.k8sNamespace, updated);
+          // 2. Rolling restart so agent picks up TELEGRAM_BOT_TOKEN
           await rolloutRestartDeployment(workspace.k8sNamespace, updated.id);
+          console.log(`[agents] Telegram token updated — rollout restart triggered for ${updated.id}`);
         }
       } catch (k8sErr) {
-        console.error("[agents] K8s Secret/restart failed:", k8sErr);
+        // Non-fatal: DB is already updated, log for ops visibility
+        console.error("[agents] K8s Secret/restart after telegram token change failed:", k8sErr);
       }
     }
 
     res.json(success(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /agents/:id/telegram/approve-pairing ───────────────────────────────
+agentsRouter.post("/:id/telegram/approve-pairing", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code } = req.body as { code?: string };
+    if (!code || typeof code !== "string" || !code.trim()) {
+      res.status(400).json(failure("Pairing code is required"));
+      return;
+    }
+
+    const [agent] = await db.select().from(agents).where(eq(agents.id, String(req.params.id)));
+    if (!agent) {
+      res.status(404).json(failure("Agent not found"));
+      return;
+    }
+
+    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
+    const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
+
+    if (!workspace?.k8sNamespace) {
+      res.status(400).json(failure("Agent not provisioned in cluster"));
+      return;
+    }
+
+    // Execute the pairing approval inside the live pod
+    try {
+      const output = await execInAgentPod(workspace.k8sNamespace, agent.id, [
+        "openclaw",
+        "pairing",
+        "approve",
+        "telegram",
+        code.trim()
+      ]);
+      console.log(`[agents] Telegram pairing approved for ${agent.id}:`, output);
+
+      // Mark integration as complete in DB
+      const [updated] = await db
+        .update(agents)
+        .set({
+          metadata: {
+            ...((agent.metadata as Record<string, unknown>) ?? {}),
+            telegramStatus: "complete"
+          },
+          updatedAt: new Date()
+        })
+        .where(eq(agents.id, agent.id))
+        .returning();
+
+      res.json(success({ 
+        message: "Telegram pairing approved.", 
+        telegramStatus: "complete", 
+        agent: updated 
+      }));
+    } catch (err: any) {
+      console.error("[agents] Telegram pairing approval failed:", err);
+      res.status(500).json(failure(err.message || "Failed to approve pairing. Is the agent pod running?"));
+    }
   } catch (err) {
     next(err);
   }

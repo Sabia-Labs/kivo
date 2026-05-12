@@ -41,6 +41,11 @@ export const agentRoles = pgTable("agent_roles", {
   soul: text("soul").notNull(),
   identity: text("identity").notNull(),
   operatingInstructions: text("operating_instructions").notNull(),
+  userContext: text("user_context").notNull().default(""),
+  memory: text("memory").notNull().default(""),
+  toolsNotes: text("tools_notes").notNull().default(""),
+  heartbeat: text("heartbeat").notNull().default(""),
+  agentsBase: text("agents_base").notNull().default(""),
 });
 
 // ── Team Types (Reference) ───────────────────────────────────────────────────
