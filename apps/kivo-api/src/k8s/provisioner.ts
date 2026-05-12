@@ -54,9 +54,17 @@ export async function applyCredentialsSecret(
   // Platform-level fallbacks — set in kivo-api env via PLATFORM_* vars from .env
   const platformOpenAIKey = process.env.PLATFORM_OPENAI_API_KEY;
   const platformGeminiKey = process.env.PLATFORM_GEMINI_API_KEY;
+  const internalToken = process.env.INTERNAL_SERVICE_TOKEN;
+
+  // Determine the internal API URL for the sidecar to talk back.
+  // In Kubernetes, if they share a namespace or we use a fixed service name:
+  const apiInternalUrl = process.env.KIVO_API_INTERNAL_URL || `http://kivo-api.${process.env.KIVO_NAMESPACE || "kivo"}:4000`;
 
   const stringData: Record<string, string> = {};
   if (agent.gatewayToken)                    stringData.OPENCLAW_GATEWAY_TOKEN  = agent.gatewayToken;
+  if (internalToken)                         stringData.INTERNAL_SERVICE_TOKEN  = internalToken;
+  if (apiInternalUrl)                        stringData.KIVO_API_INTERNAL_URL   = apiInternalUrl;
+  
   if (metadata.telegramBotToken)             stringData.TELEGRAM_BOT_TOKEN      = String(metadata.telegramBotToken);
   if (metadata.linearApiKey)                 stringData.LINEAR_API_KEY           = String(metadata.linearApiKey);
   if (metadata.linearEnabled)                stringData.LINEAR_ENABLED            = String(metadata.linearEnabled);
@@ -190,61 +198,6 @@ export async function deleteCredentialsSecret(namespace: string, agentId: string
 }
 
 /**
- * Creates or updates the `rabbitmq-credentials` Secret in the workspace namespace.
- *
- * This Secret is consumed by:
- *  - The kivo-consumer sidecar (AMQP connection to workspace vhost)
- *  - The openclaw container (optional — for environment awareness)
- *
- * Named `rabbitmq-credentials` (stable, not agent-scoped) because all agents
- * in the same namespace share the same workspace vhost.
- */
-export async function applyRabbitMQCredentialsSecret(
-  namespace: string,
-  creds: {
-    host: string;
-    amqpPort: number;
-    vhost: string;
-    username: string;
-    password: string;
-    exchange: string;
-  },
-): Promise<void> {
-  const name = "rabbitmq-credentials";
-
-  const secretBody = {
-    metadata: {
-      name,
-      namespace,
-      labels: {
-        "app.kubernetes.io/managed-by": "kivo",
-        "kivo.ai/component":           "message-bus",
-      },
-    },
-    stringData: {
-      RABBITMQ_HOST:     creds.host,
-      RABBITMQ_AMQP_PORT: String(creds.amqpPort),
-      RABBITMQ_VHOST:    creds.vhost,
-      RABBITMQ_USERNAME: creds.username,
-      RABBITMQ_PASSWORD: creds.password,
-      RABBITMQ_EXCHANGE: creds.exchange,
-    },
-  };
-
-  try {
-    const { body: existing } = await coreV1.readNamespacedSecret(name, namespace);
-    (secretBody.metadata as any).resourceVersion = existing.metadata?.resourceVersion;
-    await coreV1.replaceNamespacedSecret(name, namespace, secretBody);
-  } catch (err: any) {
-    if (httpStatus(err) === 404) {
-      await coreV1.createNamespacedSecret(namespace, secretBody);
-    } else {
-      throw err;
-    }
-  }
-}
-
-/**
  * Reads the live status of a KivoAgent CR. Returns null if not found.
  */
 export async function getKivoAgentStatus(
@@ -371,6 +324,66 @@ export async function execInAgentPod(
   });
 
   return stdout.trim();
+}
+
+/**
+ * Retrieves the internal IP of an agent's Pod from the Agent CR status.
+ */
+export async function getAgentPodIP(
+  namespace: string,
+  agentId: string,
+): Promise<string | null> {
+  try {
+    const { body: cr } = await customObjects.getNamespacedCustomObject(
+      KIVO_AI_GROUP, KIVO_AI_VERSION, namespace, KIVO_AI_PLURAL, agentId,
+    ) as any;
+    
+    return cr?.status?.podIP || null;
+  } catch (err: any) {
+    if (httpStatus(err) === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * Delivers a message to an agent's sidecar (consumer) via direct HTTP POST.
+ * Replaces RabbitMQ publishing.
+ */
+export async function deliverMessageToAgent(
+  namespace: string,
+  agentId: string,
+  payload: { sessionKey: string; content: string; messageId: string },
+): Promise<boolean> {
+  const podIP = await getAgentPodIP(namespace, agentId);
+  if (!podIP) {
+    console.warn(`[delivery] Cannot deliver: No Pod IP found for agent ${agentId} in ${namespace}`);
+    return false;
+  }
+
+  const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
+  const url = `http://${podIP}:43124/v1/inbound/message`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-token": INTERNAL_TOKEN || "",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      console.log(`[delivery] Successfully pushed message to agent ${agentId} at ${podIP}`);
+      return true;
+    } else {
+      console.error(`[delivery] Failed to push to agent ${agentId}: ${res.status} ${res.statusText}`);
+      return false;
+    }
+  } catch (err) {
+    console.error(`[delivery] Network error pushing to agent ${agentId} at ${podIP}:`, err);
+    return false;
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

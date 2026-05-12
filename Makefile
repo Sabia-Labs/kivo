@@ -32,13 +32,13 @@ dev: ## Start local environment (Tilt)
 down: ## Stop Tilt
 	tilt down
 
-clean-local: ## ⚠ TOTAL WIPE of local K8s (Apps, Namespaces, RabbitMQ, Ingress)
+clean-local: ## ⚠ TOTAL WIPE of local K8s (Apps, Namespaces, Ingress)
 	@current_ctx=$$(kubectl config current-context); \
 	if [ "$$current_ctx" != "$(LOCAL_CTX)" ]; then \
 		echo "\033[31mFATAL: You are NOT in the local context! Current: $$current_ctx\033[0m"; exit 1; \
 	fi
 	@echo "→ Deleting all local Kivo related namespaces..."
-	kubectl delete namespace kivo kivo-admin infra-messaging ingress-nginx rabbitmq-system --ignore-not-found
+	kubectl delete namespace kivo kivo-admin ingress-nginx --ignore-not-found
 	@echo "→ Deleting ephemeral workspace namespaces..."
 	kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found
 	@echo "✓ Local cluster is clean."

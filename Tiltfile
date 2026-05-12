@@ -75,20 +75,6 @@ helm_resource(
   labels=['infra'],
 )
 
-# ── 1b. RabbitMQ Cluster Operator ────────────────────────────────────────────
-# Installed via the official manifest (kubectl apply) from GitHub releases.
-# This is the recommended approach from the RabbitMQ docs.
-# The Operator watches RabbitmqCluster CRs and manages the StatefulSet lifecycle.
-#
-# We use local_resource instead of helm_resource because the public Helm chart
-# URL is frequently unavailable. The manifest includes the CRD + RBAC + Deployment.
-local_resource(
-  'rabbitmq-operator',
-  cmd='kubectl apply -f "https://github.com/rabbitmq/cluster-operator/releases/latest/download/cluster-operator.yml"',
-  labels=['infra'],
-  deps=[],
-)
-
 # ── 2. Ensure the kivo namespace exists ─────────────────────────────────────
 # For local mode, all credentials are injected via values-local.yaml (no Secret needed).
 # DATABASE_URL is built from embedded PostgreSQL, JWT_SECRET is inlined as an env var.
@@ -186,20 +172,6 @@ docker_build(
 )
 
 # ── 5a. Build kivo-agent image ──────────────────────────────────────────────
-# Root cause of stale-image problem:
-#   `docker build` writes to containerd's "default" namespace.
-#   Docker Desktop Kubernetes reads from the "k8s.io" namespace.
-#   These are separate — plain docker build is invisible to Kubernetes.
-#
-# Tilt's docker_build *does* load images into k8s.io via its cluster connector,
-# but only for images it considers "used" in a k8s resource (container image field).
-#
-# Solution:
-#   1. docker_build so Tilt builds and loads the image into k8s.io containerd.
-#   2. A 0-replica Deployment ("preloader") with kivo/agent:local — Tilt
-#      substitutes this with the tilt-tagged digest and loads it into k8s.io.
-#   3. local_resource reads the substituted tag from the preloader and patches
-#      kivo-agent-image ConfigMap → controller uses the exact loaded digest.
 docker_build(
   AGENT_IMAGE,
   context='apps/agents',
@@ -207,11 +179,6 @@ docker_build(
 )
 
 # 1-replica preloader: forces Tilt to load kivo/agent into k8s.io containerd.
-# replicas:0 makes Tilt substitute the tag but does NOT trigger k8s.io loading
-# (no pod needs to run). With replicas:1 + a trivial sleep command, Tilt sees
-# a real pod that needs the image and loads it into k8s.io.
-# pullPolicy: IfNotPresent allows Docker Desktop's bridge to serve the image
-# on first pull if k8s.io hasn't synced yet.
 k8s_yaml(blob("""
 apiVersion: apps/v1
 kind: Deployment
@@ -271,10 +238,6 @@ data:
 
 
 # ── 5b. Build kivo-consumer image ────────────────────────────────────────────────
-# The same pattern as kivo-agent: a 1-replica preloader Deployment forces Tilt
-# to build and load the image into k8s.io containerd (Docker Desktop Kubernetes).
-# Tilt only builds images it sees in a k8s container spec — a ConfigMap value alone
-# is not enough. The preloader is a stub pod that keeps the image reference alive.
 docker_build(
   CONSUMER_IMAGE,
   context='apps/consumer',
@@ -324,10 +287,7 @@ local_resource(
   labels=['images'],
 )
 
-# kivo-consumer-image ConfigMap — enables the RabbitMQ↔openclaw sidecar.
-# image is set to CONSUMER_IMAGE to activate sidecar injection in agent pods.
-# The controller reads this ConfigMap and attaches the sidecar container to each
-# KivoAgent pod when provisioning. Set image: "" to disable sidecar injection.
+# kivo-consumer-image ConfigMap — enables the HTTP Push sidecar.
 k8s_yaml(blob("""
 apiVersion: v1
 kind: ConfigMap
@@ -342,71 +302,6 @@ data:
 """.format(image=CONSUMER_IMAGE)))
 
 
-# ── RabbitmqCluster CR ───────────────────────────────────────────────────────────────
-# Applied DIRECTLY here (not in Helm) because Tilt can't load CRD-backed resources
-# from helm template before the Operator installs the CRD.
-# Tilt sees this as a known resource named 'kivo-rabbit' and applies it in the
-# correct order via resource_deps=['rabbitmq-operator'].
-k8s_yaml(blob("""
-apiVersion: rabbitmq.com/v1beta1
-kind: RabbitmqCluster
-metadata:
-  name: kivo-rabbit
-  namespace: infra-messaging
-  labels:
-    app.kubernetes.io/managed-by: tilt
-    kivo.ai/component: message-bus
-spec:
-  replicas: 1
-  persistence:
-    storage: 2Gi
-  rabbitmq:
-    additionalPlugins:
-      - rabbitmq_management
-      - rabbitmq_prometheus
-    additionalConfig: |
-      default_vhost = /
-      log.console = true
-      default_user = admin
-      default_pass = kivo_rabbit_local
-  # Pin to a stable management image — avoids EOF errors when pulling bleeding-edge tags.
-  # The management plugin tag is required for the HTTP API used by kivo-api.
-  image: rabbitmq:3.13-management
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: "300m"
-      memory: 1Gi
-  override:
-    statefulSet:
-      spec:
-        template:
-          spec:
-            containers:
-              - name: rabbitmq
-                startupProbe:
-                  exec:
-                    command:
-                      - /bin/bash
-                      - "-c"
-                      - "rabbitmqctl eval 'rabbit_nodes:reached_target_cluster_size().' | grep -q '^true$'"
-                  initialDelaySeconds: 10
-                  periodSeconds: 10
-                  timeoutSeconds: 15
-                  failureThreshold: 60
-                  successThreshold: 1
-                readinessProbe:
-                  tcpSocket:
-                    port: amqp
-                  initialDelaySeconds: 20
-                  periodSeconds: 10
-                  timeoutSeconds: 5
-                  failureThreshold: 6
-"""))
-
-
 # ── 5b. Build kivo-controller (Go) ─────────────────────────────────────────
 docker_build(
   CONTROLLER_IMAGE,
@@ -416,9 +311,6 @@ docker_build(
 )
 
 # ── 5. Deploy the kivo Helm chart ────────────────────────────────────────────
-# Note: Tilt passes --include-crds to helm template automatically, so CRDs in
-# charts/kivo/crds/ (KivoAgent CRD) are applied as part of this step.
-# No separate kubectl apply step is needed, even on a zero-km cluster.
 k8s_yaml(
   helm(
     HELM_CHART,
@@ -460,18 +352,6 @@ k8s_resource(
   port_forwards=['5432:5432'],
 )
 
-# RabbitMQ cluster — the RabbitmqCluster CR is a non-workload CRD resource.
-# Tilt requires the objects= syntax to reference it by name.
-# Port-forwards to the management UI are done separately by targeting the
-# Service created by the Operator (kivo-rabbit-management, port 15672).
-k8s_resource(
-  objects=['kivo-rabbit:RabbitmqCluster:infra-messaging'],
-  new_name='kivo-rabbit',
-  resource_deps=['rabbitmq-operator'],
-  labels=['infra'],
-)
-
-# API depends on PostgreSQL only at startup; RabbitMQ connection is lazy in the app
 k8s_resource(
   'kivo-api',
   resource_deps=['kivo-postgresql', 'db-migrate', 'ensure-namespace'],

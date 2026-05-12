@@ -6,7 +6,6 @@ import { authMiddleware } from "../middleware/authMiddleware";
 import { z } from "zod";
 import { logActivity } from "../lib/activity-logger";
 import { assignAgentToRequest } from "../lib/agent-assignment";
-import { publishToAgent, tenantVhost, tenantExchange } from "../lib/rabbitmq";
 import { buildTeamRequestMessage, buildTeamRequestInstructions, buildTeamRequestFinishedMessage } from "../lib/messages";
 import { completeRequest, handleRequestCompletedState, handleRequestCreatedState, updateRequest } from "../controllers/requestsController";
 import { runFieldInsight } from "../workflows/fieldInsight";

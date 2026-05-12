@@ -49,6 +49,8 @@
 }
 
 :root {
+    --font-sans: "Figtree", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --card: oklch(1 0 0);
     --card-foreground: oklch(0.153 0.006 107.1);
     --popover: oklch(1 0 0);

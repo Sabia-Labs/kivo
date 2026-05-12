@@ -96,8 +96,8 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// ── 4. Update status based on Deployment availability ────────────────────
-	phase, podName := r.observePhase(ctx, desiredDeploy)
-	if err := r.patchStatus(ctx, &cr, phase, podName); err != nil {
+	phase, podName, podIP := r.observePhase(ctx, desiredDeploy)
+	if err := r.patchStatus(ctx, &cr, phase, podName, podIP); err != nil {
 		logger.Error(err, "failed to patch CR status")
 		return ctrl.Result{RequeueAfter: 10 * time.Second}, nil
 	}
@@ -172,32 +172,34 @@ func (r *AgentReconciler) createOrUpdateDeployment(ctx context.Context, desired 
 func (r *AgentReconciler) observePhase(
 	ctx context.Context,
 	deploy *appsv1.Deployment,
-) (kivov1alpha1.AgentPhase, string) {
+) (kivov1alpha1.AgentPhase, string, string) {
 	existing := &appsv1.Deployment{}
 	if err := r.Get(ctx, client.ObjectKeyFromObject(deploy), existing); err != nil {
-		return kivov1alpha1.AgentPhaseProvisioning, ""
+		return kivov1alpha1.AgentPhaseProvisioning, "", ""
 	}
 
 	for _, c := range existing.Status.Conditions {
 		if c.Type == appsv1.DeploymentAvailable && c.Status == corev1.ConditionTrue {
-			// Try to surface the active pod name for the status field
+			// Try to surface the active pod name and IP for the status field
 			podList := &corev1.PodList{}
 			_ = r.List(ctx, podList,
 				client.InNamespace(deploy.Namespace),
 				client.MatchingLabels(deploy.Spec.Selector.MatchLabels),
 			)
 			podName := ""
+			podIP := ""
 			for _, p := range podList.Items {
 				if p.Status.Phase == corev1.PodRunning {
 					podName = p.Name
+					podIP = p.Status.PodIP
 					break
 				}
 			}
-			return kivov1alpha1.AgentPhaseRunning, podName
+			return kivov1alpha1.AgentPhaseRunning, podName, podIP
 		}
 	}
 
-	return kivov1alpha1.AgentPhaseProvisioning, ""
+	return kivov1alpha1.AgentPhaseProvisioning, "", ""
 }
 
 func (r *AgentReconciler) patchStatus(
@@ -205,6 +207,7 @@ func (r *AgentReconciler) patchStatus(
 	cr *kivov1alpha1.Agent,
 	phase kivov1alpha1.AgentPhase,
 	podName string,
+	podIP string,
 ) error {
 	now := metav1.Now()
 	condType := "Ready"
@@ -227,8 +230,9 @@ func (r *AgentReconciler) patchStatus(
 	}
 
 	apimeta.SetStatusCondition(&cr.Status.Conditions, condition)
-	cr.Status.Phase              = phase
-	cr.Status.PodName            = podName
+	cr.Status.Phase = phase
+	cr.Status.PodName = podName
+	cr.Status.PodIP = podIP
 	cr.Status.ObservedGeneration = cr.Generation
 
 	return r.Status().Update(ctx, cr)
@@ -243,7 +247,7 @@ func (r *AgentReconciler) failWith(
 	logger := log.FromContext(ctx)
 	logger.Error(err, "reconciliation error", "reason", reason)
 
-	_ = r.patchStatus(ctx, cr, kivov1alpha1.AgentPhaseFailed, "")
+	_ = r.patchStatus(ctx, cr, kivov1alpha1.AgentPhaseFailed, "", "")
 	_ = sync.PatchAgentStatus(ctx, r.APIBaseURL, cr.Name, "failed")
 
 	return ctrl.Result{}, fmt.Errorf("%s: %w", reason, err)

@@ -82,7 +82,7 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 		{Name: "AGENT_OPERATOR_NAME", Value: cr.Spec.OperatorName},
 		{Name: "TEAM_NAME", Value: cr.Spec.TeamName},
 		{Name: "TEAM_ID", Value: cr.Spec.TeamId},
-		// AGENT_ID is needed by the consumer sidecar to bind the correct queue.
+		// AGENT_ID is needed by the consumer sidecar and the agent itself.
 		{Name: "AGENT_ID", Value: cr.Name},
 	}
 
@@ -91,6 +91,7 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 	secretEnv := []corev1.EnvVar{
 		envFromSecret("TELEGRAM_BOT_TOKEN", secretRef, "TELEGRAM_BOT_TOKEN"),
 		envFromSecret("OPENCLAW_GATEWAY_TOKEN", secretRef, "OPENCLAW_GATEWAY_TOKEN"),
+		envFromSecret("INTERNAL_SERVICE_TOKEN", secretRef, "INTERNAL_SERVICE_TOKEN"),
 		envFromSecret("OPENAI_API_KEY", secretRef, "OPENAI_API_KEY"),
 		envFromSecret("GEMINI_API_KEY", secretRef, "GEMINI_API_KEY"),
 		envFromSecret("LINEAR_API_KEY", secretRef, "LINEAR_API_KEY"),
@@ -100,30 +101,13 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 		envFromSecret("GITHUB_AUTH_MODE", secretRef, "GITHUB_AUTH_MODE"),
 	}
 
-	// RabbitMQ env vars for the consumer sidecar — sourced from the workspace-scoped Secret.
-	// The Secret "rabbitmq-credentials" is created by the Kivo API when the first agent
-	// in the workspace is provisioned (provisioner.applyRabbitMQCredentialsSecret).
-	const rabbitSecret = "rabbitmq-credentials"
-	rabbitEnv := []corev1.EnvVar{
-		envFromSecret("RABBITMQ_HOST", rabbitSecret, "RABBITMQ_HOST"),
-		envFromSecret("RABBITMQ_AMQP_PORT", rabbitSecret, "RABBITMQ_AMQP_PORT"),
-		envFromSecret("RABBITMQ_VHOST", rabbitSecret, "RABBITMQ_VHOST"),
-		envFromSecret("RABBITMQ_USERNAME", rabbitSecret, "RABBITMQ_USERNAME"),
-		envFromSecret("RABBITMQ_PASSWORD", rabbitSecret, "RABBITMQ_PASSWORD"),
-		envFromSecret("RABBITMQ_EXCHANGE", rabbitSecret, "RABBITMQ_EXCHANGE"),
-	}
-
-	// The OPENCLAW_GATEWAY_TOKEN is needed by the consumer to call the openclaw gateway.
-	rabbitEnv = append(rabbitEnv, envFromSecret("OPENCLAW_GATEWAY_TOKEN", secretRef, "OPENCLAW_GATEWAY_TOKEN"))
-	rabbitEnv = append(rabbitEnv, corev1.EnvVar{Name: "AGENT_ID", Value: cr.Name})
-
 	initEnv := append(sharedEnv, secretEnv...)
 	mainEnv := append(sharedEnv, secretEnv...)
 	mainEnv = append(mainEnv, corev1.EnvVar{Name: "NODE_ENV", Value: "production"})
 
 	if apiBaseURL != "" {
-		initEnv = append(initEnv, corev1.EnvVar{Name: "KIVO_API_URL", Value: apiBaseURL})
-		mainEnv = append(mainEnv, corev1.EnvVar{Name: "KIVO_API_URL", Value: apiBaseURL})
+		initEnv = append(initEnv, corev1.EnvVar{Name: "KIVO_API_INTERNAL_URL", Value: apiBaseURL})
+		mainEnv = append(mainEnv, corev1.EnvVar{Name: "KIVO_API_INTERNAL_URL", Value: apiBaseURL})
 	}
 
 	// Volume definitions
@@ -147,17 +131,6 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 		},
 		{Name: "tmp", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 		{Name: "node-home", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
-		// RabbitMQ credentials secret — workspace-scoped, shared by all agents in the namespace.
-		// Created by kivo-api (provisioner.applyRabbitMQCredentialsSecret) on first agent provisioning.
-		{
-			Name: "rabbitmq-credentials",
-			VolumeSource: corev1.VolumeSource{
-				Secret: &corev1.SecretVolumeSource{
-					SecretName: "rabbitmq-credentials",
-					Optional:   ptr.To(true), // pod still starts even if RabbitMQ isn't provisioned yet
-				},
-			},
-		},
 	}
 
 	// Standard volume mounts
@@ -271,7 +244,7 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 
 	// ── kivo-consumer sidecar (conditional) ──────────────────────────────────
 	// Only injected when consumerImage is explicitly set.
-	// Bridges RabbitMQ↔openclaw and exposes the agent-to-agent send API (18780).
+	// Receives HTTP Push messages from kivo-api and exposes the local qa-bus.
 	// Kept conditional so the core agent pod starts even if the consumer image
 	// hasn't been built yet (e.g. first Tilt boot / consumer disabled).
 	if consumerImage != "" {
@@ -281,9 +254,10 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 				Name:            "kivo-consumer",
 				Image:           consumerImage,
 				ImagePullPolicy: corev1.PullPolicy(consumerPolicy),
-				Env:             rabbitEnv,
+				Env:             mainEnv,
 				Ports: []corev1.ContainerPort{
-					{Name: "send-api", ContainerPort: sendAPIPort},
+					{Name: "inbound", ContainerPort: 43124},
+					{Name: "qa-bus", ContainerPort: qaBusPort},
 				},
 				Resources: corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{

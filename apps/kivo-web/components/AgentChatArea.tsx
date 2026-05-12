@@ -76,7 +76,7 @@ export function AgentChatArea({
 
       if (!res.ok || resultObj.data?.error) {
         setMessages(p => p.map(m => m.id === messageIdInState ? { ...m, status: "error" } : m));
-        toast.error("Failed to send message.");
+        toast.error("Failed to send message: " + (resultObj.error || "Unknown error"));
         setSending(false);
         return;
       }
@@ -91,12 +91,56 @@ export function AgentChatArea({
           createdAt: resultObj.data.agentMessage.createdAt || new Date().toISOString()
         }]);
       }
-    } catch {
+    } catch (err: any) {
       setMessages(p => p.map(m => m.id === messageIdInState ? { ...m, status: "error" } : m));
     } finally {
       setSending(false);
     }
   };
+
+  // ── Polling ────────────────────────────────────────────────────────────────
+  const fetchMessages = useCallback(async (cid: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/conversations/${cid}/messages`, { headers: headers() });
+      if (res.ok) {
+        const d = await res.json();
+        const newMsgs = d.data || [];
+        setMessages(prev => {
+          // Only update if there are more messages or if content is different
+          if (newMsgs.length > prev.length) return newMsgs;
+          // Also check for status updates from 'sending' to 'sent'
+          const hasChanges = newMsgs.some((m: any, i: number) => prev[i] && m.id !== prev[i].id);
+          if (hasChanges) return newMsgs;
+          return prev;
+        });
+      }
+    } catch (err) {
+      console.error("[AgentChatArea] Polling failed:", err);
+    }
+  }, [headers]);
+
+  useEffect(() => {
+    if (!conv?.id || sending) return;
+    const interval = setInterval(() => fetchMessages(conv.id), 3000);
+    return () => clearInterval(interval);
+  }, [conv?.id, sending, fetchMessages]);
+
+  useEffect(() => {
+    if (!token || !agentId || conv?.id) return;
+    // Initial fetch to find if there's an existing conversation
+    fetch(`${API_BASE}/conversations?agentId=${agentId}`, { headers: headers() })
+      .then(res => res.json())
+      .then(d => {
+        const existing = (d.data || []).find((c: any) => c.counterpartName === userName);
+        if (existing) {
+          setConv(existing);
+          fetchMessages(existing.id);
+        }
+      })
+      .catch(() => {});
+  }, [agentId, token, userName, conv?.id, headers, fetchMessages]);
+
+  const isThinking = sending || (messages.length > 0 && messages[messages.length - 1].role === "user");
 
   return (
     <div className="flex flex-col flex-1 h-full min-h-0 bg-background overflow-hidden">
@@ -127,7 +171,7 @@ export function AgentChatArea({
                 </div>
               </div>
             ))}
-            {sending && (
+            {isThinking && (
                <div className="flex items-end gap-2">
                  <div className="flex size-6 shrink-0 items-center justify-center rounded-full text-xs" style={{ background: agentColor + "22" }}>{agentIcon}</div>
                  <div className="px-4 py-2.5 rounded-2xl rounded-bl-sm bg-muted flex items-center gap-1.5">
