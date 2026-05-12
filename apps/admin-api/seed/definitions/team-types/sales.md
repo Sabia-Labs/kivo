@@ -4,7 +4,7 @@ emoji: "💰"
 color: "#ECFDF5"
 name_i18n_key: teams.types.sales.name
 description_i18n_key: teams.types.sales.description
-featured: true
+featured: false
 composition:
   - roleId: sales-manager
     quantity: 1

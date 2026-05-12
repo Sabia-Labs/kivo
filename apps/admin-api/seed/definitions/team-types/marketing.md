@@ -4,7 +4,7 @@ emoji: "📣"
 color: "#FDF2F8"
 name_i18n_key: teams.types.marketing.name
 description_i18n_key: teams.types.marketing.description
-featured: true
+featured: false
 composition:
   - roleId: marketing-lead
     quantity: 1

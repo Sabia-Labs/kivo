@@ -3,12 +3,10 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/client";
 import { agents, workspaces, teams, users } from "../db/schema";
 import { success, failure } from "../lib/response";
-import { applyRabbitMQCredentialsSecret, rolloutRestartDeployment, ensureNamespace } from "../k8s/provisioner";
-import { provisionTenant } from "../lib/rabbitmq";
+import { rolloutRestartDeployment, ensureNamespace, workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { teamCapabilities, tasks, requests, conversations, messages, activities } from "../db/schema";
 import { createTaskInternal } from "./tasks";
 import { randomBytes } from "crypto";
-import { publishToAgent, getAdminCredentialsForWorkspace } from "../lib/rabbitmq";
 import { desc, and, sql } from "drizzle-orm";
 import { assignAgentToRequest } from "../lib/agent-assignment";
 import { buildTeamRequestMessage } from "../lib/messages";
@@ -109,126 +107,6 @@ internalRouter.patch(
 );
 
 /**
- * POST /internal/workspaces/:id/reprovision-rabbit
- *
- * Idempotent endpoint to (re-)provision the RabbitMQ tenant for a workspace.
- *
- * Use case: called automatically at startup (see below) or manually when
- * RabbitMQ was not ready at workspace creation time (e.g. after `tilt down && tilt up`).
- *
- * Steps:
- *  1. Provisions vhost / user / exchange in RabbitMQ (idempotent).
- *  2. Upserts the `rabbitmq-credentials` Secret in the workspace namespace.
- *  3. Rolling-restarts all agent Deployments in the namespace so pods pick up the new env vars.
- *
- * Returns: { workspaceId, namespace, agentsRestarted: number }
- */
-internalRouter.post(
-  "/workspaces/:id/reprovision-rabbit",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const workspaceId = String(req.params.id);
-
-      const [workspace] = await db
-        .select()
-        .from(workspaces)
-        .where(eq(workspaces.id, workspaceId));
-
-      if (!workspace) {
-        res.status(404).json(failure("Workspace not found"));
-        return;
-      }
-
-      if (!workspace.k8sNamespace) {
-        res.status(400).json(failure("Workspace has no Kubernetes namespace — not yet provisioned"));
-        return;
-      }
-
-      // 0. Ensure namespace exists (in case it was deleted or never created)
-      await ensureNamespace(workspace.k8sNamespace);
-
-      // 1. Provision (or re-provision) the RabbitMQ tenant
-      const creds = await provisionTenant(workspaceId);
-      console.log(`[internal] RabbitMQ tenant (re-)provisioned for workspace ${workspaceId}`);
-
-      // 2. Upsert the rabbitmq-credentials Secret in the workspace namespace
-      await applyRabbitMQCredentialsSecret(workspace.k8sNamespace, creds);
-      console.log(`[internal] rabbitmq-credentials Secret upserted in ${workspace.k8sNamespace}`);
-
-      // 3. Rolling-restart all agents in the workspace so they pick up the new creds
-      const workspaceAgents = await db
-        .select({ id: agents.id })
-        .from(agents)
-        .innerJoin(teams, eq(teams.id, agents.teamId))
-        .where(eq(teams.workspaceId, workspaceId));
-
-      let agentsRestarted = 0;
-      for (const agent of workspaceAgents) {
-        try {
-          await rolloutRestartDeployment(workspace.k8sNamespace, agent.id);
-          agentsRestarted++;
-        } catch (err) {
-          // Non-fatal: agent may not be deployed yet
-          console.warn(`[internal] rollout restart failed for agent ${agent.id} (skipped):`, err);
-        }
-      }
-
-      console.log(`[internal] Rolling-restarted ${agentsRestarted} agents in ${workspace.k8sNamespace}`);
-
-      res.json(success({
-        workspaceId,
-        namespace: workspace.k8sNamespace,
-        agentsRestarted,
-      }));
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-/**
- * POST /internal/startup/reprovision-all-rabbit
- *
- * Startup safety net — called by the API process itself on boot (see index.ts).
- * Re-provisions RabbitMQ tenants for every workspace that already has a K8s namespace
- * but whose tenant may have been lost (e.g. after `tilt down && tilt up`).
- *
- * Idempotent and non-fatal: errors per workspace are logged but do not abort the loop.
- * Does NOT restart pods — the caller (startup hook) handles that if needed.
- *
- * Returns a summary of what was (re-)provisioned.
- */
-internalRouter.post(
-  "/startup/reprovision-all-rabbit",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const allWorkspaces = await db
-        .select()
-        .from(workspaces);
-
-      const results: Array<{ workspaceId: string; status: string; error?: string }> = [];
-
-      for (const ws of allWorkspaces) {
-        if (!ws.k8sNamespace) continue;
-        try {
-          const creds = await provisionTenant(ws.id);
-          await applyRabbitMQCredentialsSecret(ws.k8sNamespace, creds);
-          results.push({ workspaceId: ws.id, status: "ok" });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          console.error(`[internal/startup] RabbitMQ reprovision failed for workspace ${ws.id}:`, msg);
-          results.push({ workspaceId: ws.id, status: "error", error: msg });
-        }
-      }
-
-      res.json(success({ reprovisioned: results }));
-    } catch (err) {
-      next(err);
-    }
-  },
-);
-
-/**
  * POST /internal/capabilities/:id/trigger
  * 
  * Triggered by Kubernetes CronJob to execute a team capability.
@@ -304,31 +182,89 @@ internalRouter.post(
         content: messageContent
       }).returning();
 
-      // 6. Publish to Agent
+      // 5. Push to Agent Sidecar
       const [agent] = await db.select().from(agents).where(eq(agents.id, targetAgentId));
       if (agent) {
          const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-         const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
+         const workspaceId = team?.workspaceId;
          
-         if (workspace) {
-           const rabbitCreds = getAdminCredentialsForWorkspace(workspace.id);
+         if (workspaceId) {
+            const namespace = workspaceNamespace(workspaceId);
             
             try {
-              await publishToAgent(rabbitCreds, {
-                tenantId:   workspace.id,
-                agentId:    agent.id,
+              const delivered = await deliverMessageToAgent(namespace, agent.id, {
                 sessionKey: conversation.id,
-                messageId:  randomBytes(16).toString("hex"),
-                action:     "chat_message",
-                payload:    { role: "user", content: messageContent },
+                content: messageContent,
+                messageId: userMessage.id,
               });
+
+              if (delivered) {
+                await db.update(messages).set({ deliveredAt: new Date() }).where(eq(messages.id, userMessage.id));
+              }
             } catch (err) {
-              console.error("[internal] RabbitMQ publish failed for trigger:", err);
+              console.error("[internal] HTTP push failed for trigger:", err);
             }
          }
       }
 
       res.status(200).json(success({ request: requestRecord, conversation }));
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+/**
+ * POST /internal/v1/agents/:agentId/messages
+ * 
+ * Receives a message from an agent sidecar (consumer) and saves it to the database.
+ * Used for agent replies or agent-to-agent communication.
+ */
+internalRouter.post(
+  "/v1/agents/:agentId/messages",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { agentId } = req.params;
+      const { sessionKey, content, role } = req.body;
+
+      if (!sessionKey || !content) {
+        res.status(400).json(failure("sessionKey and content are required"));
+        return;
+      }
+
+      // OpenClaw often prefixes session keys with 'dm:' or other channel identifiers.
+      // We must strip these to get the clean UUID conversation ID.
+      const cleanSessionKey = String(sessionKey).replace(/^(dm|group):/, "");
+
+      // 1. Find the conversation
+      let [conversation] = await db
+        .select()
+        .from(conversations)
+        .where(eq(conversations.id, cleanSessionKey))
+        .limit(1);
+
+      if (!conversation) {
+        // If it's a new conversation initiated by the agent (rare, but possible)
+        const [agent] = await db.select().from(agents).where(eq(agents.id, String(agentId))).limit(1);
+        if (!agent) return res.status(404).json(failure("Agent not found"));
+
+        [conversation] = await db.insert(conversations).values({
+          id: cleanSessionKey,
+          agentId: String(agentId),
+          counterpartType: "human", // Correct enum value
+          counterpartName: "User",
+        } as any).returning();
+      }
+
+      // 2. Insert the message
+      const [msg] = await db.insert(messages).values({
+        conversationId: conversation.id,
+        role: role || "assistant",
+        content,
+        deliveredAt: new Date(), // It's coming FROM the agent, so it's delivered
+      }).returning();
+
+      res.status(201).json(success(msg));
     } catch (err) {
       next(err);
     }

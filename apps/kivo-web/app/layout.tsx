@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Geist_Mono, Figtree } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/lib/i18n";
@@ -27,12 +26,9 @@ export const metadata: Metadata = {
   },
 };
 
-const figtree = Figtree({subsets:['latin'],variable:'--font-sans'});
-
-const fontMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-});
+// Fallback to system fonts to avoid build-time network dependencies
+const figtree = { variable: "--font-sans" };
+const fontMono = { variable: "--font-mono" };
 
 export default function RootLayout({
   children,

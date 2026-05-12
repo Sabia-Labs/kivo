@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "../db/client";
 import { tasks, requests, conversations, messages, agents, teams, workspaces } from "../db/schema";
-import { publishToAgent, getAdminCredentialsForWorkspace } from "../lib/rabbitmq";
+import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { logActivity } from "../lib/activity-logger";
 import { updateRequest } from "./requestsController";
 
@@ -59,22 +59,23 @@ export async function createTaskAndNotifyAgent(
   const [agent] = await db.select().from(agents).where(eq(agents.id, assignedAgentId));
   if (agent) {
     const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-    const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
+    const workspaceId = team?.workspaceId;
     
-    if (workspace) {
-      const rabbitCreds = getAdminCredentialsForWorkspace(workspace.id);
+    if (workspaceId) {
+      const namespace = workspaceNamespace(workspaceId);
       
       try {
-        await publishToAgent(rabbitCreds, {
-          tenantId: workspace.id,
-          agentId: agent.id,
+        const delivered = await deliverMessageToAgent(namespace, agent.id, {
           sessionKey: conversation.id,
-          messageId: randomBytes(16).toString("hex"),
-          action: "chat_message",
-          payload: { role: "user", content: messageContent },
+          content: messageContent,
+          messageId: userMessage.id,
         });
+
+        if (delivered) {
+          await db.update(messages).set({ deliveredAt: new Date() }).where(eq(messages.id, userMessage.id));
+        }
       } catch (err) {
-        console.error("[request-ingestion] RabbitMQ publish failed:", err);
+        console.error("[request-ingestion] HTTP push failed:", err);
       }
     }
   }

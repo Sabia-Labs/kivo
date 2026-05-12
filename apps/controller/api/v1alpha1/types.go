@@ -107,6 +107,10 @@ type AgentStatus struct {
 	// +optional
 	PodName string `json:"podName,omitempty"`
 
+	// Internal IP address of the active Pod.
+	// +optional
+	PodIP string `json:"podIP,omitempty"`
+
 	// Generation of the spec that was last successfully reconciled.
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 

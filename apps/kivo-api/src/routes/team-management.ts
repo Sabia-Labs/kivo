@@ -2,18 +2,17 @@ import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
-import { agents, workspaces, teams } from "../db/schema";
+import { agents, workspaces, teams, users } from "../db/schema";
 import { createAgentSchema } from "../schemas/agent.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
+import { replacePlaceholders } from "../lib/messages";
 import {
   applyCredentialsSecret,
   applyKivoAgentCR,
-  applyRabbitMQCredentialsSecret,
   ensureNamespace,
   workspaceNamespace,
 } from "../k8s/provisioner";
-import { provisionTenant } from "../lib/rabbitmq";
 import { getTeamById } from "../controllers/teamsController";
 import { getAgentsByTeam } from "../controllers/agentsController";
 
@@ -147,6 +146,17 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
     const { agentRoles: agentRolesSchema } = await import("../db/schema");
     const [role] = await db.select().from(agentRolesSchema).where(eq(agentRolesSchema.id, input.type));
 
+    const [user] = await db.select().from(users).where(eq(users.id, workspace.userId));
+    const operatorName = user?.name || "Operator";
+
+    const placeholderVars = {
+      agent_name: input.name,
+      team_name: team.name,
+      team_id: teamId,
+      operator_name: operatorName,
+      mission: team.mission || "",
+    };
+
     const [newAgent] = await db
       .insert(agents)
       .values({
@@ -156,9 +166,9 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
         icon: input.icon,
         gatewayToken,
         k8sStatus: "pending",
-        soul: role?.soul,
-        identity: role?.identity,
-        agentsInstructions: role?.operatingInstructions,
+        soul: replacePlaceholders(role?.soul, placeholderVars),
+        identity: replacePlaceholders(role?.identity, placeholderVars),
+        agentsInstructions: replacePlaceholders(role?.operatingInstructions, placeholderVars),
         userContext: "",
         memory: "",
         toolsNotes: "",
@@ -171,13 +181,6 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
       await ensureNamespace(namespace);
       await applyCredentialsSecret(namespace, newAgent);
       await applyKivoAgentCR(namespace, newAgent, workspace.id, team.name);
-
-      try {
-        const rabbitCreds = await provisionTenant(workspace.id);
-        await applyRabbitMQCredentialsSecret(namespace, rabbitCreds);
-      } catch (rabbitErr) {
-        console.error("[team-management] RabbitMQ provisioning failed:", rabbitErr);
-      }
 
       await db
         .update(agents)

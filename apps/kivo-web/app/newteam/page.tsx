@@ -18,6 +18,8 @@ type TeamType = {
   nameI18nKey: string;
   descriptionI18nKey: string;
   featured: boolean;
+  emoji?: string;
+  color?: string;
 };
 
 type AgentRole = {
@@ -395,11 +397,17 @@ export default function NewTeamPage() {
                           "flex items-center gap-4 rounded-xl border p-4 text-left transition-all",
                           isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40"
                         )}>
+                        <div 
+                          className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg shadow-sm"
+                          style={{ backgroundColor: tmpl.color || "#F1F5F9" }}
+                        >
+                          {tmpl.emoji || "👥"}
+                        </div>
                         <div className="flex-1 min-w-0">
                           <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
                             {translate(tmpl.nameI18nKey)}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.descriptionI18nKey)}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-1">{translate(tmpl.descriptionI18nKey)}</p>
                         </div>
                         {isSelected && <Check className="size-4 text-primary shrink-0" />}
                       </button>
@@ -439,11 +447,17 @@ export default function NewTeamPage() {
                         "flex items-center gap-4 rounded-xl border p-4 text-left transition-all",
                         isSelected ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40"
                       )}>
+                      <div 
+                        className="flex size-10 shrink-0 items-center justify-center rounded-lg text-lg shadow-sm"
+                        style={{ backgroundColor: tmpl.color || "#F1F5F9" }}
+                      >
+                        {tmpl.emoji || "👥"}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className={cn("text-sm font-semibold", isSelected ? "text-foreground" : "text-muted-foreground")}>
                           {translate(tmpl.nameI18nKey)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug">{translate(tmpl.descriptionI18nKey)}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 leading-snug line-clamp-1">{translate(tmpl.descriptionI18nKey)}</p>
                       </div>
                       {isSelected && <Check className="size-4 text-primary shrink-0" />}
                     </button>

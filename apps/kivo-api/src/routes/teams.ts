@@ -2,18 +2,17 @@ import { Router, type Request, type Response, type NextFunction } from "express"
 import { randomBytes } from "crypto";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
-import { workspaces, teams, agents, agentRoles, teamTypes, teamCapabilities } from "../db/schema";
+import { workspaces, teams, agents, agentRoles, teamTypes, teamCapabilities, users } from "../db/schema";
 import { createTeamSchema, updateTeamSchema } from "../schemas/team.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
+import { replacePlaceholders } from "../lib/messages";
 import {
   applyCredentialsSecret,
   applyKivoAgentCR,
   ensureNamespace,
   workspaceNamespace,
-  applyRabbitMQCredentialsSecret,
 } from "../k8s/provisioner";
-import { provisionTenant } from "../lib/rabbitmq";
 import { requestsRouter } from "./requests";
 import { activitiesRouter } from "./activities";
 import { getTeamById } from "../controllers/teamsController";
@@ -68,6 +67,9 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
       return;
     }
 
+    const [user] = await db.select().from(users).where(eq(users.id, req.actor!.id));
+    const operatorName = user?.name || "Operator";
+
     const result = await db.transaction(async (tx) => {
       // 0. Fetch template defaults if applicable
       let defaultMission = input.mission;
@@ -102,6 +104,13 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
         input.agents && input.agents.length > 0
           ? input.agents.map((a) => {
               const role = rolesMap.get(a.roleId);
+              const placeholderVars = {
+                agent_name: a.name,
+                team_name: team.name,
+                team_id: team.id,
+                operator_name: operatorName,
+                mission: team.mission || "",
+              };
               return {
                 teamId: team.id,
                 name: a.name,
@@ -109,9 +118,9 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
                 isLeader: a.isLeader || false,
                 icon: a.icon || role?.emoji,
                 gatewayToken: randomBytes(32).toString("base64url"),
-                soul: role?.soul,
-                identity: role?.identity,
-                agentsInstructions: role?.operatingInstructions,
+                soul: replacePlaceholders(role?.soul, placeholderVars),
+                identity: replacePlaceholders(role?.identity, placeholderVars),
+                agentsInstructions: replacePlaceholders(role?.operatingInstructions, placeholderVars),
                 userContext: "",
                 memory: "",
                 toolsNotes: "",
@@ -174,9 +183,6 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
       if (!workspace?.k8sNamespace) {
         await db.update(workspaces).set({ k8sNamespace: namespace }).where(eq(workspaces.id, workspaceId!));
       }
-
-      const rabbitCreds = await provisionTenant(workspaceId!);
-      await applyRabbitMQCredentialsSecret(namespace, rabbitCreds);
 
       for (const agent of result.agents) {
         try {
@@ -389,33 +395,3 @@ teamsRouter.put("/:id/integrations/:provider", authMiddleware, async (req: Reque
 
 teamsRouter.use("/:teamId/requests", requestsRouter);
 teamsRouter.use("/:teamId/activities", activitiesRouter);
-
-// ── Team Leader Chat ──────────────────────────────────────────────────────────
-teamsRouter.get("/:id/leader-chat", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { leaderChatHistory } = await import("../db/schema");
-    const { desc, and } = await import("drizzle-orm");
-    const rows = await db
-      .select()
-      .from(leaderChatHistory)
-      .where(and(eq(leaderChatHistory.teamId, String(req.params.id)), eq(leaderChatHistory.userId, req.actor!.id)))
-      .orderBy(desc(leaderChatHistory.createdAt))
-      .limit(50);
-    res.json(success(rows.reverse()));
-  } catch (err) { next(err); }
-});
-
-teamsRouter.post("/:id/leader-chat", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { message } = req.body;
-    if (!message) return res.status(400).json(failure("Message is required"));
-    const teamId = String(req.params.id);
-    const userId = req.actor!.id;
-    const { leaderChatHistory } = await import("../db/schema");
-    await db.insert(leaderChatHistory).values({ teamId, userId, message, role: "user" });
-    const { runTeamLeaderChat } = await import("../workflows/teamLeaderChat");
-    const aiResponse = await runTeamLeaderChat(teamId, userId, message);
-    const [saved] = await db.insert(leaderChatHistory).values({ teamId, userId, message: aiResponse, role: "assistant" }).returning();
-    res.json(success(saved));
-  } catch (err) { next(err); }
-});

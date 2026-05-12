@@ -106,9 +106,9 @@ make staging-reset
 - Ensure the source pod is allowed in the ingress rules of the target pod.
 
 #### Egress Issues (Outgoing)
-- If a service fails to reach the **Kubernetes API** (e.g., `10.30.0.1:443`) or **RabbitMQ**, check its **Egress** rules.
-- Symptom: `Error: connect ETIMEDOUT 10.30.0.1:443` or `RabbitMQ Management API not ready`.
-- Fix: Ensure the `egress` section of the `NetworkPolicy` allows traffic to the required ports (443 for K8s, 5672/15672 for RabbitMQ).
+- If a service fails to reach the **Kubernetes API** (e.g., `10.30.0.1:443`), check its **Egress** rules.
+- Symptom: `Error: connect ETIMEDOUT 10.30.0.1:443`.
+- Fix: Ensure the `egress` section of the `NetworkPolicy` allows traffic to port 443.
 
 ---
 
@@ -128,3 +128,33 @@ kubectl describe pod [POD_NAME] -n kivo-staging
 ```bash
 kubectl exec -it kivo-db-postgresql-0 -n kivo-staging -- env PGPASSWORD=[PASSWORD] psql -U postgres -d kivo
 ```
+
+---
+
+## 🤖 Agent Service Discovery (Push Architecture)
+
+Since we moved to a brokerless HTTP Push architecture, the `kivo-api` discovers agents via their Pod IP stored in the `Agent` Custom Resource.
+
+### 1. Overview of all Agents and their IPs
+Use this command to see a bird's eye view of all agents across all namespaces:
+```bash
+kubectl get agents.kivo.ai -A -o custom-columns="NAME:.metadata.name,NAMESPACE:.metadata.namespace,PHASE:.status.phase,IP:.status.podIP"
+```
+
+### 2. Check Agent Status and IP
+If an agent is not receiving messages, verify if the Controller has registered its IP:
+```bash
+kubectl get agent <agent-id> -n <namespace> -o jsonpath='{.status.podIP}'
+```
+
+### 3. Test Manual Delivery (Inbound)
+You can test the agent's "Inbox" (consumer sidecar) directly from within the cluster:
+```bash
+# Internal token for localdev is 'kivo-local-dev-token'
+# Internal token for staging can be found in the 'kivo-api-staging-secret'
+curl -X POST http://<POD_IP>:43124/v1/inbound/message \
+  -H "Content-Type: application/json" \
+  -H "x-internal-token: <INTERNAL_TOKEN>" \
+  -d '{"sessionKey": "debug-session", "content": "Hello Agent!", "messageId": "msg-123"}'
+```
+
