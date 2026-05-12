@@ -223,6 +223,7 @@ export const messages = pgTable("messages", {
   role: messageRoleEnum("role").notNull(),
   content: text("content").notNull(),
   tokenCount: integer("token_count"),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -305,17 +306,6 @@ export const comments = pgTable("comments", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const leaderChatHistory = pgTable("leader_chat_history", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  teamId: uuid("team_id")
-    .notNull()
-    .references(() => teams.id, { onDelete: "cascade" }),
-  userId: text("user_id").notNull(),
-  message: text("message").notNull(),
-  role: text("role").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const teamCapabilities = pgTable("team_capabilities", {
   id: uuid("id").primaryKey().defaultRandom(),
   teamId: uuid("team_id")
@@ -368,6 +358,4 @@ export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
-export type LeaderChatHistory = typeof leaderChatHistory.$inferSelect;
-export type NewLeaderChatHistory = typeof leaderChatHistory.$inferInsert;
 
