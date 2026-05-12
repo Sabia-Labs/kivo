@@ -379,6 +379,8 @@ export const zh: Dictionary = {
       business_developer: "业务开发",
       finance_manager: "财务经理",
       legal_counsel: "法律顾问",
+      business_operations_analyst: "业务运营分析师",
+      executive_operations_lead: "执行运营主管",
     },
     roleDescriptions: {
       team_lead: "协调团队并确保交付质量。",
@@ -386,6 +388,8 @@ export const zh: Dictionary = {
       software_architect: "定义模式并确保结构完整性。",
       product_manager: "产品目标和待办事项健康的守护者。",
       executive_assistant: "Operator 生产力的全能合作伙伴。",
+      business_operations_analyst: "分析运营信号，跟踪 OKR，并准备董事会报告。",
+      executive_operations_lead: "协调高管优先级、决策和运营节奏。",
       support_lead: "确保客户满意度和 SLA 合规性。",
       support_responder: "以同理心和速度直接协助用户。",
       support_analyst: "分析趋势并记录知识。",
@@ -415,6 +419,8 @@ export const zh: Dictionary = {
       business_developer: "布莱克",
       finance_manager: "帕特",
       legal_counsel: "德鲁",
+      business_operations_analyst: "Morgan",
+      executive_operations_lead: "Casey",
     },
     telegram: {
       sectionTitle: "Telegram",
@@ -524,7 +530,7 @@ export const zh: Dictionary = {
     cancelRequest: "取消请求",
     requestCancelled: "请求已取消",
     failedCancelRequest: "取消请求失败",
-    squadChat: "小队聊天",
+    squadChat: "小队",
     addAgent: "添加智能体",
     requests: "请求",
     filters: "筛选",
@@ -632,8 +638,12 @@ export const zh: Dictionary = {
         description: "管理您的预算和财务健康。",
       },
       legal: {
-        name: "法务",
+        name: "法律",
         description: "保护您的业务并确保合规。",
+      },
+      "executive-operations": {
+        name: "执行运营",
+        description: "协调优先级，跟踪 OKR，并保持执行节奏。",
       },
     },
   },
@@ -670,6 +680,14 @@ export const zh: Dictionary = {
     },
     legal: {
       review: { name: "合同审查", desc: "分析协议的风险和保护。" },
+    },
+    executive_operations: {
+      draft_executive_briefing: { name: "起草高管简报", desc: "为即将举行的会议或决策创建简洁的简报。" },
+      prepare_board_update: { name: "准备董事会更新", desc: "为董事会审查组织公司指标和优先级。" },
+      prepare_investor_update: { name: "准备投资者更新", desc: "总结投资者报告的进展和牵引力。" },
+      run_okr_check_in: { name: "运行 OKR 检查", desc: "审查 OKR 进展并识别领导层风险。" },
+      summarize_leadership_meeting: { name: "总结领导层会议", desc: "从会议记录中提取决策和行动项。" },
+      track_action_items: { name: "跟踪高管行动项", desc: "监控状态并升级延迟的高管承诺。" },
     },
   },
 };

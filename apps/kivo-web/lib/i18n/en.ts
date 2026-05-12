@@ -377,6 +377,8 @@ export const en = {
       business_developer: "Business Developer",
       finance_manager: "Finance Manager",
       legal_counsel: "Legal Counsel",
+      business_operations_analyst: "Business Operations Analyst",
+      executive_operations_lead: "Executive Operations Lead",
     },
     roleDescriptions: {
       team_lead: "Coordinates the team and ensures delivery quality.",
@@ -384,6 +386,8 @@ export const en = {
       software_architect: "Defines patterns and ensures structural integrity.",
       product_manager: "Custodian of product purpose and backlog health.",
       executive_assistant: "A versatile partner for the Operator's productivity.",
+      business_operations_analyst: "Analyzes operational signals, tracks OKRs, and prepares board-ready reports.",
+      executive_operations_lead: "Coordinates executive priorities, decisions, and operational rhythm.",
       support_lead: "Ensures customer satisfaction and SLA compliance.",
       support_responder: "Directly assists users with empathy and speed.",
       support_analyst: "Analyzes trends and documents knowledge.",
@@ -413,6 +417,8 @@ export const en = {
       business_developer: "Blake",
       finance_manager: "Pat",
       legal_counsel: "Drew",
+      business_operations_analyst: "Morgan",
+      executive_operations_lead: "Casey",
     },
     telegram: {
       sectionTitle: "Telegram",
@@ -493,7 +499,7 @@ export const en = {
   },
   teamsPage: {
     title: "Your Teams",
-    subtitle: "Manage and monitor your engineering squads.",
+    subtitle: "Manage and monitor your teams.",
     agents: "Agents",
     noAgents: "No agents yet.",
     noTeams: "No teams found",
@@ -522,7 +528,7 @@ export const en = {
     cancelRequest: "Cancel Request",
     requestCancelled: "Request cancelled",
     failedCancelRequest: "Failed to cancel request",
-    squadChat: "Squad Chat",
+    squadChat: "Squad",
     addAgent: "Add Agent",
     requests: "Requests",
     filters: "Filters",
@@ -633,6 +639,10 @@ export const en = {
         name: "Legal",
         description: "Protect your business and ensure compliance.",
       },
+      "executive-operations": {
+        name: "Executive Operations",
+        description: "Coordinate priorities, track OKRs, and maintain executive rhythm.",
+      },
     },
   },
   capabilities: {
@@ -667,6 +677,14 @@ export const en = {
     },
     legal: {
       review: { name: "Contract Review", desc: "Analyze agreements for risk and protection." },
+    },
+    executive_operations: {
+      draft_executive_briefing: { name: "Draft Executive Briefing", desc: "Create a concise briefing for upcoming meetings or decisions." },
+      prepare_board_update: { name: "Prepare Board Update", desc: "Structure company metrics and priorities for board review." },
+      prepare_investor_update: { name: "Prepare Investor Update", desc: "Summarize progress and traction for investor reporting." },
+      run_okr_check_in: { name: "Run OKR Check-in", desc: "Review OKR progress and identify leadership-level risks." },
+      summarize_leadership_meeting: { name: "Summarize Leadership Meeting", desc: "Extract decisions and action items from meeting notes." },
+      track_action_items: { name: "Track Executive Action Items", desc: "Monitor status and escalate delayed executive commitments." },
     },
   },
 };

@@ -23,6 +23,18 @@ export default function NewRequestPage() {
   const router = useRouter();
   const teamId = String(params.id);
 
+  const translate = React.useCallback((key: string) => {
+    if (!key) return "";
+    if (!key.includes(".")) return key; // Not a translation key
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (!current || current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [agents, setAgents] = useState<any[]>([]);
   const [capabilities, setCapabilities] = useState<any[]>([]);
@@ -254,7 +266,7 @@ export default function NewRequestPage() {
 
       <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {selectedCapabilityInfo ? selectedCapabilityInfo.name : t.teamsPage.askAnything}
+          {selectedCapabilityInfo ? translate(selectedCapabilityInfo.name) : t.teamsPage.askAnything}
         </h1>
         <p className="text-muted-foreground text-sm">
           {selectedCapabilityInfo ? t.teamsPage.capabilityInfo : t.teamsPage.genericRequestInfo}
@@ -271,6 +283,7 @@ export default function NewRequestPage() {
             value={capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : suggestedCapability}
             onChange={handleCapabilityChange}
             availableCapabilities={capabilities}
+            translate={translate}
           />
         </div>
 
