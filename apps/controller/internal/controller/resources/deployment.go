@@ -37,12 +37,14 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 
 	// Resource defaults — overridden by CR spec if present
 	requests := corev1.ResourceList{
-		corev1.ResourceCPU:    resource.MustParse("50m"),
-		corev1.ResourceMemory: resource.MustParse("256Mi"),
+		corev1.ResourceCPU:              resource.MustParse("50m"),
+		corev1.ResourceMemory:           resource.MustParse("256Mi"),
+		corev1.ResourceEphemeralStorage: resource.MustParse("100Mi"),
 	}
 	limits := corev1.ResourceList{
-		corev1.ResourceCPU:    resource.MustParse("1000m"),
-		corev1.ResourceMemory: resource.MustParse("2Gi"),
+		corev1.ResourceCPU:              resource.MustParse("1000m"),
+		corev1.ResourceMemory:           resource.MustParse("2Gi"),
+		corev1.ResourceEphemeralStorage: resource.MustParse("1Gi"),
 	}
 	if cr.Spec.Resources != nil {
 		if v, ok := cr.Spec.Resources.Requests["cpu"]; ok {
@@ -193,6 +195,18 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 							Command:         []string{"sh", "/bootstrap/bootstrap.sh"},
 							Env:             initEnv,
 							VolumeMounts:    initMounts,
+							Resources: corev1.ResourceRequirements{
+								Requests: corev1.ResourceList{
+									corev1.ResourceCPU:              resource.MustParse("100m"),
+									corev1.ResourceMemory:           resource.MustParse("384Mi"),
+									corev1.ResourceEphemeralStorage: resource.MustParse("50Mi"),
+								},
+								Limits: corev1.ResourceList{
+									corev1.ResourceCPU:              resource.MustParse("200m"),
+									corev1.ResourceMemory:           resource.MustParse("512Mi"),
+									corev1.ResourceEphemeralStorage: resource.MustParse("100Mi"),
+								},
+							},
 							SecurityContext: &corev1.SecurityContext{
 								RunAsNonRoot:             ptr.To(true),
 								RunAsUser:                ptr.To(int64(1000)),
@@ -264,12 +278,14 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 				},
 				Resources: corev1.ResourceRequirements{
 					Requests: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("50m"),
-						corev1.ResourceMemory: resource.MustParse("128Mi"),
+						corev1.ResourceCPU:              resource.MustParse("50m"),
+						corev1.ResourceMemory:           resource.MustParse("128Mi"),
+						corev1.ResourceEphemeralStorage: resource.MustParse("50Mi"),
 					},
 					Limits: corev1.ResourceList{
-						corev1.ResourceCPU:    resource.MustParse("200m"),
-						corev1.ResourceMemory: resource.MustParse("256Mi"),
+						corev1.ResourceCPU:              resource.MustParse("200m"),
+						corev1.ResourceMemory:           resource.MustParse("256Mi"),
+						corev1.ResourceEphemeralStorage: resource.MustParse("100Mi"),
 					},
 				},
 				ReadinessProbe: &corev1.Probe{

@@ -14,6 +14,7 @@ kivoApi:
     requests:
       cpu: 50m
       memory: 128Mi
+      ephemeral-storage: "100Mi"
     limits:
       cpu: "500m"
       memory: 512Mi
@@ -35,6 +36,7 @@ kivoWeb:
     requests:
       cpu: 50m
       memory: 128Mi
+      ephemeral-storage: "100Mi"
   env:
     NODE_ENV: production
     PORT: "3000"
@@ -51,6 +53,7 @@ adminApi:
     requests:
       cpu: 50m
       memory: 128Mi
+      ephemeral-storage: "100Mi"
   env:
     NODE_ENV: production
     ADMIN_PORT: "4001"
@@ -70,6 +73,7 @@ adminWeb:
     requests:
       cpu: 50m
       memory: 128Mi
+      ephemeral-storage: "100Mi"
   env:
     NODE_ENV: production
     PORT: "3001"
@@ -82,6 +86,11 @@ controller:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
     tag: "fce08fe29ac0d73565704e6038f9d52734cddcad"
     pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+      ephemeral-storage: "100Mi"
   agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
   agentImagePullPolicy: "Always"
   consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
@@ -98,6 +107,8 @@ ingress:
       clusterIssuer: letsencrypt-prod
 postgresql:
   embedded: true
+  persistence:
+    storageClassName: "standard-rwo"
 networkPolicy:
   enabled: true
 imagePullSecrets: []

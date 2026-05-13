@@ -290,3 +290,11 @@ controller:
   # Image the controller injects as the kivo-consumer sidecar.
   consumerImage: "ghcr.io/ltreven/kivo-consumer:latest"
   consumerImagePullPolicy: "IfNotPresent"
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
