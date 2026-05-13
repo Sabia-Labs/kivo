@@ -1,4 +1,4 @@
-.PHONY: help dev down clean-local staging-reset migrate seed clean-files ctx-local ctx-staging local-db-studio local-admin-db-studio staging-db-studio staging-admin-db-studio argo-ui gcloud-auth
+.PHONY: help dev down clean-local clean-staging staging-reset migrate seed clean-files ctx-local ctx-staging local-db-studio local-admin-db-studio staging-db-studio staging-admin-db-studio argo-ui gcloud-auth
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 LOCAL_CTX = docker-desktop
@@ -42,6 +42,17 @@ clean-local: ## ⚠ TOTAL WIPE of local K8s (Apps, Namespaces, Ingress)
 	@echo "→ Deleting ephemeral workspace namespaces..."
 	kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found
 	@echo "✓ Local cluster is clean."
+	
+clean-staging: gcloud-auth ## ⚠ TOTAL WIPE of Staging resources (Apps & Workspaces)
+	@current_ctx=$$(kubectl config current-context); \
+	if [ "$$current_ctx" != "$(STAGING_CTX)" ]; then \
+		echo "\033[31mFATAL: You are NOT in the staging context! Current: $$current_ctx\033[0m"; exit 1; \
+	fi
+	@echo "→ Deleting all resources in $(STAGING_NAMESPACE)..."
+	kubectl delete all,pvc,secrets,configmaps --all -n $(STAGING_NAMESPACE) --ignore-not-found
+	@echo "→ Deleting ephemeral workspace namespaces..."
+	kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found
+	@echo "✓ Staging environment is clean."
 
 # ── STAGING OPERATIONS (GKE/Argo) ─────────────────────────────────────────────
 staging-reset: gcloud-auth ## ☢ TOTAL RESET of Staging (Wipes DBs & Reseeds)
