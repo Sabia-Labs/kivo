@@ -8,6 +8,7 @@ set -e
 NAMESPACE="kivo-staging"
 POSTGRES_POD="kivo-postgresql-0"
 POSTGRES_SVC="kivo-postgresql"
+DB_USER="kivo" # Default user defined in Helm charts/kivo/values.yaml
 
 echo "🧹 Cleaning up workspace namespaces (kivo-ws-*)..."
 kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found || true
@@ -18,7 +19,7 @@ echo "Waiting for pods to terminate..."
 sleep 10
 
 echo "🔐 Extracting Postgres credentials from cluster..."
-# Try to get it from kivo-db-credentials first, then fallback to values.yaml if possible
+# Try to get it from kivo-db-credentials first, then fallback to default if not found
 DB_PWD=$(kubectl get secret kivo-db-credentials -n $NAMESPACE -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g')
 
 if [ -z "$DB_PWD" ]; then
@@ -27,11 +28,13 @@ if [ -z "$DB_PWD" ]; then
 fi
 
 echo "🧹 Dropping and recreating databases (executing inside pod $POSTGRES_POD)..."
-# Usamos kubectl exec para rodar o psql dentro do pod do Postgres
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo WITH (FORCE);"
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "CREATE DATABASE kivo;"
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo_admin WITH (FORCE);"
-kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "CREATE DATABASE kivo_admin;"
+# Usamos o usuário 'kivo' e conectamos ao banco 'kivo' (que o Helm cria por padrão)
+kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U $DB_USER -d $DB_USER -c "DROP DATABASE IF EXISTS kivo_admin WITH (FORCE);"
+kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U $DB_USER -d $DB_USER -c "CREATE DATABASE kivo_admin;"
+# O banco 'kivo' nós não dropamos (pois estamos conectados a ele), apenas limpamos se necessário, 
+# ou dropamos conectando ao recém criado 'kivo_admin'
+kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U $DB_USER -d kivo_admin -c "DROP DATABASE IF EXISTS kivo WITH (FORCE);"
+kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U $DB_USER -d kivo_admin -c "CREATE DATABASE kivo;"
 
 # Agora precisamos do port-forward apenas para as migrações que rodam LOCALMENTE
 echo "🔌 Starting temporary port-forward for migrations..."
@@ -40,7 +43,7 @@ PF_PID=$!
 sleep 5
 
 # Connection strings para o Drizzle (que roda na sua máquina)
-DB_BASE="postgres://postgres:$DB_PWD@localhost:5433"
+DB_BASE="postgres://$DB_USER:$DB_PWD@localhost:5433"
 export DATABASE_URL="$DB_BASE/kivo"
 export DATABASE_URL_ADMIN="$DB_BASE/kivo_admin"
 
@@ -51,7 +54,7 @@ echo "🏗 Running migrations and SEED for Admin API (Control Plane)..."
 cd apps/admin-api && npm install && npm run db:migrate && npm run db:seed && cd ../..
 
 echo "🛠 Creating/Updating separate Secret for Admin API DB..."
-NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@$POSTGRES_SVC:5432/kivo_admin" | base64)
+NEW_URL_ADMIN=$(echo -n "postgres://$DB_USER:$DB_PWD@$POSTGRES_SVC:5432/kivo_admin" | base64)
 kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret
