@@ -33,26 +33,81 @@ kubectl create secret generic kivo-admin-db-credentials \
   --from-literal=DATABASE_URL_ADMIN="$DB_URL_ADMIN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# 3. Kivo API Secrets (JWT, Tokens, etc.)
+# 3. Kivo API Secrets (JWT, Tokens, Google, AI)
 echo "🔐 Preparing kivo-api-staging-secret..."
 JWT_SECRET=$(openssl rand -base64 32)
 INTERNAL_TOKEN=$(openssl rand -base64 32)
 
-# Check if secret already exists to avoid overwriting existing keys if just updating
-if kubectl get secret kivo-api-staging-secret -n $NAMESPACE >/dev/null 2>&1; then
-    echo "   -> Secret exists, patching..."
-    kubectl patch secret kivo-api-staging-secret -n $NAMESPACE \
-      --patch "{\"data\":{\"JWT_SECRET\":\"$(echo -n $JWT_SECRET | base64)\",\"INTERNAL_SERVICE_TOKEN\":\"$(echo -n $INTERNAL_TOKEN | base64)\"}}"
-else
-    echo "   -> Creating new secret..."
-    kubectl create secret generic kivo-api-staging-secret \
-      -n $NAMESPACE \
-      --from-literal=JWT_SECRET="$JWT_SECRET" \
-      --from-literal=INTERNAL_SERVICE_TOKEN="$INTERNAL_TOKEN" \
-      --from-literal=PLATFORM_OPENAI_API_KEY="sk-placeholder" \
-      --from-literal=PLATFORM_GEMINI_API_KEY="placeholder" \
-      --from-literal=RESEND_API_KEY="re-placeholder"
-fi
+# Attempt to load values from local .env files to make bootstrap easier
+# We check the root .env and the specific app .env files
+ENV_FILES=(".env" "apps/admin-api/.env" "apps/kivo-api/.env")
+for f in "${ENV_FILES[@]}"; do
+    if [ -f "$f" ]; then
+        echo "   -> Loading defaults from $f"
+        # Extract values using grep/sed (avoiding 'source' to prevent shell side effects)
+        export GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-$(grep "^GOOGLE_CLIENT_ID=" "$f" | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+        export GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-$(grep "^GOOGLE_CLIENT_SECRET=" "$f" | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+        export PLATFORM_OPENAI_API_KEY=${PLATFORM_OPENAI_API_KEY:-$(grep -E "^(OPENAI_API_KEY|PLATFORM_OPENAI_API_KEY)=" "$f" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+        export PLATFORM_GEMINI_API_KEY=${PLATFORM_GEMINI_API_KEY:-$(grep -E "^(GEMINI_API_KEY|PLATFORM_GEMINI_API_KEY)=" "$f" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+        export RESEND_API_KEY=${RESEND_API_KEY:-$(grep "^RESEND_API_KEY=" "$f" | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+    fi
+done
+
+# Prompt for external integration keys (using detected defaults)
+echo "--- External Integrations (Detected values will be used if you press Enter) ---"
+read -p "Google Client ID [${GOOGLE_CLIENT_ID:0:10}...]: " G_ID
+G_ID=${G_ID:-$GOOGLE_CLIENT_ID}
+read -p "Google Client Secret [${GOOGLE_CLIENT_SECRET:0:5}...]: " G_SECRET
+G_SECRET=${G_SECRET:-$GOOGLE_CLIENT_SECRET}
+read -p "OpenAI API Key: " OAI_KEY
+OAI_KEY=${OAI_KEY:-$PLATFORM_OPENAI_API_KEY}
+read -p "Gemini API Key: " GEM_KEY
+GEM_KEY=${GEM_KEY:-$PLATFORM_GEMINI_API_KEY}
+read -p "Resend API Key: " RESEND_KEY
+RESEND_KEY=${RESEND_KEY:-$RESEND_API_KEY}
+
+# Helper function to get existing or new value
+get_val() {
+    local key=$1
+    local new_val=$2
+    local fallback=$3
+    if [ -n "$new_val" ]; then
+        echo -n "$new_val" | base64 | tr -d '\n'
+    else
+        # Try to keep existing if it exists
+        local existing=$(kubectl get secret kivo-api-staging-secret -n $NAMESPACE -o jsonpath="{.data.$key}" 2>/dev/null || echo "")
+        if [ -n "$existing" ]; then
+            echo -n "$existing"
+        else
+            echo -n "$fallback" | base64 | tr -d '\n'
+        fi
+    fi
+}
+
+B64_JWT=$(get_val "JWT_SECRET" "$JWT_SECRET" "temporary-jwt-secret")
+B64_INT=$(get_val "INTERNAL_SERVICE_TOKEN" "$INTERNAL_TOKEN" "temporary-token")
+B64_GID=$(get_val "GOOGLE_CLIENT_ID" "$G_ID" "placeholder")
+B64_GSEC=$(get_val "GOOGLE_CLIENT_SECRET" "$G_SECRET" "placeholder")
+B64_OAI=$(get_val "PLATFORM_OPENAI_API_KEY" "$OAI_KEY" "placeholder")
+B64_GEM=$(get_val "PLATFORM_GEMINI_API_KEY" "$GEM_KEY" "placeholder")
+B64_RES=$(get_val "RESEND_API_KEY" "$RESEND_KEY" "placeholder")
+
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kivo-api-staging-secret
+  namespace: $NAMESPACE
+type: Opaque
+data:
+  JWT_SECRET: $B64_JWT
+  INTERNAL_SERVICE_TOKEN: $B64_INT
+  GOOGLE_CLIENT_ID: $B64_GID
+  GOOGLE_CLIENT_SECRET: $B64_GSEC
+  PLATFORM_OPENAI_API_KEY: $B64_OAI
+  PLATFORM_GEMINI_API_KEY: $B64_GEM
+  RESEND_API_KEY: $B64_RES
+EOF
 
 echo "✅ Bootstrap complete! ArgoCD should now be able to sync."
 echo "👉 Next step: Run 'make staging-reset' to initialize the databases."
