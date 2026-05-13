@@ -48,6 +48,11 @@ async function seed() {
       soul,
       identity,
       operatingInstructions,
+      userContext: userBase,
+      memory: memoryBase,
+      toolsNotes: toolsBase,
+      heartbeat: heartbeatBase,
+      agentsBase: agentsBase,
     }).onConflictDoUpdate({
       target: agentRoles.id,
       set: {
@@ -59,6 +64,11 @@ async function seed() {
         soul,
         identity,
         operatingInstructions,
+        userContext: userBase,
+        memory: memoryBase,
+        toolsNotes: toolsBase,
+        heartbeat: heartbeatBase,
+        agentsBase: agentsBase,
       }
     });
   }

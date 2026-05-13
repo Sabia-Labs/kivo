@@ -143,20 +143,6 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
     const namespace = workspace.k8sNamespace ?? workspaceNamespace(workspace.id);
     const gatewayToken = randomBytes(32).toString("base64url");
 
-    const { agentRoles: agentRolesSchema } = await import("../db/schema");
-    const [role] = await db.select().from(agentRolesSchema).where(eq(agentRolesSchema.id, input.type));
-
-    const [user] = await db.select().from(users).where(eq(users.id, workspace.userId));
-    const operatorName = user?.name || "Operator";
-
-    const placeholderVars = {
-      agent_name: input.name,
-      team_name: team.name,
-      team_id: teamId,
-      operator_name: operatorName,
-      mission: team.mission || "",
-    };
-
     const [newAgent] = await db
       .insert(agents)
       .values({
@@ -165,14 +151,8 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
         roleId: input.type, // input.type holds the role ID from client
         icon: input.icon,
         gatewayToken,
+        metadata: input.metadata || {},
         k8sStatus: "pending",
-        soul: replacePlaceholders(role?.soul, placeholderVars),
-        identity: replacePlaceholders(role?.identity, placeholderVars),
-        agentsInstructions: replacePlaceholders(role?.operatingInstructions, placeholderVars),
-        userContext: "",
-        memory: "",
-        toolsNotes: "",
-        heartbeat: "",
       })
       .returning();
 

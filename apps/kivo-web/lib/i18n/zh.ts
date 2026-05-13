@@ -600,6 +600,9 @@ export const zh: Dictionary = {
     submitRequest: "提交请求",
     failedInsight: "我现在分析时遇到点麻烦，但您可以随时提交！",
     updatedExecutionPlan: "我已根据所选能力更新了执行计划。请提供详细信息以继续。",
+    exploreAllTemplates: "浏览所有可用模板",
+    hideAdditionalTemplates: "隐藏额外模板",
+    moreTemplates: "更多模板",
     statusLabels: {
       draft: "草稿",
       open: "已创建",

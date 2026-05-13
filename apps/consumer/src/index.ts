@@ -19,6 +19,8 @@
  */
 
 import * as http from "http";
+import * as fs from "fs";
+import * as path from "path";
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -27,6 +29,7 @@ const INTERNAL_TOKEN         = process.env.INTERNAL_SERVICE_TOKEN ?? "";
 const KIVO_API_INTERNAL_URL  = process.env.KIVO_API_INTERNAL_URL  ?? "http://kivo-api:4000";
 const LOCAL_BUS_PORT         = 43123; // Loopback only (Secure)
 const EXTERNAL_PUSH_PORT     = 43124; // Cluster-wide (Protected by token)
+const WORKSPACE_DIR         = process.env.OPENCLAW_WORKSPACE_DIR ?? "/home/node/.openclaw/workspace";
 
 if (!AGENT_ID) {
   console.error("[consumer] FATAL: AGENT_ID env var is required");
@@ -216,6 +219,30 @@ async function startExternalServer(): Promise<void> {
     const pathname = new URL(req.url ?? "/", `http://localhost`).pathname;
 
     try {
+      // ── GET /v1/files/:filename ──────────────────────────────────────────
+      if (req.method === "GET" && pathname.startsWith("/v1/files/")) {
+        const filename = pathname.replace("/v1/files/", "");
+        
+        // Safety: only allow specific markdown files to prevent path traversal
+        const allowedFiles = [
+          "IDENTITY.md", "SOUL.md", "PROCESS.MD", "USER.md", 
+          "MEMORY.md", "TOOLS.md", "HEARTBEAT.md", "AGENTS.md", "SAFETY.md"
+        ];
+        
+        if (!allowedFiles.includes(filename)) {
+          return writeJson(res, 403, { error: "forbidden_file" });
+        }
+
+        const filePath = path.join(WORKSPACE_DIR, filename);
+        
+        if (!fs.existsSync(filePath)) {
+          return writeJson(res, 404, { error: "file_not_found" });
+        }
+
+        const content = fs.readFileSync(filePath, "utf-8");
+        return writeJson(res, 200, { filename, content });
+      }
+
       // ── POST /v1/inbound/message ─────────────────────────────────────────
       if (req.method === "POST" && pathname === "/v1/inbound/message") {
         const body = await readBody(req);
