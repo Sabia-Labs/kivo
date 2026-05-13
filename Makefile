@@ -55,11 +55,21 @@ clean-staging: gcloud-auth ## ⚠ TOTAL WIPE of Staging resources (Apps & Worksp
 	@echo "✓ Staging environment is clean."
 
 # ── STAGING OPERATIONS (GKE/Argo) ─────────────────────────────────────────────
+staging-bootstrap: gcloud-auth ## 🚀 Initialize mandatory secrets for Staging
+	@current_ctx=$$(kubectl config current-context); \
+	if [ "$$current_ctx" != "$(STAGING_CTX)" ]; then \
+		echo "\033[31mFATAL: You are NOT in the staging context! Current: $$current_ctx\033[0m"; exit 1; \
+	fi
+	@chmod +x setup_staging_secrets.sh
+	./setup_staging_secrets.sh
+
 staging-reset: gcloud-auth ## ☢ TOTAL RESET of Staging (Wipes DBs & Reseeds)
 	@current_ctx=$$(kubectl config current-context); \
 	if [ "$$current_ctx" != "$(STAGING_CTX)" ]; then \
 		echo "\033[31mFATAL: You are NOT in the staging context! Current: $$current_ctx\033[0m"; exit 1; \
 	fi
+	@# Check if secrets exist before running reset
+	@kubectl get secret kivo-db-credentials -n $(STAGING_NAMESPACE) >/dev/null 2>&1 || (echo "❌ Error: kivo-db-credentials not found. Run 'make staging-bootstrap' first!" && exit 1)
 	@chmod +x reset_staging.sh
 	./reset_staging.sh
 
