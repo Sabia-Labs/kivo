@@ -31,22 +31,46 @@ Both databases are port-forwarded automatically by Tilt to `localhost:5432`.
 
 1. **Start Port-forward:**
    ```bash
-   kubectl port-forward svc/kivo-db-postgresql 5432:5432 -n kivo-staging
+   kubectl port-forward svc/kivo-postgresql 5433:5432 -n kivo-staging
    ```
 
 2. **Open Studio (in a separate terminal):**
    - **Application Plane (`kivo`):**
      ```bash
      cd apps/kivo-api
-     DATABASE_URL="postgresql://postgres:[PASSWORD]@localhost:5432/kivo" pnpm drizzle-kit studio
+     DATABASE_URL="postgresql://postgres:[PASSWORD]@localhost:5433/kivo" pnpm drizzle-kit studio
      ```
    - **Control Plane (`kivo_admin`):**
      ```bash
      cd apps/admin-api
-     DATABASE_URL_ADMIN="postgresql://postgres:[PASSWORD]@localhost:5432/kivo_admin" npx drizzle-kit studio
+     DATABASE_URL_ADMIN="postgresql://postgres:[PASSWORD]@localhost:5433/kivo_admin" npx drizzle-kit studio
      ```
 
 *Note: Get the password from the `kivo-db-credentials` secret in the `kivo-staging` namespace.*
+*Note 2: Use port 5433 to avoid conflict with local postgres on 5432.*
+
+---
+
+## 🚀 Staging Disaster Recovery (Namespace Cleaned/Deleted)
+
+If you deleted the `kivo-staging` namespace or performed a total wipe, follow these steps to restore the environment:
+
+### 1. Bootstrap Mandatory Secrets
+The ArgoCD deployment will fail (Error: Secret not found) until you provide the initial credentials.
+```bash
+make ctx-staging
+make staging-bootstrap
+```
+*This script will ask for a password (default: `kivo_local_only`) and generate JWT and Internal Service tokens.*
+
+### 2. Wait for ArgoCD Sync
+ArgoCD will now detect the secrets and successfully deploy the pods, including the PostgreSQL database (now that it is `embedded: true`).
+
+### 3. Initialize Databases and Seeds
+Once the `kivo-postgresql-0` pod is **Running**, perform a total reset to create the databases (`kivo` and `kivo_admin`), run migrations, and apply the default seeds.
+```bash
+make staging-reset
+```
 
 ---
 
@@ -126,7 +150,7 @@ kubectl describe pod [POD_NAME] -n kivo-staging
 
 ### Run a temporary psql shell inside the cluster
 ```bash
-kubectl exec -it kivo-db-postgresql-0 -n kivo-staging -- env PGPASSWORD=[PASSWORD] psql -U postgres -d kivo
+kubectl exec -it kivo-postgresql-0 -n kivo-staging -- env PGPASSWORD=[PASSWORD] psql -U postgres -d kivo
 ```
 
 ---

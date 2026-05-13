@@ -6,7 +6,8 @@
 set -e
 
 NAMESPACE="kivo-staging"
-POSTGRES_POD="kivo-db-postgresql-0"
+POSTGRES_POD="kivo-postgresql-0"
+POSTGRES_SVC="kivo-postgresql"
 
 echo "🧹 Cleaning up workspace namespaces (kivo-ws-*)..."
 kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found || true
@@ -17,11 +18,16 @@ echo "Waiting for pods to terminate..."
 sleep 10
 
 echo "🔐 Extracting Postgres credentials from cluster..."
-DB_PWD=$(kubectl get secret kivo-db-credentials -n $NAMESPACE -o jsonpath='{.data.DATABASE_URL}' | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g')
+# Try to get it from kivo-db-credentials first, then fallback to values.yaml if possible
+DB_PWD=$(kubectl get secret kivo-db-credentials -n $NAMESPACE -o jsonpath='{.data.DATABASE_URL}' 2>/dev/null | base64 -d | grep -o ':[^:]*@' | sed 's/://g' | sed 's/@//g')
 
-echo "🧹 Dropping and recreating databases (executing inside pod)..."
+if [ -z "$DB_PWD" ]; then
+    echo "⚠️  Could not extract password from secret. Re-running with default password..."
+    DB_PWD="kivo_local_only"
+fi
+
+echo "🧹 Dropping and recreating databases (executing inside pod $POSTGRES_POD)..."
 # Usamos kubectl exec para rodar o psql dentro do pod do Postgres
-# Forçamos o drop mesmo que haja conexões residuais (embora o scale down deva evitar isso)
 kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo WITH (FORCE);"
 kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "CREATE DATABASE kivo;"
 kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS kivo_admin WITH (FORCE);"
@@ -29,7 +35,7 @@ kubectl exec -n $NAMESPACE $POSTGRES_POD -- env PGPASSWORD=$DB_PWD psql -U postg
 
 # Agora precisamos do port-forward apenas para as migrações que rodam LOCALMENTE
 echo "🔌 Starting temporary port-forward for migrations..."
-kubectl port-forward svc/kivo-db-postgresql 5433:5432 -n $NAMESPACE > /dev/null 2>&1 &
+kubectl port-forward svc/$POSTGRES_SVC 5433:5432 -n $NAMESPACE > /dev/null 2>&1 &
 PF_PID=$!
 sleep 5
 
@@ -45,7 +51,7 @@ echo "🏗 Running migrations and SEED for Admin API (Control Plane)..."
 cd apps/admin-api && npm install && npm run db:migrate && npm run db:seed && cd ../..
 
 echo "🛠 Creating/Updating separate Secret for Admin API DB..."
-NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@kivo-db-postgresql:5432/kivo_admin" | base64)
+NEW_URL_ADMIN=$(echo -n "postgres://postgres:$DB_PWD@$POSTGRES_SVC:5432/kivo_admin" | base64)
 kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Secret

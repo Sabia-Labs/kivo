@@ -95,7 +95,7 @@ ingress:
       enabled: true
       clusterIssuer: letsencrypt-prod
 postgresql:
-  embedded: false
+  embedded: true
 networkPolicy:
   enabled: true
 imagePullSecrets: []
