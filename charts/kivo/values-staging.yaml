@@ -83,7 +83,10 @@ controller:
     tag: "b6adae2ca273508f1f77098f2ae072637e753c04"
     pullPolicy: Always
   agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
+  agentImagePullPolicy: "Always"
   consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
+  consumerImagePullPolicy: "Always"
+
 ingress:
   enabled: true
   className: nginx
