@@ -35,7 +35,10 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- if .Values.adminApi.databaseSecret }}
+            {{- if .Values.postgresql.embedded }}
+            - name: DATABASE_URL_ADMIN
+              value: {{ include "kivo.postgresql.adminConnectionString" . | quote }}
+            {{- else if .Values.adminApi.databaseSecret }}
             - name: DATABASE_URL_ADMIN
               valueFrom:
                 secretKeyRef:
@@ -78,9 +81,6 @@ spec:
                   name: {{ .Values.adminApi.existingSecret }}
                   key: RESEND_API_KEY
                   optional: true
-            {{- else if .Values.postgresql.embedded }}
-            - name: DATABASE_URL_ADMIN
-              value: {{ include "kivo.postgresql.adminConnectionString" . | quote }}
             {{- end }}
           livenessProbe:
             {{- toYaml .Values.adminApi.livenessProbe | nindent 12 }}

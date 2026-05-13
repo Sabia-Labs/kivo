@@ -102,7 +102,11 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- if .Values.kivoApi.databaseSecret }}
+            {{- if .Values.postgresql.embedded }}
+            {{- /* Local/Staging Recovery: DATABASE_URL built from embedded PostgreSQL values */}}
+            - name: DATABASE_URL
+              value: {{ include "kivo.postgresql.connectionString" . | quote }}
+            {{- else if .Values.kivoApi.databaseSecret }}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -146,12 +150,6 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: PLATFORM_GEMINI_API_KEY
                   optional: true
-            {{- end }}
-            {{- if .Values.postgresql.embedded }}
-            {{- /* Local: DATABASE_URL built from embedded PostgreSQL values */}}
-            {{- /* JWT_SECRET is already injected above via the env range loop */}}
-            - name: DATABASE_URL
-              value: {{ include "kivo.postgresql.connectionString" . | quote }}
             {{- end }}
           livenessProbe:
             {{- toYaml .Values.kivoApi.livenessProbe | nindent 12 }}
