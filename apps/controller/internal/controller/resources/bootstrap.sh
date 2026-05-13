@@ -228,8 +228,10 @@ fi
 # ── Kivo API MCP ─────────────────────────────────────────────────────────
 # Runs every boot
 echo "==> Configuring Kivo API MCP"
-KIVO_API_URL="${KIVO_API_URL:-http://kivo-api.kivo.svc.cluster.local:4000}/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
-KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_API_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
+# Use KIVO_API_INTERNAL_URL passed from the controller, fall back to environment derivation
+MCP_API_BASE="${KIVO_API_INTERNAL_URL:-http://kivo-api.${KIVO_NAMESPACE:-kivo}.svc.cluster.local:4000}"
+KIVO_MCP_URL="${MCP_API_BASE}/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
+KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_MCP_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
 openclaw mcp set kivo "$KIVO_JSON_ARG"
 
 # ── Telegram channel (runs every boot) ───────────────────────────────────────────
