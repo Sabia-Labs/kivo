@@ -145,10 +145,13 @@ export async function applyKivoAgentCR(
         name:     String(metadata.modelName     ?? process.env.PLATFORM_MODEL_NAME     ?? "gpt-5.4"),
       },
       resources: {
-        requests: { cpu: "50m",  memory: "256Mi" },
+        requests: { cpu: "500m", memory: "512Mi" },
         limits:   { cpu: "1000m", memory: "2Gi"   },
       },
-      persistence: { size: "1Gi" },
+      persistence: { 
+        size: "1Gi",
+        storageClassName: "standard"
+      },
     },
   };
 

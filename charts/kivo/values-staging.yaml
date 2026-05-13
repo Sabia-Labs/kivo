@@ -108,7 +108,7 @@ ingress:
 postgresql:
   embedded: true
   persistence:
-    storageClassName: "standard-rwo"
+    storageClassName: "standard"
 networkPolicy:
   enabled: true
 imagePullSecrets: []
