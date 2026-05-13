@@ -25,6 +25,12 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "kivo.kivoWeb.selectorLabels" . | nindent 14 }}
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-agent-controller
+        - namespaceSelector:
+            matchLabels:
+              kivo.ai/component: workspace
       ports:
         - protocol: TCP
           port: {{ .Values.kivoApi.port }}
@@ -64,6 +70,15 @@ spec:
       ports:
         - protocol: TCP
           port: 4001
+
+    # Allow connection to Agent Sidecar (for direct message delivery)
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kivo.ai/component: workspace
+      ports:
+        - protocol: TCP
+          port: 43124
 
     {{- if .Values.postgresql.embedded }}
     # Allow connection to embedded PostgreSQL
