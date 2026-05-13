@@ -16,8 +16,10 @@ DB_PWD=${DB_PWD:-$DEFAULT_DB_PWD}
 
 # 2. Connection Strings
 # We assume the service name is kivo-postgresql (standard for this project)
-DB_URL="postgres://postgres:$DB_PWD@kivo-postgresql:5432/kivo"
-DB_URL_ADMIN="postgres://postgres:$DB_PWD@kivo-postgresql:5432/kivo_admin"
+# Default user is 'kivo'
+DB_USER="kivo"
+DB_URL="postgres://$DB_USER:$DB_PWD@kivo-postgresql:5432/kivo"
+DB_URL_ADMIN="postgres://$DB_USER:$DB_PWD@kivo-postgresql:5432/kivo_admin"
 
 echo "🔐 Creating kivo-db-credentials..."
 kubectl create secret generic kivo-db-credentials \
