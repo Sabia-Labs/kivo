@@ -148,7 +148,7 @@ export async function applyKivoAgentCR(
         requests: { cpu: "50m",  memory: "256Mi" },
         limits:   { cpu: "1000m", memory: "2Gi"   },
       },
-      persistence: { size: "10Gi" },
+      persistence: { size: "1Gi" },
     },
   };
 
