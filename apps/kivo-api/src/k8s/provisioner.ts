@@ -51,9 +51,10 @@ export async function applyCredentialsSecret(
   const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
   const name = `${agent.id}-creds`;
 
-  // Platform-level fallbacks — set in kivo-api env via PLATFORM_* vars from .env
-  const platformOpenAIKey = process.env.PLATFORM_OPENAI_API_KEY;
-  const platformGeminiKey = process.env.PLATFORM_GEMINI_API_KEY;
+  // Platform-level fallbacks — set in kivo-api env via PLATFORM_* vars from .env (Local)
+  // or via OPENAI_API_KEY / GEMINI_API_KEY (Staging/Prod via Helm)
+  const platformOpenAIKey = process.env.OPENAI_API_KEY || process.env.PLATFORM_OPENAI_API_KEY;
+  const platformGeminiKey = process.env.GEMINI_API_KEY || process.env.PLATFORM_GEMINI_API_KEY;
   const internalToken = process.env.INTERNAL_SERVICE_TOKEN;
 
   // Determine the internal API URL for the sidecar to talk back.
