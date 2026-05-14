@@ -168,7 +168,7 @@ export function AgentChatArea({
                   m.role === "user" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm",
                   m.status === "error" && "bg-destructive/10 text-destructive-foreground"
                 )}>
-                  {m.role === "assistant" ? (
+                  {m.role !== "user" ? (
                     <Markdown content={m.content} />
                   ) : (
                     m.content
