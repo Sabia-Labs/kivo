@@ -37,8 +37,15 @@ reset: ## 🔄 Factory Reset (Scale down + Wipe DB + Seed + Cleanup Agents)
 
 # ── UTILS ─────────────────────────────────────────────────────────────────────
 
-argo: ## 🌐 Open ArgoCD UI
-	@open https://argo.sabia.cc/applications/kivo-staging
+gcloud-auth: ## 🔐 Authenticate with Google Cloud
+	@gcloud auth login
+	@gcloud auth application-default login
+
+argo: ## 🌐 Open ArgoCD UI (Port-forward + Credentials)
+	@echo "🔐 Initial Admin Password:"
+	@kubectl --context $(CTX) -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo ""
+	@echo "🚀 Opening ArgoCD at http://localhost:8080 (User: admin)"
+	@kubectl --context $(CTX) port-forward svc/argocd-server -n argocd 8080:443
 
 status: ## 📊 Show cluster health
 	@echo "🏥 Cluster: $(CTX) | Namespace: $(NAMESPACE)"
