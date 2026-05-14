@@ -38,6 +38,8 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: init-scripts
+              mountPath: /docker-entrypoint-initdb.d
           livenessProbe:
             exec:
               command:
@@ -60,6 +62,10 @@ spec:
             periodSeconds: 10
           resources:
             {{- toYaml .Values.postgresql.resources | nindent 12 }}
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: kivo-postgresql-init
   volumeClaimTemplates:
     - metadata:
         name: data

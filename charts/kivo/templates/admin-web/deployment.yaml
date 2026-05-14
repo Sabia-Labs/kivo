@@ -21,6 +21,10 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      hostAliases:
+        - ip: "10.43.235.2" # Fixed IP of kivo-admin-api service for now (since hostAliases requires IP)
+          hostnames:
+            - "kivo-admin-api.kivo-admin"
       containers:
         - name: admin-web
           image: "{{ .Values.adminWeb.image.repository }}:{{ .Values.adminWeb.image.tag }}"

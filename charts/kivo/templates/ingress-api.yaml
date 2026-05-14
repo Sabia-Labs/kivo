@@ -5,7 +5,7 @@ metadata:
   name: kivo-admin-api-ingress
   namespace: {{ .Values.namespace }}
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-%s-strip-admin-api@kubernetescrd" .Values.namespace .Values.namespace | quote }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-strip-admin-api@kubernetescrd" .Values.namespace | quote }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:

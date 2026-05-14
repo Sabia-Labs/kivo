@@ -1,0 +1,12 @@
+{{- if .Values.postgresql.embedded }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kivo-postgresql-init
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "kivo.labels" . | nindent 4 }}
+data:
+  create-admin-db.sql: |
+    CREATE DATABASE kivo_admin;
+{{- end }}

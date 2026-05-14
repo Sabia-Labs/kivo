@@ -59,15 +59,19 @@ if ! k get secret kivo-api-staging-secret -n "$NS" >/dev/null 2>&1; then
   
   # Try to pull from local .env if available
   OAI_KEY=$(grep "^OPENAI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
-  
+  GEMINI_KEY=$(grep "^GEMINI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  RESEND_KEY=$(grep "^RESEND_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  G_CLIENT_ID=$(grep "^GOOGLE_CLIENT_ID=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  G_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+
   k create secret generic kivo-api-staging-secret -n "$NS" \
     --from-literal=JWT_SECRET="$JWT_SECRET" \
     --from-literal=INTERNAL_SERVICE_TOKEN="$INTERNAL_TOKEN" \
     --from-literal=PLATFORM_OPENAI_API_KEY="$OAI_KEY" \
-    --from-literal=GOOGLE_CLIENT_ID="placeholder" \
-    --from-literal=GOOGLE_CLIENT_SECRET="placeholder" \
-    --from-literal=PLATFORM_GEMINI_API_KEY="placeholder" \
-    --from-literal=RESEND_API_KEY="placeholder"
+    --from-literal=GOOGLE_CLIENT_ID="$G_CLIENT_ID" \
+    --from-literal=GOOGLE_CLIENT_SECRET="$G_CLIENT_SECRET" \
+    --from-literal=PLATFORM_GEMINI_API_KEY="$GEMINI_KEY" \
+    --from-literal=RESEND_API_KEY="$RESEND_KEY"
 fi
 
 echo "✅ Secrets initialized for $ENV."
