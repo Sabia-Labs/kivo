@@ -44,8 +44,6 @@ if [ ! -f "$OPENCLAW_CONFIG_DIR/.bootstrapped" ]; then
     --workspace "$OPENCLAW_CONFIG_DIR/workspace" \
     --json
 
-  # (Telegram channel configured after first-boot gate — see below)
-
   # ── Model config ─────────────────────────────────────────────────────────
   PROVIDER="${ACTIVE_PROVIDER:-gemini}"
   if [ "$PROVIDER" = "google" ]; then PROVIDER="gemini"; fi
@@ -96,12 +94,6 @@ if [ ! -f "$OPENCLAW_CONFIG_DIR/.bootstrapped" ]; then
 EOF
 
   # ── Seed profile files (FIRST BOOT ONLY) ─────────────────────────────────
-  # Source: Kivo API (dynamic from database templates)
-  # Destination: $OPENCLAW_CONFIG_DIR/workspace/
-  #
-  # IMPORTANT: These files will evolve over time on the PVC.
-  # This block runs ONCE. The .bootstrapped flag prevents re-seeding on restart.
-  
   echo "==> Fetching dynamic bootstrap files from Kivo API..."
   BOOTSTRAP_URL="${KIVO_API_INTERNAL_URL}/internal/v1/agents/${AGENT_ID}/bootstrap-data"
   
@@ -148,17 +140,15 @@ fetchBootstrap();
     cp -r "$SHARED_SKILLS_SRC/"* "$OPENCLAW_CONFIG_DIR/workspace/skills/"
   fi
 
-  echo "==> Creating symlink for openclaw.json"
-  ln -sf "$CONFIG_FILE" "$OPENCLAW_CONFIG_DIR/workspace/openclaw.json"
-
   touch "$OPENCLAW_CONFIG_DIR/.bootstrapped"
-  echo "==> Bootstrap complete"
+  echo "==> Bootstrap core complete"
 else
   echo "==> Already bootstrapped — skipping (PVC state preserved)"
 fi
 
-# ── Linear MCP (packages pre-installed in image) ─────────────────────────
-# Runs every boot to pick up new API keys
+# ── Configuration (Runs every boot) ───────────────────────────────────────────
+
+# ── Linear MCP
 ENABLE_LINEAR_MCP=false
 if [ "${LINEAR_ENABLED:-false}" = "true" ] && [ -n "${LINEAR_API_KEY:-}" ]; then
   ENABLE_LINEAR_MCP=true
@@ -168,7 +158,7 @@ fi
 if [ "$ENABLE_LINEAR_MCP" = "true" ]; then
   LINEAR_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@sylphx/linear-mcp/dist/index.js"
   JSON_ARG="{\"command\":\"node\",\"args\":[\"$LINEAR_MCP_BIN\"],\"env\":{\"LINEAR_API_KEY\":\"${LINEAR_API_KEY}\"}}"
-  openclaw mcp set linear "$JSON_ARG"
+  openclaw mcp set linear "$JSON_ARG" --skip-observe || true
 
   mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills/linear"
   cat >"$OPENCLAW_CONFIG_DIR/workspace/skills/linear/SKILL.md" <<'SKILL_EOF'
@@ -181,15 +171,10 @@ metadata: { "openclaw": { "emoji": "🔗" } }
 # Linear Integration
 
 You have direct access to Linear through native MCP tools.
-
-## Available Native Tools:
-- `mcp_linear_list_issues`, `mcp_linear_get_issue`, `mcp_linear_create_issue`, `mcp_linear_update_issue`
-- `mcp_linear_list_teams`, `mcp_linear_list_projects`, `mcp_linear_create_comment`
 SKILL_EOF
 fi
 
-# ── GitHub MCP (packages pre-installed in image) ──────────────────────────
-# Runs every boot to pick up new tokens/keys
+# ── GitHub MCP
 ENABLE_GITHUB_MCP=false
 GITHUB_AUTH_MODE="${GITHUB_AUTH_MODE:-pat}"
 if [ "${GITHUB_ENABLED:-false}" = "true" ]; then
@@ -208,50 +193,27 @@ if [ "$ENABLE_GITHUB_MCP" = "true" ]; then
   if [ "$GITHUB_AUTH_MODE" = "pat" ]; then
     JSON_ARG="{\"command\":\"node\",\"args\":[\"$GITHUB_MCP_BIN\"],\"env\":{\"GITHUB_PERSONAL_ACCESS_TOKEN\":\"${GITHUB_PERSONAL_ACCESS_TOKEN}\"}}"
   else
-    JSON_ARG="{\"command\":\"node\",\"args\":[\"$GITHUB_MCP_BIN\"],\"env\":{\"GITHUB_APP_ID\":\"${GITHUB_APP_ID}\",\"GITHUB_INSTALLATION_ID\":\"${GITHUB_INSTALLATION_ID}\",\"GITHUB_APP_PRIVATE_KEY\":\"${GITHUB_APP_PRIVATE_KEY}\"}}"
+    JSON_ARG="{\"command\":\"node\",\"args\":[\"$GITHUB_APP_ID\":\"${GITHUB_APP_ID}\",\"GITHUB_INSTALLATION_ID\":\"${GITHUB_INSTALLATION_ID}\",\"GITHUB_APP_PRIVATE_KEY\":\"${GITHUB_APP_PRIVATE_KEY}\"}}"
   fi
 
-  openclaw mcp set github "$JSON_ARG"
-
-  mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills/github"
-  cat >"$OPENCLAW_CONFIG_DIR/workspace/skills/github/SKILL.md" <<'SKILL_EOF'
----
-name: github
-description: Manage repositories, pull requests, and issues in GitHub via MCP.
-metadata: { "openclaw": { "emoji": "🐙" } }
----
-
-# GitHub Integration
-
-You have direct access to GitHub through native MCP tools.
-Use these tools for repository discovery, issue triage, and pull-request workflows.
-SKILL_EOF
+  openclaw mcp set github "$JSON_ARG" --skip-observe || true
 fi
 
-# ── Kivo API MCP ─────────────────────────────────────────────────────────
-# Runs every boot
+# ── Kivo API MCP
 echo "==> Configuring Kivo API MCP"
-# Use KIVO_API_INTERNAL_URL passed from the controller, fall back to environment derivation
 MCP_API_BASE="${KIVO_API_INTERNAL_URL:-http://kivo-api.${KIVO_NAMESPACE:-kivo}.svc.cluster.local:4000}"
 KIVO_MCP_URL="${MCP_API_BASE}/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
 KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_MCP_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
-openclaw mcp set kivo "$KIVO_JSON_ARG"
+openclaw mcp set kivo "$KIVO_JSON_ARG" --skip-observe || true
 
-# ── Telegram channel (runs every boot) ───────────────────────────────────────────
-#
-# Runs outside the .bootstrapped gate so a new TELEGRAM_BOT_TOKEN (updated
-# via the Kivo UI and injected into the K8s Secret) is picked up on every
-# pod start without requiring PVC manipulation.
-#
-# `openclaw channels add` is idempotent: calling it again with the same or a
-# new token simply reconfigures the channel. The `|| true` ensures the script
-# does not abort if the command exits non-zero (e.g. token not yet valid).
-
+# ── Telegram channel
 if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then
   echo "==> Configuring Telegram channel (token present)"
   openclaw channels add \
     --channel telegram \
     --token "$TELEGRAM_BOT_TOKEN" || true
 else
-  echo "==> Telegram channel not configured (TELEGRAM_BOT_TOKEN not set)"
+  echo "==> Telegram channel not configured"
 fi
+
+echo "==> Bootstrap script finished"
