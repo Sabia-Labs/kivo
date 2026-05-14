@@ -1,0 +1,68 @@
+# ── Alibaba Cloud Staging Environment Overrides ─────────────────────────────────
+# Used for testing on ACK (Alibaba Cloud Container Service for Kubernetes)
+
+namespace: kivo-staging
+adminNamespace: kivo-staging
+
+kivoApi:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-api
+    tag: "latest"
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  env:
+    NODE_ENV: production
+    PORT: "4000"
+    # CORS_ORIGIN: "https://app.kivo-alibaba.nip.io" # To be updated with SLB IP
+  existingSecret: kivo-api-staging-secret
+  databaseSecret: kivo-db-credentials
+
+kivoWeb:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-web
+    tag: "latest"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+adminApi:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-api
+    tag: "latest"
+  existingSecret: kivo-api-staging-secret
+  databaseSecret: kivo-admin-db-credentials
+
+adminWeb:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-web
+    tag: "latest"
+
+controller:
+  replicaCount: 1
+  image:
+    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
+    tag: "latest"
+  agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
+  consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
+
+ingress:
+  enabled: true
+  className: nginx
+  # host: kivo-alibaba.nip.io # To be updated
+  annotations:
+    # Alibaba Cloud specific ingress annotations if needed
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-spec: "slb.s1.small"
+
+postgresql:
+  embedded: false # Managed via separate Helm release in infra repo
+
+networkPolicy:
+  enabled: true
