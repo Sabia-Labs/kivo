@@ -15,8 +15,11 @@ k() {
   kubectl --context "$CTX" "$@"
 }
 
-# Ensure namespace exists
+# Ensure namespace exists and has Helm ownership metadata
 k create namespace "$NS" --dry-run=client -o yaml | k apply -f -
+k label namespace "$NS" app.kubernetes.io/managed-by=Helm --overwrite
+k annotate namespace "$NS" meta.helm.sh/release-name=kivo --overwrite
+k annotate namespace "$NS" meta.helm.sh/release-namespace="$NS" --overwrite
 
 # 1. Database Credentials (if not exist)
 if ! k get secret kivo-db-credentials -n "$NS" >/dev/null 2>&1; then
