@@ -55,7 +55,7 @@ internalRouter.post(
             id: workspaceId,
             userId,
             name: workspaceName || "Default Workspace",
-            k8sNamespace: `kivo-ws-${workspaceId.substring(0, 8)}`,
+            k8sNamespace: process.env.KIVO_SHARED_NAMESPACE || `kivo-ws-${workspaceId.substring(0, 8)}`,
           })
           .onConflictDoNothing();
       });
