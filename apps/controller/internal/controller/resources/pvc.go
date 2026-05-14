@@ -25,7 +25,7 @@ func StatePVC(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.P
 		size = cr.Spec.Persistence.Size
 	}
 
-	storageClass := "pd-balanced"
+	storageClass := "standard-rwo"
 	if cr.Spec.Persistence != nil && cr.Spec.Persistence.StorageClassName != "" {
 		storageClass = cr.Spec.Persistence.StorageClassName
 	}
