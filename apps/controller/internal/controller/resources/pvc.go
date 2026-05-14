@@ -20,13 +20,13 @@ import (
 // WARNING: PVC deletion is permanent. Agent state (including evolved profile files)
 // will be lost. This is intentional — agent deletion = full decommission.
 func StatePVC(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.PersistentVolumeClaim {
-	size := "10Gi"
+	size := "1Gi"
 	if cr.Spec.Persistence != nil && cr.Spec.Persistence.Size != "" {
 		size = cr.Spec.Persistence.Size
 	}
 
-	storageClass := ""
-	if cr.Spec.Persistence != nil {
+	storageClass := "pd-balanced"
+	if cr.Spec.Persistence != nil && cr.Spec.Persistence.StorageClassName != "" {
 		storageClass = cr.Spec.Persistence.StorageClassName
 	}
 
@@ -41,16 +41,13 @@ func StatePVC(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference) *corev1.P
 			AccessModes: []corev1.PersistentVolumeAccessMode{
 				corev1.ReadWriteOnce,
 			},
+			StorageClassName: &storageClass,
 			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceStorage: resource.MustParse(size),
 				},
 			},
 		},
-	}
-
-	if storageClass != "" {
-		pvc.Spec.StorageClassName = &storageClass
 	}
 
 	return pvc

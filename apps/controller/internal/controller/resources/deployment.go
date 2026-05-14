@@ -37,13 +37,13 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 
 	// Resource defaults — overridden by CR spec if present
 	requests := corev1.ResourceList{
-		corev1.ResourceCPU:              resource.MustParse("250m"),
-		corev1.ResourceMemory:           resource.MustParse("512Mi"),
+		corev1.ResourceCPU:              resource.MustParse("100m"),
+		corev1.ResourceMemory:           resource.MustParse("256Mi"),
 		corev1.ResourceEphemeralStorage: resource.MustParse("100Mi"),
 	}
 	limits := corev1.ResourceList{
 		corev1.ResourceCPU:              resource.MustParse("1000m"),
-		corev1.ResourceMemory:           resource.MustParse("2Gi"),
+		corev1.ResourceMemory:           resource.MustParse("1Gi"),
 		corev1.ResourceEphemeralStorage: resource.MustParse("1Gi"),
 	}
 	if cr.Spec.Resources != nil {

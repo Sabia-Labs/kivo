@@ -23,6 +23,7 @@ kivoApi:
     PORT: "4000"
     CORS_ORIGIN: "https://app.kivo-staging.34-141-70-109.nip.io"
     ADMIN_API_INTERNAL_URL: "http://kivo-admin-api:4001"
+    KIVO_SHARED_NAMESPACE: "kivo-staging"
   existingSecret: kivo-api-staging-secret
   databaseSecret: kivo-db-credentials
   runMigrations: false
