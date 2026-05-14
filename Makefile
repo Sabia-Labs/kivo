@@ -35,6 +35,11 @@ reset: ## 🔄 Factory Reset (Scale down + Wipe DB + Seed + Cleanup Agents)
 	@chmod +x scripts/*.sh
 	@scripts/env-manager.sh reset $(ENV) $(CTX) $(NAMESPACE)
 
+# ── UTILS ─────────────────────────────────────────────────────────────────────
+
+argo: ## 🌐 Open ArgoCD UI
+	@open https://argo.sabia.cc/applications/kivo-staging
+
 status: ## 📊 Show cluster health
 	@echo "🏥 Cluster: $(CTX) | Namespace: $(NAMESPACE)"
 	@kubectl --context $(CTX) get pods -n $(NAMESPACE)
@@ -55,4 +60,6 @@ ctx-alibaba:
 # ── HELP ──────────────────────────────────────────────────────────────────────
 help: ## Show this help
 	@echo "\n  \033[1mKivo Environment Manager\033[0m"
+	@echo "  \033[1mUsage:\033[0m make ENV=<env> <target>"
+	@echo "  \033[1mEnvironments:\033[0m local (default), staging (GCP), hetzner, alibaba\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'

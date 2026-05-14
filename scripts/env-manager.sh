@@ -59,7 +59,11 @@ case $ACTION in
     
     # 3. Wipe Workspace Namespaces
     echo "→ Deleting ephemeral workspaces (kivo-ws-*)..."
-    k get ns -o name | grep "kivo-ws-" | xargs -r k delete --ignore-not-found
+    # shellcheck disable=SC2015
+    k get ns -o name | grep "kivo-ws-" > /tmp/ns_to_delete.txt || true
+    if [ -s /tmp/ns_to_delete.txt ]; then
+      xargs -r kubectl --context "$CTX" delete --ignore-not-found < /tmp/ns_to_delete.txt
+    fi
     
     # 4. IMPLODE Primary Namespace
     echo "🔥 Imploding primary namespace: $NS"
@@ -82,7 +86,10 @@ case $ACTION in
     # 3. Cleanup remaining agent state
     echo "→ Cleaning up Agent CRs and workspaces..."
     k delete agents --all -n "$NS" --ignore-not-found
-    k get ns -o name | grep "kivo-ws-" | xargs -r k delete --ignore-not-found
+    k get ns -o name | grep "kivo-ws-" > /tmp/ns_to_delete_reset.txt || true
+    if [ -s /tmp/ns_to_delete_reset.txt ]; then
+      xargs -r kubectl --context "$CTX" delete --ignore-not-found < /tmp/ns_to_delete_reset.txt
+    fi
     
     # 4. Scale up
     echo "→ Scaling up application pods..."
