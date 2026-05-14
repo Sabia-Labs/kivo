@@ -197,7 +197,7 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 							VolumeMounts:    initMounts,
 							Resources: corev1.ResourceRequirements{
 								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:              resource.MustParse("500m"),
+									corev1.ResourceCPU:              resource.MustParse("250m"),
 									corev1.ResourceMemory:           resource.MustParse("384Mi"),
 									corev1.ResourceEphemeralStorage: resource.MustParse("500Mi"),
 								},
