@@ -54,7 +54,9 @@ clean-staging: gcloud-auth ## ⚠ TOTAL WIPE of Staging resources (Apps & Worksp
 	fi
 	@echo "→ Deleting all Kivo Agent resources..."
 	kubectl delete agents --all -n $(STAGING_NAMESPACE) --ignore-not-found
-	@echo "→ Deleting all resources in $(STAGING_NAMESPACE)..."
+	@echo "→ Deleting NetworkPolicies, Ingresses and RBAC..."
+	kubectl delete netpol,ingress,serviceaccount,role,rolebinding --all -n $(STAGING_NAMESPACE) --ignore-not-found
+	@echo "→ Deleting all standard resources (Deployments, Pods, PVCs, Secrets, CMs)..."
 	kubectl delete all,pvc,secrets,configmaps --all -n $(STAGING_NAMESPACE) --ignore-not-found
 	@echo "→ Deleting ephemeral workspace namespaces..."
 	kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found
@@ -94,12 +96,18 @@ hetzner-deploy: ## 🚀 Build, Push and Deploy everything to Hetzner
 	@# Kivo Web
 	docker build -t ghcr.io/sabia-labs/kivo-web:latest \
 		--build-arg NEXT_PUBLIC_API_URL=/api \
-		--build-arg API_INTERNAL_URL=http://kivo-api:4000 apps/kivo-web
+		--build-arg API_INTERNAL_URL=http://kivo-api:4000 \
+		--build-arg NEXT_PUBLIC_SITE_URL=http://www.178.104.138.63.sslip.io \
+		--build-arg NEXT_PUBLIC_APP_URL=http://app.178.104.138.63.sslip.io \
+		apps/kivo-web
 	docker push ghcr.io/sabia-labs/kivo-web:latest
 	@# Admin Web
 	docker build -t ghcr.io/sabia-labs/admin-web:latest \
 		--build-arg NEXT_PUBLIC_API_URL=/admin-api \
-		--build-arg API_INTERNAL_URL=http://kivo-admin-api.kivo-admin:4001 apps/admin-web
+		--build-arg API_INTERNAL_URL=http://kivo-admin-api.kivo-admin:4001 \
+		--build-arg NEXT_PUBLIC_SITE_URL=http://www.178.104.138.63.sslip.io \
+		--build-arg NEXT_PUBLIC_APP_URL=http://app.178.104.138.63.sslip.io \
+		apps/admin-web
 	docker push ghcr.io/sabia-labs/admin-web:latest
 	@echo "☸️ Updating Hetzner deployment..."
 	KUBECONFIG=../sabia-infra/infra/products/kivo/hetzner-vps/kubeconfig.yaml \
