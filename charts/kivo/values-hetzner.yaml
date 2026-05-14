@@ -1,0 +1,64 @@
+# ── Hetzner VPS Overrides (k3s) ──────────────────────────────────────────────
+# Used by: make hetzner-deploy
+
+namespace: kivo-staging
+tiltDeploy: false
+
+imagePullSecrets:
+  - name: ghcr-pull-secret
+
+kivoApi:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/sabia-labs/kivo-api
+    tag: latest
+    pullPolicy: Always
+  existingSecret: "kivo-db-credentials"
+  runMigrations: true
+  env:
+    CORS_ORIGIN: "http://app.178.104.138.63.sslip.io,http://www.178.104.138.63.sslip.io"
+    APP_URL: "http://app.178.104.138.63.sslip.io"
+
+adminApi:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/sabia-labs/admin-api
+    tag: latest
+    pullPolicy: Always
+  runMigrations: true
+  env: {}
+
+kivoWeb:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/sabia-labs/kivo-web
+    tag: latest
+    pullPolicy: Always
+  env:
+    API_INTERNAL_URL: "http://kivo-api:4000"
+    NEXT_PUBLIC_API_URL: "/api"
+    NEXT_PUBLIC_APP_URL: "http://app.178.104.138.63.sslip.io"
+
+adminWeb:
+  replicaCount: 1
+  image:
+    repository: ghcr.io/sabia-labs/admin-web
+    tag: latest
+    pullPolicy: Always
+  env:
+    API_INTERNAL_URL: "http://kivo-admin-api.kivo-admin:4001"
+    NEXT_PUBLIC_API_URL: "/admin-api"
+    NEXT_PUBLIC_APP_URL: "http://www.178.104.138.63.sslip.io"
+
+ingress:
+  enabled: true
+  className: traefik  # k3s uses traefik by default
+  host: 178.104.138.63.sslip.io # Using sslip.io for easy SSL-less testing
+  tls:
+    enabled: false
+
+postgresql:
+  embedded: false # Using the one managed by Terraform in the cluster
+
+rabbitmq:
+  enabled: false

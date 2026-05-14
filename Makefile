@@ -3,6 +3,7 @@
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 LOCAL_CTX = docker-desktop
 STAGING_CTX = gke_sabia-infra_europe-west3_kivo-staging
+HETZNER_CTX = hetzner-vps
 STAGING_NAMESPACE = kivo-staging
 
 # ── HELP ──────────────────────────────────────────────────────────────────────
@@ -16,6 +17,9 @@ ctx-local: ## Switch to local context
 
 ctx-staging: ## Switch to staging context
 	kubectl config use-context $(STAGING_CTX)
+
+ctx-hetzner: ## Switch to Hetzner context
+	kubectl config use-context $(HETZNER_CTX)
 
 gcloud-auth: ## Ensure gcloud is authenticated
 	@echo "Checking gcloud authentication..."
@@ -48,7 +52,11 @@ clean-staging: gcloud-auth ## ⚠ TOTAL WIPE of Staging resources (Apps & Worksp
 	if [ "$$current_ctx" != "$(STAGING_CTX)" ]; then \
 		echo "\033[31mFATAL: You are NOT in the staging context! Current: $$current_ctx\033[0m"; exit 1; \
 	fi
-	@echo "→ Deleting all resources in $(STAGING_NAMESPACE)..."
+	@echo "→ Deleting all Kivo Agent resources..."
+	kubectl delete agents --all -n $(STAGING_NAMESPACE) --ignore-not-found
+	@echo "→ Deleting NetworkPolicies, Ingresses and RBAC..."
+	kubectl delete netpol,ingress,serviceaccount,role,rolebinding --all -n $(STAGING_NAMESPACE) --ignore-not-found
+	@echo "→ Deleting all standard resources (Deployments, Pods, PVCs, Secrets, CMs)..."
 	kubectl delete all,pvc,secrets,configmaps --all -n $(STAGING_NAMESPACE) --ignore-not-found
 	@echo "→ Deleting ephemeral workspace namespaces..."
 	kubectl get namespace -o name | grep 'namespace/kivo-ws-' | xargs -r kubectl delete --ignore-not-found
@@ -75,6 +83,46 @@ staging-reset: gcloud-auth ## ☢ TOTAL RESET of Staging (Wipes DBs & Reseeds)
 
 staging-status: gcloud-auth ## Check status of staging pods
 	kubectl get pods -n $(STAGING_NAMESPACE)
+
+# ── HETZNER OPERATIONS (VPS/k3s) ──────────────────────────────────────────────
+hetzner-deploy: ## 🚀 Build, Push and Deploy everything to Hetzner
+	@echo "🏗️ Building and Pushing images to GHCR..."
+	@# API
+	docker build -t ghcr.io/sabia-labs/kivo-api:latest apps/kivo-api
+	docker push ghcr.io/sabia-labs/kivo-api:latest
+	@# Admin API
+	docker build -t ghcr.io/sabia-labs/admin-api:latest apps/admin-api
+	docker push ghcr.io/sabia-labs/admin-api:latest
+	@# Kivo Web
+	docker build -t ghcr.io/sabia-labs/kivo-web:latest \
+		--build-arg NEXT_PUBLIC_API_URL=/api \
+		--build-arg API_INTERNAL_URL=http://kivo-api:4000 \
+		--build-arg NEXT_PUBLIC_SITE_URL=http://www.178.104.138.63.sslip.io \
+		--build-arg NEXT_PUBLIC_APP_URL=http://app.178.104.138.63.sslip.io \
+		apps/kivo-web
+	docker push ghcr.io/sabia-labs/kivo-web:latest
+	@# Admin Web
+	docker build -t ghcr.io/sabia-labs/admin-web:latest \
+		--build-arg NEXT_PUBLIC_API_URL=/admin-api \
+		--build-arg API_INTERNAL_URL=http://kivo-admin-api.kivo-admin:4001 \
+		--build-arg NEXT_PUBLIC_SITE_URL=http://www.178.104.138.63.sslip.io \
+		--build-arg NEXT_PUBLIC_APP_URL=http://app.178.104.138.63.sslip.io \
+		apps/admin-web
+	docker push ghcr.io/sabia-labs/admin-web:latest
+	@echo "☸️ Updating Hetzner deployment..."
+	KUBECONFIG=../sabia-infra/infra/products/kivo/hetzner-vps/kubeconfig.yaml \
+	helm upgrade --install kivo ./charts/kivo \
+		--namespace $(STAGING_NAMESPACE) \
+		--create-namespace \
+		-f charts/kivo/values-hetzner.yaml
+
+hetzner-reset: ## ☢ TOTAL RESET of Hetzner (Wipes DBs & Reseeds)
+	@current_ctx=$$(kubectl config current-context); \
+	if [ "$$current_ctx" != "$(HETZNER_CTX)" ]; then \
+		echo "\033[31mFATAL: You are NOT in the hetzner context! Current: $$current_ctx\033[0m"; exit 1; \
+	fi
+	@chmod +x reset_staging.sh
+	./reset_staging.sh
 
 argo-ui: gcloud-auth ## Open ArgoCD UI (Port-forward + Credentials)
 	@echo "🔐 Initial Admin Password:"
