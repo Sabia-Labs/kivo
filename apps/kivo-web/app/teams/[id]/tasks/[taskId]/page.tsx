@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Markdown } from "@/components/Markdown";
 
 export default function TaskPage() {
   const { token, isLoading: authLoading } = useAuth();
@@ -278,7 +279,7 @@ export default function TaskPage() {
             <div className="space-y-2">
               <Label>Prompt</Label>
               <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
-                {task.prompt || <span className="text-muted-foreground italic">No prompt provided.</span>}
+                <Markdown content={task.prompt || ""} />
               </div>
             </div>
             
@@ -305,7 +306,7 @@ export default function TaskPage() {
                   <div className="space-y-2">
                     <Label>Plan</Label>
                     <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
-                      {task.plan}
+                      <Markdown content={task.plan} />
                     </div>
                   </div>
                 )}
@@ -313,7 +314,7 @@ export default function TaskPage() {
                   <div className="space-y-2">
                     <Label>Task List</Label>
                     <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap font-mono">
-                      {task.taskList}
+                      <Markdown content={task.taskList} />
                     </div>
                   </div>
                 )}
@@ -330,7 +331,7 @@ export default function TaskPage() {
               <div className="space-y-2">
                 <Label>Work Summary</Label>
                 <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
-                  {task.workSummary}
+                  <Markdown content={task.workSummary} />
                 </div>
               </div>
             )}
@@ -354,7 +355,7 @@ export default function TaskPage() {
                     ? "bg-red-500/5 border-red-500/20"
                     : "bg-emerald-500/5 border-emerald-500/20"
                 )}>
-                  {task.result}
+                  <Markdown content={task.result} />
                 </div>
               </div>
             )}
@@ -416,7 +417,7 @@ export default function TaskPage() {
               </Button>
             </div>
             <div className="p-6 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed">
-              {task.instructions || <span className="text-muted-foreground italic">No instructions provided.</span>}
+              <Markdown content={task.instructions || ""} />
             </div>
             <div className="px-6 py-4 border-t bg-muted/20 flex justify-end">
               <Button variant="outline" onClick={() => setShowInstructionsModal(false)}>Close</Button>

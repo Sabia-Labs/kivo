@@ -8,6 +8,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Comment, Agent } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
+import { Markdown } from "@/components/Markdown";
 
 
 
@@ -80,9 +81,9 @@ export function CommentsList({
                   </button>
                 )}
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                {c.content}
-              </p>
+              <div className="text-sm text-muted-foreground leading-relaxed">
+                <Markdown content={c.content} />
+              </div>
             </div>
           </div>
         );

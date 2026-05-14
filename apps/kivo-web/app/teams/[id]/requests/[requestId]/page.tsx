@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "@/lib/i18n";
+import { Markdown } from "@/components/Markdown";
 
 function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, level?: number }) {
   const { token } = useAuth();
@@ -273,12 +274,16 @@ export default function RequestDetailsPage() {
           <section className="rounded-xl border bg-card p-6 space-y-6">
             <div className="space-y-2">
               <Label>{t?.teamsPage?.whatWasAsked}</Label>
-              <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">{request?.requestDetails || t?.teamsPage?.noDetails}</div>
+              <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+                <Markdown content={request?.requestDetails || t?.teamsPage?.noDetails} />
+              </div>
             </div>
             {request?.response && (
               <div className="space-y-2">
                 <Label>{t?.teamsPage?.response}</Label>
-                <div className="p-4 bg-emerald-500/5 border-emerald-500/20 rounded-lg border text-sm whitespace-pre-wrap">{typeof request.response === 'string' ? request.response : JSON.stringify(request.response, null, 2)}</div>
+                <div className="p-4 bg-emerald-500/5 border-emerald-500/20 rounded-lg border text-sm whitespace-pre-wrap">
+                  <Markdown content={typeof request.response === 'string' ? request.response : JSON.stringify(request.response, null, 2)} />
+                </div>
               </div>
             )}
             <div className="flex items-center justify-between gap-4 pt-4 border-t">
@@ -322,7 +327,9 @@ export default function RequestDetailsPage() {
                     <div className="flex size-7 items-center justify-center rounded-full bg-muted text-lg">{isHuman ? "👤" : (agent?.icon || "🤖")}</div>
                     <div className="flex-1 space-y-1">
                       <div className="flex justify-between items-center"><span className="font-medium">{isHuman ? t?.teamsPage?.you : agent?.name || "Agent"}</span><span className="text-[10px] text-muted-foreground">{new Date(c.createdAt).toLocaleTimeString()}</span></div>
-                      <div className="p-2 bg-muted/30 rounded-lg border">{c.content}</div>
+                      <div className="p-2 bg-muted/30 rounded-lg border">
+                        <Markdown content={c.content} />
+                      </div>
                     </div>
                   </div>
                 );
