@@ -187,7 +187,7 @@ authRouter.post("/signup/verify", async (req, res, next) => {
 
       const [updatedWorkspace] = await tx
         .update(workspaces)
-        .set({ k8sNamespace: `kivo-ws-${workspace.id.substring(0, 8)}` })
+        .set({ k8sNamespace: process.env.KIVO_SHARED_NAMESPACE || `kivo-ws-${workspace.id.substring(0, 8)}` })
         .where(eq(workspaces.id, workspace.id))
         .returning();
 
@@ -294,7 +294,7 @@ authRouter.get("/google/callback", async (req, res) => {
         }).returning();
         
         await tx.update(workspaces)
-          .set({ k8sNamespace: `kivo-ws-${newWorkspace.id.substring(0, 8)}` })
+          .set({ k8sNamespace: process.env.KIVO_SHARED_NAMESPACE || `kivo-ws-${newWorkspace.id.substring(0, 8)}` })
           .where(eq(workspaces.id, newWorkspace.id));
           
         return { user: newUser, workspace: newWorkspace };
