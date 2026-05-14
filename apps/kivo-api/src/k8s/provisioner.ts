@@ -153,7 +153,7 @@ export async function applyKivoAgentCR(
       },
       persistence: { 
         size: "1Gi",
-        storageClassName: "pd-balanced"
+        storageClassName: "standard-rwo"
       },
     },
   };
