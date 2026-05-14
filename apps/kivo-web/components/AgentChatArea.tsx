@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Markdown } from "@/components/Markdown";
 
 export function AgentChatArea({ 
   agentId, 
@@ -167,7 +168,11 @@ export function AgentChatArea({
                   m.role === "user" ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted text-foreground rounded-bl-sm",
                   m.status === "error" && "bg-destructive/10 text-destructive-foreground"
                 )}>
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <Markdown content={m.content} />
+                  ) : (
+                    m.content
+                  )}
                 </div>
               </div>
             ))}
