@@ -17,6 +17,9 @@ set -eu
 
 export HOME=/home/node
 export OPENCLAW_CONFIG_DIR=/home/node/.openclaw
+# Disable config watchers and anomalies during bootstrap to save IO/CPU
+export OPENCLAW_OBSERVE_CONFIG=false
+export OPENCLAW_TELEMETRY=false
 
 mkdir -p "$OPENCLAW_CONFIG_DIR"
 mkdir -p "$OPENCLAW_CONFIG_DIR/workspace"
