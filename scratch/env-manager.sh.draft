@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+ACTION=$1
+ENV=$2
+CTX=$3
+NS=$4
+
+echo "🔧 Kivo Env Manager | Action: $ACTION | Env: $ENV | Context: $CTX"
+
+case $ACTION in
+  "down")
+    echo "☢ Starting TOTAL WIPE of $ENV..."
+    kubectl --context "$CTX" delete agents --all -n "$NS" --ignore-not-found
+    helm --kube-context "$CTX" uninstall kivo -n "$NS" --ignore-not-found
+    
+    echo "🧹 Deleting ephemeral workspaces..."
+    kubectl --context "$CTX" get ns -o name | grep "kivo-ws-" | xargs -r kubectl --context "$CTX" delete --ignore-not-found
+    
+    echo "🔥 Deleting primary namespace: $NS"
+    kubectl --context "$CTX" delete ns "$NS" --ignore-not-found
+    
+    echo "✨ $ENV is now clean."
+    ;;
+
+  "reset")
+    echo "🔄 Starting Factory Reset of $ENV..."
+    # 1. Scale down
+    kubectl --context "$CTX" scale deployment -n "$NS" --all --replicas=0
+    
+    # 2. Wipe DB (Logic from reset_staging.sh but generalized)
+    # ... (Invoke generalized reset-db.sh)
+    
+    # 3. Cleanup Agents & Workspaces
+    kubectl --context "$CTX" delete agents --all -n "$NS" --ignore-not-found
+    kubectl --context "$CTX" get ns -o name | grep "kivo-ws-" | xargs -r kubectl --context "$CTX" delete --ignore-not-found
+    
+    # 4. Scale up
+    kubectl --context "$CTX" scale deployment -n "$NS" --all --replicas=1
+    echo "✨ Factory Reset complete."
+    ;;
+esac

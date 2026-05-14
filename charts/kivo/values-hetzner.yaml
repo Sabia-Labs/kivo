@@ -14,7 +14,8 @@ kivoApi:
     repository: ghcr.io/sabia-labs/kivo-api
     tag: latest
     pullPolicy: Always
-  existingSecret: "kivo-db-credentials"
+  existingSecret: "kivo-api-staging-secret"
+  databaseSecret: "kivo-db-credentials"
   runMigrations: true
   env:
     CORS_ORIGIN: "http://app.178.104.138.63.sslip.io,http://www.178.104.138.63.sslip.io"
@@ -26,7 +27,8 @@ adminApi:
     repository: ghcr.io/sabia-labs/admin-api
     tag: latest
     pullPolicy: Always
-  existingSecret: "kivo-db-credentials"
+  existingSecret: "kivo-api-staging-secret"
+  databaseSecret: "kivo-admin-db-credentials"
   runMigrations: true
   env:
     ADMIN_WEB_URL: "http://www.178.104.138.63.sslip.io"
@@ -50,7 +52,7 @@ adminWeb:
     tag: latest
     pullPolicy: Always
   env:
-    API_INTERNAL_URL: "http://kivo-admin-api.kivo-admin:4001"
+    API_INTERNAL_URL: "http://kivo-admin-api:4001"
     NEXT_PUBLIC_API_URL: "/admin-api"
     NEXT_PUBLIC_ADMIN_WEB_URL: "http://www.178.104.138.63.sslip.io"
     NEXT_PUBLIC_KIVO_WEB_URL: "http://app.178.104.138.63.sslip.io"
@@ -71,7 +73,12 @@ ingress:
     enabled: false
 
 postgresql:
-  embedded: false # Using the one managed by Terraform in the cluster
+  embedded: true
+  primary:
+    initdb:
+      scripts:
+        create-admin-db.sql: |
+          CREATE DATABASE kivo_admin;
 
 networkPolicy:
   enabled: false

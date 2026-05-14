@@ -1,0 +1,36 @@
+# ── ENVIRONMENT CONFIGURATION ──────────────────────────────────────────────────
+ENV ?= local
+NAMESPACE = kivo-staging
+CTX = docker-desktop
+
+ifeq ($(ENV),staging)
+	CTX = gke_sabia-infra_europe-west3_kivo-staging
+	NAMESPACE = kivo-staging
+else ifeq ($(ENV),hetzner)
+	CTX = hetzner-vps
+	NAMESPACE = kivo-staging
+else ifeq ($(ENV),alibaba)
+	CTX = alibaba-vps
+	NAMESPACE = kivo-staging
+endif
+
+# ── CORE TARGETS ──────────────────────────────────────────────────────────────
+
+up: ## 🚀 Deploy environment (Bootstrap + Helm)
+	@scripts/env-manager.sh bootstrap $(ENV) $(CTX) $(NAMESPACE)
+	@scripts/env-manager.sh deploy $(ENV) $(CTX) $(NAMESPACE)
+
+down: ## ☢ TOTAL WIPE (Delete Release + Namespace + Workspaces)
+	@scripts/env-manager.sh down $(ENV) $(CTX) $(NAMESPACE)
+
+reset: ## 🔄 Factory Reset (Scale down + Wipe DB + Seed + Cleanup Agents)
+	@scripts/env-manager.sh reset $(ENV) $(CTX) $(NAMESPACE)
+
+status: ## 📊 Show cluster health
+	@kubectl --context $(CTX) get pods -n $(NAMESPACE)
+	@kubectl --context $(CTX) get agents -n $(NAMESPACE)
+	@kubectl --context $(CTX) get ns | grep kivo-ws- || true
+
+# ── HELP ──────────────────────────────────────────────────────────────────────
+help:
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
