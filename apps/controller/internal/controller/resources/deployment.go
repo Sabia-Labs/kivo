@@ -199,12 +199,12 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 								Requests: corev1.ResourceList{
 									corev1.ResourceCPU:              resource.MustParse("100m"),
 									corev1.ResourceMemory:           resource.MustParse("384Mi"),
-									corev1.ResourceEphemeralStorage: resource.MustParse("50Mi"),
+									corev1.ResourceEphemeralStorage: resource.MustParse("500Mi"),
 								},
 								Limits: corev1.ResourceList{
 									corev1.ResourceCPU:              resource.MustParse("200m"),
 									corev1.ResourceMemory:           resource.MustParse("512Mi"),
-									corev1.ResourceEphemeralStorage: resource.MustParse("100Mi"),
+									corev1.ResourceEphemeralStorage: resource.MustParse("1Gi"),
 								},
 							},
 							SecurityContext: &corev1.SecurityContext{
@@ -280,12 +280,12 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 					Requests: corev1.ResourceList{
 						corev1.ResourceCPU:              resource.MustParse("50m"),
 						corev1.ResourceMemory:           resource.MustParse("128Mi"),
-						corev1.ResourceEphemeralStorage: resource.MustParse("50Mi"),
+						corev1.ResourceEphemeralStorage: resource.MustParse("250Mi"),
 					},
 					Limits: corev1.ResourceList{
 						corev1.ResourceCPU:              resource.MustParse("200m"),
 						corev1.ResourceMemory:           resource.MustParse("256Mi"),
-						corev1.ResourceEphemeralStorage: resource.MustParse("100Mi"),
+						corev1.ResourceEphemeralStorage: resource.MustParse("500Mi"),
 					},
 				},
 				ReadinessProbe: &corev1.Probe{
