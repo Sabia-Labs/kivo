@@ -180,6 +180,9 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 					// Set a friendly hostname so openclaw's mDNS uses the agent name
 					// instead of the full pod name (UUID + hash, >63 bytes → DNS label crash).
 					Hostname:                     dnsHostname(cr.Spec.AgentName),
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{Name: "ghcr-pull-secret"},
+					},
 					AutomountServiceAccountToken: ptr.To(false),
 					SecurityContext: &corev1.PodSecurityContext{
 						FSGroup: ptr.To(int64(1000)),

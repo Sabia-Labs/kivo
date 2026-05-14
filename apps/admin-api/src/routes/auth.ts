@@ -303,7 +303,7 @@ authRouter.get("/google/callback", async (req, res) => {
       workspaceId = result.workspace.id;
 
       // Sync with kivo-api (application plane)
-      const KIVO_API_INTERNAL_URL = process.env.KIVO_API_INTERNAL_URL ?? "http://kivo-api.kivo:4000";
+      const KIVO_API_INTERNAL_URL = process.env.KIVO_API_INTERNAL_URL ?? "http://kivo-api.kivo-staging:4000";
       try {
         await fetch(`${KIVO_API_INTERNAL_URL}/internal/provision-workspace`, {
           method: "POST",
@@ -332,7 +332,7 @@ authRouter.get("/google/callback", async (req, res) => {
     });
     
     // Redirect to frontend with token
-    const ADMIN_WEB_URL = process.env.ADMIN_WEB_URL || "http://localhost:3001";
+    const ADMIN_WEB_URL = process.env.ADMIN_WEB_URL || "http://www.178.104.138.63.sslip.io";
     res.redirect(`${ADMIN_WEB_URL}/auth/callback?token=${token}&userId=${user.id}&workspaceId=${workspaceId || ""}&isNew=${isNewUser}`);
   } catch (err) {
     console.error("[auth/google/callback] Google Auth Error:", {

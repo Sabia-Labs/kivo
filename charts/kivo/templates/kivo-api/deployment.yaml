@@ -72,13 +72,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
+                  key: OPENAI_API_KEY
                   optional: true
             - name: GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
+                  key: GEMINI_API_KEY
                   optional: true
             {{- end }}
             {{- if .Values.postgresql.embedded }}
@@ -142,13 +142,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
+                  key: OPENAI_API_KEY
                   optional: true
             - name: GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
+                  key: GEMINI_API_KEY
                   optional: true
             {{- end }}
           livenessProbe:

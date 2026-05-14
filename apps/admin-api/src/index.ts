@@ -36,8 +36,36 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 
 const HOST = process.env.HOST ?? "127.0.0.1";
 
-app.listen(PORT, HOST, () => {
-  console.log(`🚀 Kivo Admin API running on http://${HOST}:${PORT}`);
+const start = async () => {
+  // Check for migration flag
+  if (process.argv.includes("--migrate-only")) {
+    const { runMigrations } = await import("./db/migrate");
+    await runMigrations();
+    process.exit(0);
+  }
+
+  // Check for seed flag
+  if (process.argv.includes("--seed")) {
+    console.log("🌱 Manually triggering Seed...");
+    const { seed } = await import("./seed/seed");
+    await seed();
+    process.exit(0);
+  }
+
+  app.listen(PORT, HOST, async () => {
+    console.log(`🚀 Kivo Admin API running on http://${HOST}:${PORT}`);
+    
+    // Run migrations on startup anyway
+    const { runMigrations } = await import("./db/migrate");
+    await runMigrations().catch(err => {
+      console.error("Failed to run migrations:", err);
+    });
+  });
+};
+
+start().catch(err => {
+  console.error("Startup failed:", err);
+  process.exit(1);
 });
 
 export default app;

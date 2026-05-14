@@ -83,12 +83,30 @@ app.use(errorHandler);
 
 const HOST = process.env.HOST ?? "127.0.0.1";
 
-app.listen(PORT, HOST, async () => {
-  console.log(`🚀 Kivo API running on http://${HOST}:${PORT}`);
+const start = async () => {
+  // Check for migration flag
+  if (process.argv.includes("--migrate-only")) {
+    const { runMigrations } = await import("./db/migrate");
+    await runMigrations();
+    process.exit(0);
+  }
 
-  // ── Template Seed (Sync from Control Plane) ─────────────────────────────────
-  const { runTemplateSeed } = await import("./lib/templateSeed");
-  await runTemplateSeed();
+  app.listen(PORT, HOST, async () => {
+    console.log(`🚀 Kivo API running on http://${HOST}:${PORT}`);
+    
+    // Run migrations on startup anyway to be safe
+    const { runMigrations } = await import("./db/migrate");
+    await runMigrations().catch(err => console.error("Migration failed:", err));
+
+    // ── Template Seed (Sync from Control Plane) ─────────────────────────────────
+    const { runTemplateSeed } = await import("./lib/templateSeed");
+    await runTemplateSeed().catch(err => console.error("Template seed failed:", err));
+  });
+};
+
+start().catch(err => {
+  console.error("Startup failed:", err);
+  process.exit(1);
 });
 
 export default app;

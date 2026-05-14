@@ -2,6 +2,7 @@
 # Used by: make hetzner-deploy
 
 namespace: kivo-staging
+adminNamespace: kivo-staging
 tiltDeploy: false
 
 imagePullSecrets:
@@ -25,8 +26,11 @@ adminApi:
     repository: ghcr.io/sabia-labs/admin-api
     tag: latest
     pullPolicy: Always
+  existingSecret: "kivo-db-credentials"
   runMigrations: true
-  env: {}
+  env:
+    ADMIN_WEB_URL: "http://www.178.104.138.63.sslip.io"
+    GOOGLE_REDIRECT_URI: "http://www.178.104.138.63.sslip.io/admin-api/auth/google/callback"
 
 kivoWeb:
   replicaCount: 1
@@ -37,7 +41,7 @@ kivoWeb:
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
     NEXT_PUBLIC_API_URL: "/api"
-    NEXT_PUBLIC_APP_URL: "http://app.178.104.138.63.sslip.io"
+    NEXT_PUBLIC_SITE_URL: "http://www.178.104.138.63.sslip.io"
 
 adminWeb:
   replicaCount: 1
@@ -48,7 +52,16 @@ adminWeb:
   env:
     API_INTERNAL_URL: "http://kivo-admin-api.kivo-admin:4001"
     NEXT_PUBLIC_API_URL: "/admin-api"
-    NEXT_PUBLIC_APP_URL: "http://www.178.104.138.63.sslip.io"
+    NEXT_PUBLIC_ADMIN_WEB_URL: "http://www.178.104.138.63.sslip.io"
+    NEXT_PUBLIC_KIVO_WEB_URL: "http://app.178.104.138.63.sslip.io"
+
+controller:
+  image:
+    repository: ghcr.io/sabia-labs/kivo-agent-controller
+    tag: latest
+    pullPolicy: Always
+  agentImage: "ghcr.io/sabia-labs/kivo-agent:latest"
+  consumerImage: "ghcr.io/sabia-labs/kivo-consumer:latest"
 
 ingress:
   enabled: true
@@ -59,6 +72,9 @@ ingress:
 
 postgresql:
   embedded: false # Using the one managed by Terraform in the cluster
+
+networkPolicy:
+  enabled: false
 
 rabbitmq:
   enabled: false
