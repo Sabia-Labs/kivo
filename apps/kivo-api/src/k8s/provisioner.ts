@@ -6,9 +6,12 @@ import { kc, coreV1, appsV1, customObjects, KIVO_AI_GROUP, KIVO_AI_VERSION, KIVO
 /**
  * Derives the deterministic Kubernetes namespace for a workspace.
  * Pattern: kivo-ws-{workspaceId[:8]}
- * Guaranteed unique (UUID prefix), never changes after creation.
+ * If KIVO_SHARED_NAMESPACE is set, returns that instead (consolidation mode).
  */
 export function workspaceNamespace(workspaceId: string): string {
+  if (process.env.KIVO_SHARED_NAMESPACE) {
+    return process.env.KIVO_SHARED_NAMESPACE;
+  }
   return `kivo-ws-${workspaceId.slice(0, 8)}`;
 }
 

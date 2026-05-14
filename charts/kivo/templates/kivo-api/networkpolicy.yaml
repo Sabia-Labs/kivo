@@ -28,6 +28,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: kivo-agent-controller
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-agent
         - namespaceSelector:
             matchLabels:
               kivo.ai/component: workspace
@@ -73,6 +76,9 @@ spec:
 
     # Allow connection to Agent Sidecar (for direct message delivery)
     - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: kivo-agent
         - namespaceSelector:
             matchLabels:
               kivo.ai/component: workspace
