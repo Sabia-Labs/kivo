@@ -10,7 +10,7 @@ kivoApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-api
-    tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
+    tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
   existingSecret: "kivo-api-staging-secret"
   databaseSecret: "kivo-db-credentials"
@@ -24,7 +24,7 @@ adminApi:
     repository: ghcr.io/sabia-labs/kivo-admin-api
     tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
     repository: ghcr.io/sabia-labs/kivo-admin-api
-    tag: c41ed93f9637b35d0c42b13942d082334c6cbcbc
+    tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
   existingSecret: "kivo-api-staging-secret"
   databaseSecret: "kivo-admin-db-credentials"
@@ -36,7 +36,7 @@ kivoWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
+    tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
@@ -48,7 +48,7 @@ adminWeb:
     repository: ghcr.io/sabia-labs/kivo-admin-web
     tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
     repository: ghcr.io/sabia-labs/kivo-admin-web
-    tag: c41ed93f9637b35d0c42b13942d082334c6cbcbc
+    tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-admin-api:4001"
@@ -58,7 +58,7 @@ adminWeb:
 controller:
   image:
     repository: ghcr.io/sabia-labs/kivo-controller
-    tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
+    tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
   agentImage: "ghcr.io/sabia-labs/kivo-agent:latest"
   consumerImage: "ghcr.io/sabia-labs/kivo-consumer:latest"
