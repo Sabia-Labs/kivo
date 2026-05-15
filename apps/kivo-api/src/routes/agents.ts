@@ -220,22 +220,24 @@ agentsRouter.put("/:id", async (req: Request, res: Response, next: NextFunction)
       .where(eq(agents.id, String(req.params.id)))
       .returning();
 
-    // If Telegram token was updated, we need to restart the agent pod
-    // so it picks up the new credentials secret.
-    if (input.metadata?.telegramBotToken && input.metadata.telegramBotToken !== (existing.metadata as any)?.telegramBotToken) {
+    // If metadata was updated, we need to refresh the credentials secret
+    // and potentially restart the pod.
+    if (input.metadata) {
       try {
         const [team] = await db.select().from(teams).where(eq(teams.id, updated.teamId));
         const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
-        if (workspace?.k8sNamespace) {
-          // 1. Upsert credentials Secret with new token
-          await applyCredentialsSecret(workspace.k8sNamespace, updated);
-          // 2. Rolling restart so agent picks up TELEGRAM_BOT_TOKEN
-          await rolloutRestartDeployment(workspace.k8sNamespace, updated.id);
-          console.log(`[agents] Telegram token updated — rollout restart triggered for ${updated.id}`);
+        const namespace = workspace?.k8sNamespace || workspaceNamespace(workspace?.id || "");
+        
+        if (namespace) {
+          // 1. Upsert credentials Secret with new values from DB and Env fallbacks
+          await applyCredentialsSecret(namespace, updated);
+          
+          // 2. Rolling restart so agent picks up changes
+          await rolloutRestartDeployment(namespace, updated.id);
+          console.log(`[agents] Metadata updated — rollout restart triggered for ${updated.id} in ${namespace}`);
         }
       } catch (k8sErr) {
-        // Non-fatal: DB is already updated, log for ops visibility
-        console.error("[agents] K8s Secret/restart after telegram token change failed:", k8sErr);
+        console.error("[agents] K8s Secret/restart after metadata change failed:", k8sErr);
       }
     }
 
