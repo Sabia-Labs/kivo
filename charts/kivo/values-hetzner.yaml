@@ -21,8 +21,13 @@ kivoApi:
 adminApi:
   replicaCount: 1
   image:
-    repository: ghcr.io/sabia-labs/admin-api
+<<<<<<< Updated upstream
+    repository: ghcr.io/sabia-labs/kivo-admin-api
     tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
+=======
+    repository: ghcr.io/sabia-labs/kivo-admin-api
+    tag: c41ed93f9637b35d0c42b13942d082334c6cbcbc
+>>>>>>> Stashed changes
     pullPolicy: Always
   existingSecret: "kivo-api-staging-secret"
   databaseSecret: "kivo-admin-db-credentials"
@@ -43,8 +48,13 @@ kivoWeb:
 adminWeb:
   replicaCount: 1
   image:
-    repository: ghcr.io/sabia-labs/admin-web
+<<<<<<< Updated upstream
+    repository: ghcr.io/sabia-labs/kivo-admin-web
     tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
+=======
+    repository: ghcr.io/sabia-labs/kivo-admin-web
+    tag: c41ed93f9637b35d0c42b13942d082334c6cbcbc
+>>>>>>> Stashed changes
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-admin-api:4001"
