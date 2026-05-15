@@ -1,69 +1,82 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Bot, Check, Loader2, UserPlus, Cpu } from "lucide-react";
+import { ArrowLeft, Bot, Check, Loader2, UserPlus, Cpu, Search, Grid, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type AgentType = "software_engineer" | "software_architect" | "product_manager" | "team_lead";
-
-interface Role {
-  key: AgentType;
-  title: string;
-  description: string;
-  icon: string;
-  color: string;
+interface AgentRole {
+  id: string;
+  nameI18nKey: string;
+  descriptionI18nKey: string;
+  emoji: string;
+  emojiBgColor: string;
+  suggestedNameI18nKey: string;
 }
-
-const ROLES: Role[] = [
-  {
-    key: "software_engineer",
-    title: "Software Engineer",
-    description: "Codes features, fixes bugs, writes tests and reviews PRs.",
-    icon: "🛠️",
-    color: "#3b82f6",
-  },
-  {
-    key: "software_architect",
-    title: "Software Architect",
-    description: "Designs systems, guards technical standards, makes key tech decisions.",
-    icon: "🏛️",
-    color: "#8b5cf6",
-  },
-  {
-    key: "product_manager",
-    title: "Product Manager",
-    description: "Owns the roadmap, writes specs, coordinates delivery with the team.",
-    icon: "📋",
-    color: "#ec4899",
-  },
-  {
-    key: "team_lead",
-    title: "Team Lead",
-    description: "Coordinates the team and owns delivery.",
-    icon: "👑",
-    color: "#6366f1",
-  },
-];
 
 export default function NewAgentPage() {
   const { token, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const teamId = String(params.id);
+  const { t } = useTranslation();
+
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (!current || current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
 
   const [teamName, setTeamName] = useState("");
   const [name, setName] = useState("");
-  const [selectedRole, setSelectedRole] = useState<AgentType>("software_engineer");
+  const [selectedRole, setSelectedRole] = useState<AgentRole | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoadingTeam, setIsLoadingTeam] = useState(true);
+
+  const [allRoles, setAllRoles] = useState<AgentRole[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isFetchingRoles, setIsFetchingRoles] = useState(true);
+  const [showAllRoles, setShowAllRoles] = useState(false);
+
+  // ── Load roles ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!token) return;
+    const fetchRoles = async () => {
+      setIsFetchingRoles(true);
+      try {
+        const url = new URL(`${API_BASE}/meta/agent-roles`, window.location.origin);
+        if (searchQuery.trim()) url.searchParams.append("search", searchQuery.trim());
+        const res = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+        const data = await res.json();
+        if (!data.error) {
+          setAllRoles(data.data);
+          // Auto-select first role if none selected and not searching
+          if (!selectedRole && data.data.length > 0 && !searchQuery) {
+            setSelectedRole(data.data[0]);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch roles", err);
+      } finally {
+        setIsFetchingRoles(false);
+      }
+    };
+    const debounce = setTimeout(fetchRoles, 300);
+    return () => clearTimeout(debounce);
+  }, [token, searchQuery, selectedRole]);
 
   // ── Load team info ──────────────────────────────────────────────────────────
 
@@ -105,7 +118,7 @@ export default function NewAgentPage() {
         body: JSON.stringify({
           teamId,
           name: name.trim(),
-          type: selectedRole,
+          roleId: selectedRole?.id,
         }),
       });
 
@@ -178,44 +191,79 @@ export default function NewAgentPage() {
 
         {/* Role Selection */}
         <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="mb-4 flex items-center gap-2">
-            <div className="flex size-6 items-center justify-center rounded-full bg-primary/20 text-primary">
-              <Check className="size-3.5" />
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex size-6 items-center justify-center rounded-full bg-primary/20 text-primary">
+                <Check className="size-3.5" />
+              </div>
+              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Expertise & Role</h2>
             </div>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">Expertise & Role</h2>
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {ROLES.map((role) => {
-              const isSelected = selectedRole === role.key;
-              return (
-                <button
-                  key={role.key}
-                  type="button"
-                  onClick={() => setSelectedRole(role.key)}
-                  className={cn(
-                    "group flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all",
-                    isSelected
-                      ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
-                      : "border-border hover:border-primary/40 hover:bg-muted/5"
-                  )}
-                >
-                  <div
-                    className="flex size-10 items-center justify-center rounded-lg text-xl shadow-sm transition-transform group-hover:scale-105"
-                    style={{ background: role.color + "20" }}
-                  >
-                    {role.icon}
-                  </div>
-                  <div>
-                    <p className={cn("text-sm font-bold", isSelected ? "text-primary" : "text-foreground")}>
-                      {role.title}
-                    </p>
-                    <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
-                      {role.description}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+
+          <div className="mb-6 space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search roles (e.g. Engineer, Manager...)"
+                className="pl-9 h-11 rounded-xl"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {isFetchingRoles ? (
+                <div className="col-span-full py-12 flex justify-center">
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : allRoles.length === 0 ? (
+                <p className="col-span-full py-8 text-center text-sm text-muted-foreground">No roles found.</p>
+              ) : (
+                (showAllRoles ? allRoles : allRoles.slice(0, 4)).map((role) => {
+                  const isSelected = selectedRole?.id === role.id;
+                  return (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => setSelectedRole(role)}
+                      className={cn(
+                        "group flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-all",
+                        isSelected
+                          ? "border-primary bg-primary/5 ring-1 ring-primary shadow-sm"
+                          : "border-border hover:border-primary/40 hover:bg-muted/5"
+                      )}
+                    >
+                      <div
+                        className="flex size-10 items-center justify-center rounded-lg text-xl shadow-sm transition-transform group-hover:scale-105"
+                        style={{ backgroundColor: role.emojiBgColor }}
+                      >
+                        {role.emoji}
+                      </div>
+                      <div>
+                        <p className={cn("text-sm font-bold", isSelected ? "text-primary" : "text-foreground")}>
+                          {translate(role.nameI18nKey)}
+                        </p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground line-clamp-2">
+                          {translate(role.descriptionI18nKey)}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {!searchQuery && allRoles.length > 4 && (
+              <button
+                type="button"
+                onClick={() => setShowAllRoles(!showAllRoles)}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-dashed border-border bg-muted/20 hover:bg-muted/40 text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+              >
+                <Grid className="size-3.5" />
+                <span>{showAllRoles ? "Hide additional roles" : `Explore all roles (${allRoles.length})`}</span>
+                <ChevronDown className={cn("size-3.5 transition-transform duration-200", showAllRoles && "rotate-180")} />
+              </button>
+            )}
           </div>
         </section>
 

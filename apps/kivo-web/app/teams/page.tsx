@@ -10,12 +10,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useTranslation } from "@/lib/i18n";
 
-type AgentType = "team_lead" | "software_engineer" | "software_architect" | "product_manager";
-
 interface Agent {
   id: string; 
   name: string; 
-  type: AgentType;
+  roleId: string;
   icon?: string; 
   metadata?: { avatarColor?: string };
 }

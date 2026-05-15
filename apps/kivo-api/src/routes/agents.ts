@@ -58,7 +58,7 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
       .values({
         teamId: input.teamId,
         name: input.name,
-        roleId: input.type,
+        roleId: input.roleId,
         icon: input.icon,
         gatewayToken,
         metadata: input.metadata || {},
