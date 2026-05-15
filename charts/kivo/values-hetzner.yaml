@@ -53,7 +53,7 @@ adminWeb:
     NEXT_PUBLIC_KIVO_WEB_URL: "https://kivo.sabialabs.de"
 controller:
   image:
-    repository: ghcr.io/sabia-labs/kivo-agent-controller
+    repository: ghcr.io/sabia-labs/kivo-controller
     tag: 7beac294d7608459bfa32ba7b43508ae560526d4
     pullPolicy: Always
   agentImage: "ghcr.io/sabia-labs/kivo-agent:latest"
