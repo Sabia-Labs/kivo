@@ -126,12 +126,14 @@ conversationsRouter.post("/:id/messages", authMiddleware, async (req: Request, r
     const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
     const workspaceId = team?.workspaceId;
 
-    if (!workspaceId) {
+    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
+
+    if (!workspace) {
       res.status(201).json(success({ userMessage, agentMessage: null }));
       return;
     }
 
-    const namespace = workspaceNamespace(workspaceId);
+    const namespace = workspace.k8sNamespace || workspaceNamespace(workspaceId);
 
     // ── 3. Push to Agent Sidecar ──────────────────────────────────────────────
     const sessionKey = conversationId;

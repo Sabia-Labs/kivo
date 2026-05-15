@@ -67,10 +67,10 @@ if ! k get secret kivo-api-staging-secret -n "$NS" >/dev/null 2>&1; then
   k create secret generic kivo-api-staging-secret -n "$NS" \
     --from-literal=JWT_SECRET="$JWT_SECRET" \
     --from-literal=INTERNAL_SERVICE_TOKEN="$INTERNAL_TOKEN" \
-    --from-literal=PLATFORM_OPENAI_API_KEY="$OAI_KEY" \
+    --from-literal=OPENAI_API_KEY="$OAI_KEY" \
     --from-literal=GOOGLE_CLIENT_ID="$G_CLIENT_ID" \
     --from-literal=GOOGLE_CLIENT_SECRET="$G_CLIENT_SECRET" \
-    --from-literal=PLATFORM_GEMINI_API_KEY="$GEMINI_KEY" \
+    --from-literal=GEMINI_API_KEY="$GEMINI_KEY" \
     --from-literal=RESEND_API_KEY="$RESEND_KEY"
 fi
 

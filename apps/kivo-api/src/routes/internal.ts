@@ -278,11 +278,10 @@ internalRouter.post(
       // 5. Push to Agent Sidecar
       const [agent] = await db.select().from(agents).where(eq(agents.id, targetAgentId));
       if (agent) {
-         const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-         const workspaceId = team?.workspaceId;
-         
-         if (workspaceId) {
-            const namespace = workspaceNamespace(workspaceId);
+          const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
+          const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
+          if (workspace) {
+            const namespace = workspace.k8sNamespace || workspaceNamespace(workspace.id);
             
             try {
               const delivered = await deliverMessageToAgent(namespace, agent.id, {

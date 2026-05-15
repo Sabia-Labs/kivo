@@ -107,10 +107,10 @@ export async function applyCredentialsSecret(
   const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
   const name = `${agent.id}-creds`;
 
-  // Platform-level fallbacks — set in kivo-api env via PLATFORM_* vars from .env (Local)
+  // Platform-level fallbacks — set in kivo-api env via vars from .env (Local)
   // or via OPENAI_API_KEY / GEMINI_API_KEY (Staging/Prod via Helm)
-  const platformOpenAIKey = process.env.OPENAI_API_KEY || process.env.PLATFORM_OPENAI_API_KEY;
-  const platformGeminiKey = process.env.GEMINI_API_KEY || process.env.PLATFORM_GEMINI_API_KEY;
+  const platformOpenAIKey = process.env.OPENAI_API_KEY;
+  const platformGeminiKey = process.env.GEMINI_API_KEY;
   const internalToken = process.env.INTERNAL_SERVICE_TOKEN;
 
   // Determine the internal API URL for the sidecar to talk back.
@@ -197,8 +197,8 @@ export async function applyKivoAgentCR(
       teamId:               agent.teamId,
       credentialsSecretRef: `${agent.id}-creds`,
       model: {
-        provider: String(metadata.modelProvider ?? process.env.PLATFORM_MODEL_PROVIDER ?? "openai"),
-        name:     String(metadata.modelName     ?? process.env.PLATFORM_MODEL_NAME     ?? "gpt-5.4"),
+        provider: String(metadata.modelProvider ?? process.env.MODEL_PROVIDER ?? "openai"),
+        name:     String(metadata.modelName     ?? process.env.MODEL_NAME     ?? "gpt-5.4"),
       },
       resources: {
         requests: { cpu: "100m", memory: "256Mi" },
