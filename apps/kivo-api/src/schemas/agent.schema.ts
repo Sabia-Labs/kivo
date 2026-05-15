@@ -1,14 +1,5 @@
 import { z } from "zod";
 
-// ── Agent type enum ───────────────────────────────────────────────────────────
-
-export const agentTypeSchema = z.enum([
-  "team_lead",
-  "software_engineer",
-  "product_manager",
-  "software_architect",
-]);
-
 // ── Agent metadata ────────────────────────────────────────────────────────────
 
 export const agentMetadataSchema = z
@@ -33,7 +24,7 @@ export const agentMetadataSchema = z
 export const createAgentSchema = z.object({
   teamId: z.string().uuid("teamId must be a valid UUID"),
   name: z.string().min(1, "name is required"),
-  type: agentTypeSchema,
+  roleId: z.string().min(1, "roleId is required"),
   icon: z.string().optional(),
   metadata: agentMetadataSchema.optional(),
 });

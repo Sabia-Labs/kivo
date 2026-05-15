@@ -148,7 +148,7 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
       .values({
         teamId,
         name: input.name,
-        roleId: input.type, // input.type holds the role ID from client
+        roleId: input.roleId, // input.roleId holds the role ID from client
         icon: input.icon,
         gatewayToken,
         metadata: input.metadata || {},
