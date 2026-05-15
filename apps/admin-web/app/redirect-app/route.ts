@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const workspaceId = searchParams.get('workspaceId') || '';
   const lang = searchParams.get('lang') || '';
   const path = searchParams.get('path') || '/teams';
-  const kivoWebUrl = process.env.NEXT_PUBLIC_KIVO_WEB_URL || process.env.KIVO_WEB_URL || "";
+  const kivoWebUrl = process.env.KIVO_WEB_URL || process.env.NEXT_PUBLIC_KIVO_WEB_URL || "";
   
   if (!kivoWebUrl) {
     console.error("[redirect-app] Error: KIVO_WEB_URL is not defined in environment variables");
