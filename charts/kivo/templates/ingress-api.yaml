@@ -5,10 +5,24 @@ metadata:
   name: kivo-admin-api-ingress
   namespace: {{ .Values.namespace }}
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-strip-admin-api@kubernetescrd" .Values.namespace | quote }}
+    {{- if eq .Values.ingress.className "traefik" }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-redirect-to-https@kubernetescrd,%s-strip-admin-api@kubernetescrd" .Values.namespace .Values.namespace | quote }}
+    {{- else }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.ingress.className }}
   rules:
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /admin-api
+            pathType: Prefix
+            backend:
+              service:
+                name: kivo-admin-api
+                port:
+                  name: http
     - host: www.{{ .Values.ingress.host }}
       http:
         paths:

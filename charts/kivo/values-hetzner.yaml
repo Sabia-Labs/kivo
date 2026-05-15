@@ -18,8 +18,8 @@ kivoApi:
   databaseSecret: "kivo-db-credentials"
   runMigrations: true
   env:
-    CORS_ORIGIN: "http://app.178.104.138.63.sslip.io,http://www.178.104.138.63.sslip.io"
-    APP_URL: "http://app.178.104.138.63.sslip.io"
+    CORS_ORIGIN: "https://kivo.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de"
+    APP_URL: "https://kivo.sabialabs.de"
 
 adminApi:
   replicaCount: 1
@@ -31,8 +31,8 @@ adminApi:
   databaseSecret: "kivo-admin-db-credentials"
   runMigrations: true
   env:
-    ADMIN_WEB_URL: "http://www.178.104.138.63.sslip.io"
-    GOOGLE_REDIRECT_URI: "http://www.178.104.138.63.sslip.io/admin-api/auth/google/callback"
+    ADMIN_WEB_URL: "https://www.sabialabs.de"
+    GOOGLE_REDIRECT_URI: "https://www.sabialabs.de/admin-api/auth/google/callback"
 
 kivoWeb:
   replicaCount: 1
@@ -43,7 +43,7 @@ kivoWeb:
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
     NEXT_PUBLIC_API_URL: "/api"
-    NEXT_PUBLIC_SITE_URL: "http://www.178.104.138.63.sslip.io"
+    NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
 
 adminWeb:
   replicaCount: 1
@@ -54,8 +54,8 @@ adminWeb:
   env:
     API_INTERNAL_URL: "http://kivo-admin-api:4001"
     NEXT_PUBLIC_API_URL: "/admin-api"
-    NEXT_PUBLIC_ADMIN_WEB_URL: "http://www.178.104.138.63.sslip.io"
-    NEXT_PUBLIC_KIVO_WEB_URL: "http://app.178.104.138.63.sslip.io"
+    NEXT_PUBLIC_ADMIN_WEB_URL: "https://www.sabialabs.de"
+    NEXT_PUBLIC_KIVO_WEB_URL: "https://kivo.sabialabs.de"
 
 controller:
   image:
@@ -68,9 +68,13 @@ controller:
 ingress:
   enabled: true
   className: traefik  # k3s uses traefik by default
-  host: 178.104.138.63.sslip.io # Using sslip.io for easy SSL-less testing
+  host: sabialabs.de
   tls:
-    enabled: false
+    enabled: true
+    secretName: kivo-tls
+    certManager:
+      enabled: true
+      clusterIssuer: letsencrypt-prod
 
 postgresql:
   embedded: true

@@ -7,9 +7,14 @@ metadata:
   labels:
     {{- include "kivo.labels" . | nindent 4 }}
   annotations:
+    {{- if eq .Values.ingress.className "traefik" }}
+    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-redirect-to-https@kubernetescrd" .Values.namespace | quote }}
+    {{- else }}
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- end }}
     {{- if .Values.ingress.tls.certManager.enabled }}
     cert-manager.io/cluster-issuer: {{ .Values.ingress.tls.certManager.clusterIssuer | quote }}
     {{- end }}
@@ -21,12 +26,23 @@ spec:
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
+        - {{ .Values.ingress.host }}
         - www.{{ .Values.ingress.host }}
-        - app.{{ .Values.ingress.host }}
+        - kivo.{{ .Values.ingress.host }}
       secretName: {{ .Values.ingress.tls.secretName }}
   {{- end }}
   rules:
     # Admin/Marketing Portal
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kivo-admin-web
+                port:
+                  name: http
     - host: www.{{ .Values.ingress.host }}
       http:
         paths:
@@ -38,7 +54,7 @@ spec:
                 port:
                   name: http
     # App Portal (Clients)
-    - host: app.{{ .Values.ingress.host }}
+    - host: kivo.{{ .Values.ingress.host }}
       http:
         paths:
           - path: /

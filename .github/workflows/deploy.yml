@@ -1,4 +1,4 @@
-name: Build & Push (main → GCP Artifact Registry)
+name: Build & Push (main → GHCR)
 
 on:
   push:
@@ -9,11 +9,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  REGISTRY: europe-west3-docker.pkg.dev
-  PROJECT_ID: sabia-infra
-  REPO_NAME: sabia-artifacts
-  WIF_PROVIDER: projects/8433826157/locations/global/workloadIdentityPools/github-actions-pool/providers/github-provider
-  WIF_SA: github-actions-builder@sabia-infra.iam.gserviceaccount.com
+  REGISTRY: ghcr.io
+  IMAGE_NAME_PREFIX: ${{ github.repository_owner }}/kivo
 
 jobs:
   build-and-push:
@@ -21,8 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write   # required for GCP Workload Identity
-      packages: write   # keeping if needed elsewhere
+      packages: write
 
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
@@ -33,31 +29,25 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          workload_identity_provider: ${{ env.WIF_PROVIDER }}
-          service_account: ${{ env.WIF_SA }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGISTRY }} --quiet
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: |
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent
-            ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-api
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web
+            ${{ env.REGISTRY }}/sabia-labs/admin-api
+            ${{ env.REGISTRY }}/sabia-labs/admin-web
+            ${{ env.REGISTRY }}/sabia-labs/kivo-controller
+            ${{ env.REGISTRY }}/sabia-labs/kivo-agent
+            ${{ env.REGISTRY }}/sabia-labs/kivo-consumer
           tags: |
             type=sha,format=short
             type=ref,event=branch
@@ -68,7 +58,7 @@ jobs:
           context: apps/kivo-api
           file: apps/kivo-api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-api:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-api:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=kivo-api
           cache-to: type=gha,mode=max,scope=kivo-api
@@ -79,7 +69,7 @@ jobs:
           context: apps/kivo-web
           file: apps/kivo-web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-web:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-web:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=kivo-web
           cache-to: type=gha,mode=max,scope=kivo-web
@@ -90,7 +80,7 @@ jobs:
           context: apps/admin-api
           file: apps/admin-api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-api:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/admin-api:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/admin-api:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=admin-api
           cache-to: type=gha,mode=max,scope=admin-api
@@ -101,7 +91,7 @@ jobs:
           context: apps/admin-web
           file: apps/admin-web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/admin-web:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/admin-web:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/admin-web:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=admin-web
           cache-to: type=gha,mode=max,scope=admin-web
@@ -112,7 +102,7 @@ jobs:
           context: apps/controller
           file: apps/controller/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-controller:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-agent-controller:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-agent-controller:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=controller
           cache-to: type=gha,mode=max,scope=controller
@@ -123,7 +113,7 @@ jobs:
           context: apps/agents
           file: apps/agents/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-agent:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-agent:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-agent:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=agents
           cache-to: type=gha,mode=max,scope=agents
@@ -134,7 +124,7 @@ jobs:
           context: apps/consumer
           file: apps/consumer/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer:${{ github.sha }},${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/kivo-consumer:latest
+          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-consumer:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-consumer:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=consumer
           cache-to: type=gha,mode=max,scope=consumer
@@ -153,24 +143,24 @@ jobs:
           token: ${{ secrets.GIT_PUSH_TOKEN }}
           ref: main
           
-      - name: Update staging values with new image tag
+      - name: Update Hetzner values with new image tag
         run: |
-          # Use yq to update the image tag for all components
-          yq -i '.kivoApi.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
-          yq -i '.kivoWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
-          yq -i '.adminApi.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
-          yq -i '.adminWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
-          yq -i '.controller.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          # Use yq to update the image tag for all components in values-hetzner.yaml
+          yq -i '.kivoApi.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
+          yq -i '.kivoWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
+          yq -i '.adminApi.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
+          yq -i '.adminWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
+          yq -i '.controller.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
           
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add charts/kivo/values-staging.yaml
+          git add charts/kivo/values-hetzner.yaml
           
           # Only commit if there are changes
           if ! git diff-index --quiet HEAD; then
-            git commit -m "chore: deploy ${{ github.sha }} to staging [skip ci]"
+            git commit -m "chore: deploy ${{ github.sha }} to hetzner [skip ci]"
             git pull --rebase origin main
             git push origin HEAD:main
           else
