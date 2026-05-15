@@ -43,7 +43,7 @@ kivoWeb:
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
     NEXT_PUBLIC_API_URL: "/api"
-    NEXT_PUBLIC_SITE_URL: "https://www.sabialabs.de"
+    NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
 
 adminWeb:
   replicaCount: 1
