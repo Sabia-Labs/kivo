@@ -41,6 +41,17 @@ gcloud-auth: ## 🔐 Authenticate with Google Cloud
 	@gcloud auth login
 	@gcloud auth application-default login
 
+hetzner-install-cert-manager: ## 🛡️ Install cert-manager on Hetzner
+	@echo "🛡️ Installing cert-manager on $(CTX)..."
+	@KUBECONFIG=$(KUBECONFIG) helm --kube-context $(CTX) repo add jetstack https://charts.jetstack.io || true
+	@KUBECONFIG=$(KUBECONFIG) helm --kube-context $(CTX) repo update
+	@KUBECONFIG=$(KUBECONFIG) helm --kube-context $(CTX) upgrade --install cert-manager jetstack/cert-manager \
+		--namespace cert-manager \
+		--create-namespace \
+		--set installCRDs=true \
+		--wait
+	@echo "✅ cert-manager installed."
+
 argo: ## 🌐 Open ArgoCD UI (Port-forward + Credentials)
 	@echo "🔐 Initial Admin Password:"
 	@kubectl --context $(CTX) -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo ""
