@@ -22,8 +22,6 @@ adminApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-admin-api
-    tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
-    repository: ghcr.io/sabia-labs/kivo-admin-api
     tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
   existingSecret: "kivo-api-staging-secret"
@@ -45,8 +43,6 @@ kivoWeb:
 adminWeb:
   replicaCount: 1
   image:
-    repository: ghcr.io/sabia-labs/kivo-admin-web
-    tag: 7f99a35a1e7d0bf27481992e0995cb5b91a07c7c
     repository: ghcr.io/sabia-labs/kivo-admin-web
     tag: 4793ae5877e31e539bdf18971652753bf670ed3d
     pullPolicy: Always
