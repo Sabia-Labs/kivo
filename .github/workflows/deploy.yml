@@ -43,11 +43,11 @@ jobs:
           images: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-api
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web
-            ${{ env.REGISTRY }}/sabia-labs/admin-api
-            ${{ env.REGISTRY }}/sabia-labs/admin-web
-            ${{ env.REGISTRY }}/sabia-labs/kivo-controller
-            ${{ env.REGISTRY }}/sabia-labs/kivo-agent
-            ${{ env.REGISTRY }}/sabia-labs/kivo-consumer
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-api
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-web
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-controller
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-agent
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-consumer
           tags: |
             type=sha,format=short
             type=ref,event=branch
@@ -58,7 +58,9 @@ jobs:
           context: apps/kivo-api
           file: apps/kivo-api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-api:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-api:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-api:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-api:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=kivo-api
           cache-to: type=gha,mode=max,scope=kivo-api
@@ -69,7 +71,9 @@ jobs:
           context: apps/kivo-web
           file: apps/kivo-web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-web:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-web:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=kivo-web
           cache-to: type=gha,mode=max,scope=kivo-web
@@ -80,7 +84,9 @@ jobs:
           context: apps/admin-api
           file: apps/admin-api/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/admin-api:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/admin-api:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-api:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-api:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=admin-api
           cache-to: type=gha,mode=max,scope=admin-api
@@ -91,7 +97,9 @@ jobs:
           context: apps/admin-web
           file: apps/admin-web/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/admin-web:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/admin-web:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-web:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-web:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=admin-web
           cache-to: type=gha,mode=max,scope=admin-web
@@ -102,7 +110,9 @@ jobs:
           context: apps/controller
           file: apps/controller/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-agent-controller:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-agent-controller:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-controller:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-controller:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=controller
           cache-to: type=gha,mode=max,scope=controller
@@ -113,7 +123,9 @@ jobs:
           context: apps/agents
           file: apps/agents/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-agent:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-agent:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-agent:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-agent:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=agents
           cache-to: type=gha,mode=max,scope=agents
@@ -124,7 +136,9 @@ jobs:
           context: apps/consumer
           file: apps/consumer/Dockerfile
           push: true
-          tags: ${{ env.REGISTRY }}/sabia-labs/kivo-consumer:${{ github.sha }},${{ env.REGISTRY }}/sabia-labs/kivo-consumer:latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-consumer:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-consumer:latest
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=consumer
           cache-to: type=gha,mode=max,scope=consumer
