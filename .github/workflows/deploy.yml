@@ -33,7 +33,7 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
+          username: lourenco
           password: ${{ secrets.GIT_PUSH_TOKEN }}
 
       - name: Extract metadata (tags, labels)
