@@ -32,9 +32,9 @@ def _parse_dotenv(lines):
   return env
 _env = _parse_dotenv(dotenv)
 
-PLATFORM_OPENAI_KEY    = _env.get("PLATFORM_OPENAI_API_KEY",  "")
-PLATFORM_MODEL_PROVIDER = _env.get("PLATFORM_MODEL_PROVIDER", "openai")
-PLATFORM_MODEL_NAME     = _env.get("PLATFORM_MODEL_NAME",    "gpt-5.4")
+OPENAI_KEY    = _env.get("OPENAI_API_KEY",  "")
+MODEL_PROVIDER = _env.get("MODEL_PROVIDER", "openai")
+MODEL_NAME     = _env.get("MODEL_NAME",    "gpt-5.4")
 
 GOOGLE_CLIENT_ID        = _env.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET    = _env.get("GOOGLE_CLIENT_SECRET", "")
@@ -330,9 +330,9 @@ k8s_yaml(
       'controller.image.tag=local',
       'ingress.host=' + TILT_HOST,
       # Platform AI credentials — read from .env (gitignored)
-      'kivoApi.env.PLATFORM_OPENAI_API_KEY=' + PLATFORM_OPENAI_KEY,
-      'kivoApi.env.PLATFORM_MODEL_PROVIDER=' + PLATFORM_MODEL_PROVIDER,
-      'kivoApi.env.PLATFORM_MODEL_NAME=' + PLATFORM_MODEL_NAME,
+      'kivoApi.env.OPENAI_API_KEY=' + OPENAI_KEY,
+      'kivoApi.env.MODEL_PROVIDER=' + MODEL_PROVIDER,
+      'kivoApi.env.MODEL_NAME=' + MODEL_NAME,
       'kivoApi.env.ADMIN_API_INTERNAL_URL=http://kivo-admin-api.kivo-admin:4001',
       'kivoApi.env.INTERNAL_SERVICE_TOKEN=kivo-local-dev-token',
       'adminApi.env.KIVO_API_INTERNAL_URL=http://kivo-api.kivo:4000',

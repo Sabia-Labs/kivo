@@ -47,8 +47,8 @@ for f in "${ENV_FILES[@]}"; do
         # Extract values using grep/sed (avoiding 'source' to prevent shell side effects)
         export GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-$(grep "^GOOGLE_CLIENT_ID=" "$f" | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
         export GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-$(grep "^GOOGLE_CLIENT_SECRET=" "$f" | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
-        export PLATFORM_OPENAI_API_KEY=${PLATFORM_OPENAI_API_KEY:-$(grep -E "^(OPENAI_API_KEY|PLATFORM_OPENAI_API_KEY)=" "$f" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
-        export PLATFORM_GEMINI_API_KEY=${PLATFORM_GEMINI_API_KEY:-$(grep -E "^(GEMINI_API_KEY|PLATFORM_GEMINI_API_KEY)=" "$f" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+        export OPENAI_API_KEY=${OPENAI_API_KEY:-$(grep "^OPENAI_API_KEY=" "$f" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
+        export GEMINI_API_KEY=${GEMINI_API_KEY:-$(grep "^GEMINI_API_KEY=" "$f" | head -n1 | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
         export RESEND_API_KEY=${RESEND_API_KEY:-$(grep "^RESEND_API_KEY=" "$f" | cut -d'=' -f2- | tr -d '"' | tr -d "'")}
     fi
 done
@@ -60,9 +60,9 @@ G_ID=${G_ID:-$GOOGLE_CLIENT_ID}
 read -p "Google Client Secret [${GOOGLE_CLIENT_SECRET:0:5}...]: " G_SECRET
 G_SECRET=${G_SECRET:-$GOOGLE_CLIENT_SECRET}
 read -p "OpenAI API Key: " OAI_KEY
-OAI_KEY=${OAI_KEY:-$PLATFORM_OPENAI_API_KEY}
+OAI_KEY=${OAI_KEY:-$OPENAI_API_KEY}
 read -p "Gemini API Key: " GEM_KEY
-GEM_KEY=${GEM_KEY:-$PLATFORM_GEMINI_API_KEY}
+GEM_KEY=${GEM_KEY:-$GEMINI_API_KEY}
 read -p "Resend API Key: " RESEND_KEY
 RESEND_KEY=${RESEND_KEY:-$RESEND_API_KEY}
 
@@ -88,8 +88,8 @@ B64_JWT=$(get_val "JWT_SECRET" "$JWT_SECRET" "temporary-jwt-secret")
 B64_INT=$(get_val "INTERNAL_SERVICE_TOKEN" "$INTERNAL_TOKEN" "temporary-token")
 B64_GID=$(get_val "GOOGLE_CLIENT_ID" "$G_ID" "placeholder")
 B64_GSEC=$(get_val "GOOGLE_CLIENT_SECRET" "$G_SECRET" "placeholder")
-B64_OAI=$(get_val "PLATFORM_OPENAI_API_KEY" "$OAI_KEY" "placeholder")
-B64_GEM=$(get_val "PLATFORM_GEMINI_API_KEY" "$GEM_KEY" "placeholder")
+B64_OAI=$(get_val "OPENAI_API_KEY" "$OAI_KEY" "placeholder")
+B64_GEM=$(get_val "GEMINI_API_KEY" "$GEM_KEY" "placeholder")
 B64_RES=$(get_val "RESEND_API_KEY" "$RESEND_KEY" "placeholder")
 
 cat <<EOF | kubectl apply -f -
@@ -104,8 +104,8 @@ data:
   INTERNAL_SERVICE_TOKEN: $B64_INT
   GOOGLE_CLIENT_ID: $B64_GID
   GOOGLE_CLIENT_SECRET: $B64_GSEC
-  PLATFORM_OPENAI_API_KEY: $B64_OAI
-  PLATFORM_GEMINI_API_KEY: $B64_GEM
+  OPENAI_API_KEY: $B64_OAI
+  GEMINI_API_KEY: $B64_GEM
   RESEND_API_KEY: $B64_RES
 EOF
 

@@ -166,7 +166,10 @@ agentsRouter.get("/:id/files/:filename", async (req: Request, res: Response, nex
     const workspaceId = team?.workspaceId;
     if (!workspaceId) return res.status(404).json(failure("Workspace not found"));
 
-    const namespace = workspaceNamespace(workspaceId);
+    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
+    if (!workspace) return res.status(404).json(failure("Workspace not found"));
+
+    const namespace = workspace.k8sNamespace || workspaceNamespace(workspace.id);
     const podIP = await getAgentPodIP(namespace, agent.id);
     
     if (!podIP) {

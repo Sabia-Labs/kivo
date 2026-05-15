@@ -18,12 +18,12 @@ import * as path from "path";
 let llmInstance: ChatOpenAI | null = null;
 function getLlm() {
   if (!llmInstance) {
-    // Ensure the root .env is loaded, which contains PLATFORM_OPENAI_API_KEY
+    // Ensure the root .env is loaded, which contains OPENAI_API_KEY
     dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
     
-    const apiKey = process.env.OPENAI_API_KEY || process.env.PLATFORM_OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn("[request-ingestion] CRITICAL: Both OPENAI_API_KEY and PLATFORM_OPENAI_API_KEY are missing from environment.");
+      console.warn("[request-ingestion] CRITICAL: OPENAI_API_KEY is missing from environment.");
     }
 
     llmInstance = new ChatOpenAI({ 

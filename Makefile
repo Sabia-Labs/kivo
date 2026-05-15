@@ -35,6 +35,18 @@ reset: ## 🔄 Factory Reset (Scale down + Wipe DB + Seed + Cleanup Agents)
 	@chmod +x scripts/*.sh
 	@scripts/env-manager.sh reset $(ENV) $(CTX) $(NAMESPACE)
 
+secrets: ## 🔐 Initialize/Update secrets for current ENV
+	@chmod +x scripts/*.sh
+	@scripts/env-manager.sh bootstrap $(ENV) $(CTX) $(NAMESPACE)
+
+drizzle-kivo: ## 🗄️ Open Drizzle Studio for Kivo DB (ENV=local|staging|hetzner)
+	@chmod +x scripts/*.sh
+	@scripts/drizzle-manager.sh kivo $(ENV) $(CTX) $(NAMESPACE)
+
+drizzle-admin: ## 🗄️ Open Drizzle Studio for Admin DB (ENV=local|staging|hetzner)
+	@chmod +x scripts/*.sh
+	@scripts/drizzle-manager.sh admin $(ENV) $(CTX) $(NAMESPACE)
+
 # ── UTILS ─────────────────────────────────────────────────────────────────────
 
 gcloud-auth: ## 🔐 Authenticate with Google Cloud

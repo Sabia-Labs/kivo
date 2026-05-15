@@ -14,9 +14,9 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 let llmInstance: ChatOpenAI | null = null;
 function getLlm() {
   if (!llmInstance) {
-    const apiKey = process.env.OPENAI_API_KEY || process.env.PLATFORM_OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn("[field-insight] CRITICAL: Both OPENAI_API_KEY and PLATFORM_OPENAI_API_KEY are missing from environment.");
+      console.warn("[field-insight] CRITICAL: OPENAI_API_KEY is missing from environment.");
     }
 
     llmInstance = new ChatOpenAI({ 

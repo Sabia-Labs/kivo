@@ -16,9 +16,9 @@ let llmInstance: ChatOpenAI | null = null;
 function getLlm() {
   if (!llmInstance) {
     dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-    const apiKey = process.env.OPENAI_API_KEY || process.env.PLATFORM_OPENAI_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      console.warn("[request-continuation] CRITICAL: Both OPENAI_API_KEY and PLATFORM_OPENAI_API_KEY are missing from environment.");
+      console.warn("[request-continuation] CRITICAL: OPENAI_API_KEY is missing from environment.");
     }
     llmInstance = new ChatOpenAI({ 
       modelName: "gpt-4o", 
