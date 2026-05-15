@@ -10,7 +10,7 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_PREFIX: ${{ github.repository_owner }}/kivo
+  IMAGE_NAME_PREFIX: sabia-labs/kivo
 
 jobs:
   build-and-push:
