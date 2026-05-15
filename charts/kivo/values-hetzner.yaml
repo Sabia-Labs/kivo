@@ -29,6 +29,7 @@ adminApi:
   runMigrations: true
   env:
     ADMIN_WEB_URL: "https://www.sabialabs.de"
+    KIVO_WEB_URL: "https://kivo.sabialabs.de"
     GOOGLE_REDIRECT_URI: "https://www.sabialabs.de/admin-api/auth/google/callback"
 kivoWeb:
   replicaCount: 1
@@ -51,6 +52,8 @@ adminWeb:
     NEXT_PUBLIC_API_URL: "/admin-api"
     NEXT_PUBLIC_ADMIN_WEB_URL: "https://www.sabialabs.de"
     NEXT_PUBLIC_KIVO_WEB_URL: "https://kivo.sabialabs.de"
+    KIVO_WEB_URL: "https://kivo.sabialabs.de"
+    ADMIN_WEB_URL: "https://www.sabialabs.de"
 controller:
   image:
     repository: ghcr.io/sabia-labs/kivo-controller
