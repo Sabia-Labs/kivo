@@ -4,15 +4,13 @@
 namespace: kivo-staging
 adminNamespace: kivo-staging
 tiltDeploy: false
-
 imagePullSecrets:
   - name: ghcr-pull-secret
-
 kivoApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-api
-    tag: latest
+    tag: 7beac294d7608459bfa32ba7b43508ae560526d4
     pullPolicy: Always
   existingSecret: "kivo-api-staging-secret"
   databaseSecret: "kivo-db-credentials"
@@ -20,12 +18,11 @@ kivoApi:
   env:
     CORS_ORIGIN: "https://kivo.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de"
     APP_URL: "https://kivo.sabialabs.de"
-
 adminApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/admin-api
-    tag: latest
+    tag: 7beac294d7608459bfa32ba7b43508ae560526d4
     pullPolicy: Always
   existingSecret: "kivo-api-staging-secret"
   databaseSecret: "kivo-admin-db-credentials"
@@ -33,41 +30,37 @@ adminApi:
   env:
     ADMIN_WEB_URL: "https://www.sabialabs.de"
     GOOGLE_REDIRECT_URI: "https://www.sabialabs.de/admin-api/auth/google/callback"
-
 kivoWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: latest
+    tag: 7beac294d7608459bfa32ba7b43508ae560526d4
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
     NEXT_PUBLIC_API_URL: "/api"
     NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
-
 adminWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/admin-web
-    tag: latest
+    tag: 7beac294d7608459bfa32ba7b43508ae560526d4
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-admin-api:4001"
     NEXT_PUBLIC_API_URL: "/admin-api"
     NEXT_PUBLIC_ADMIN_WEB_URL: "https://www.sabialabs.de"
     NEXT_PUBLIC_KIVO_WEB_URL: "https://kivo.sabialabs.de"
-
 controller:
   image:
     repository: ghcr.io/sabia-labs/kivo-agent-controller
-    tag: latest
+    tag: 7beac294d7608459bfa32ba7b43508ae560526d4
     pullPolicy: Always
   agentImage: "ghcr.io/sabia-labs/kivo-agent:latest"
   consumerImage: "ghcr.io/sabia-labs/kivo-consumer:latest"
-
 ingress:
   enabled: true
-  className: traefik  # k3s uses traefik by default
+  className: traefik # k3s uses traefik by default
   host: sabialabs.de
   tls:
     enabled: true
@@ -75,12 +68,9 @@ ingress:
     certManager:
       enabled: true
       clusterIssuer: letsencrypt-prod
-
 postgresql:
   embedded: true
-
 networkPolicy:
   enabled: false
-
 rabbitmq:
   enabled: false
