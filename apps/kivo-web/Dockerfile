@@ -23,12 +23,16 @@ COPY . .
 #   In bare-metal dev: http://localhost:4000 (direct)
 ARG API_INTERNAL_URL=http://kivo-api:4000
 ARG NEXT_PUBLIC_API_URL=/api
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:3001
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Disable telemetry during build
 ENV NEXT_TELEMETRY_DISABLED=1
 # Expose build args as env vars for next.config.mjs and client bundle
 ENV API_INTERNAL_URL=${API_INTERNAL_URL}
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
 RUN npm run build
 

@@ -1,0 +1,22 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kivo-admin-api-ingress
+  namespace: {{ .Values.namespace }}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: {{ printf "%s-strip-admin-api@kubernetescrd" .Values.namespace | quote }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    - host: www.{{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /admin-api
+            pathType: Prefix
+            backend:
+              service:
+                name: kivo-admin-api
+                port:
+                  name: http
+{{- end }}

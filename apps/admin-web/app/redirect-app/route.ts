@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const workspaceId = searchParams.get('workspaceId') || '';
   const lang = searchParams.get('lang') || '';
   const path = searchParams.get('path') || '/teams';
-  const kivoWebUrl = process.env.NEXT_PUBLIC_KIVO_WEB_URL || process.env.KIVO_WEB_URL || "http://localhost:3000";
+  const kivoWebUrl = process.env.NEXT_PUBLIC_KIVO_WEB_URL || process.env.KIVO_WEB_URL || "http://app.178.104.138.63.sslip.io";
   
   let url = `${kivoWebUrl}${path}`;
   const queryParams = new URLSearchParams();

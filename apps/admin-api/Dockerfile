@@ -10,7 +10,7 @@ RUN npm install
 # Copy source and compile
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm run build
+RUN npm run build && cp -r src/seed/definitions dist/seed/
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runtime
@@ -23,6 +23,8 @@ RUN npm install --omit=dev
 
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist
+COPY migrations ./migrations
+COPY seed ./seed
 
 # Install curl — required for k8s liveness/readiness probes
 RUN apk add --no-cache curl

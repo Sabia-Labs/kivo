@@ -37,7 +37,10 @@ spec:
             - name: {{ $key }}
               value: {{ $value | quote }}
             {{- end }}
-            {{- if .Values.kivoApi.databaseSecret }}
+            {{- if .Values.postgresql.embedded }}
+            - name: DATABASE_URL
+              value: {{ include "kivo.postgresql.connectionString" . | quote }}
+            {{- else if .Values.kivoApi.databaseSecret }}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -72,18 +75,14 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
+                  key: OPENAI_API_KEY
                   optional: true
             - name: GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
+                  key: GEMINI_API_KEY
                   optional: true
-            {{- end }}
-            {{- if .Values.postgresql.embedded }}
-            - name: DATABASE_URL
-              value: {{ include "kivo.postgresql.connectionString" . | quote }}
             {{- end }}
       {{- end }}
 
@@ -103,7 +102,6 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- if .Values.postgresql.embedded }}
-            {{- /* Local/Staging Recovery: DATABASE_URL built from embedded PostgreSQL values */}}
             - name: DATABASE_URL
               value: {{ include "kivo.postgresql.connectionString" . | quote }}
             {{- else if .Values.kivoApi.databaseSecret }}
@@ -113,7 +111,6 @@ spec:
                   name: {{ .Values.kivoApi.databaseSecret }}
                   key: DATABASE_URL
             {{- else if .Values.kivoApi.existingSecret }}
-            {{- /* UAT/Prod: credentials come from a pre-existing Kubernetes Secret */}}
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -142,13 +139,13 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_OPENAI_API_KEY
+                  key: OPENAI_API_KEY
                   optional: true
             - name: GEMINI_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
-                  key: PLATFORM_GEMINI_API_KEY
+                  key: GEMINI_API_KEY
                   optional: true
             {{- end }}
           livenessProbe:

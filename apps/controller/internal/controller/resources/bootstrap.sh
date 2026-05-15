@@ -158,7 +158,7 @@ fi
 if [ "$ENABLE_LINEAR_MCP" = "true" ]; then
   LINEAR_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@sylphx/linear-mcp/dist/index.js"
   JSON_ARG="{\"command\":\"node\",\"args\":[\"$LINEAR_MCP_BIN\"],\"env\":{\"LINEAR_API_KEY\":\"${LINEAR_API_KEY}\"}}"
-  openclaw mcp set linear "$JSON_ARG" --skip-observe || true
+  openclaw mcp set linear "$JSON_ARG" || true
 
   mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills/linear"
   cat >"$OPENCLAW_CONFIG_DIR/workspace/skills/linear/SKILL.md" <<'SKILL_EOF'
@@ -196,7 +196,7 @@ if [ "$ENABLE_GITHUB_MCP" = "true" ]; then
     JSON_ARG="{\"command\":\"node\",\"args\":[\"$GITHUB_APP_ID\":\"${GITHUB_APP_ID}\",\"GITHUB_INSTALLATION_ID\":\"${GITHUB_INSTALLATION_ID}\",\"GITHUB_APP_PRIVATE_KEY\":\"${GITHUB_APP_PRIVATE_KEY}\"}}"
   fi
 
-  openclaw mcp set github "$JSON_ARG" --skip-observe || true
+  openclaw mcp set github "$JSON_ARG" || true
 fi
 
 # ── Kivo API MCP
@@ -204,7 +204,7 @@ echo "==> Configuring Kivo API MCP"
 MCP_API_BASE="${KIVO_API_INTERNAL_URL:-http://kivo-api.${KIVO_NAMESPACE:-kivo}.svc.cluster.local:4000}"
 KIVO_MCP_URL="${MCP_API_BASE}/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
 KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_MCP_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
-openclaw mcp set kivo "$KIVO_JSON_ARG" --skip-observe || true
+openclaw mcp set kivo "$KIVO_JSON_ARG" || true
 
 # ── Telegram channel
 if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then

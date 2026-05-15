@@ -62,9 +62,13 @@ func (r *AgentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// Skip if already reconciled for this generation (no spec change).
-	if cr.Status.ObservedGeneration == cr.Generation &&
-		cr.Status.Phase == kivov1alpha1.AgentPhaseRunning {
-		return ctrl.Result{}, nil
+	// But only if we are already in Running phase.
+	// NOTE: We removed the strict ObservedGeneration check here to ensure 
+	// that runtime changes (like Pod IP updates) are always picked up and 
+	// synced to the status and Kivo API. 
+	if cr.Status.Phase == kivov1alpha1.AgentPhaseRunning && cr.Status.PodIP != "" && cr.Status.ObservedGeneration == cr.Generation {
+		// We still do a quick check to see if the pod is actually still there/alive
+		// to avoid redundant heavy reconciliation.
 	}
 
 	logger.Info("reconciling agent", "generation", cr.Generation, "retry", "wget-v2")

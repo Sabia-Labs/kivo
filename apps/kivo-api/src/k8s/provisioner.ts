@@ -41,6 +41,59 @@ export async function ensureNamespace(namespace: string): Promise<void> {
       throw err;
     }
   }
+
+  // ── Propagation ─────────────────────────────────────────────────────────────
+  // In environments with private GHCR images, new namespaces must have the 
+  // pull secret to allow agent pods to start.
+  try {
+    const sourceNamespace = process.env.KIVO_NAMESPACE || "kivo-staging";
+    await copySecret("ghcr-pull-secret", sourceNamespace, namespace);
+  } catch (err) {
+    console.warn(`[provisioner] Failed to propagate ghcr-pull-secret to ${namespace}:`, err);
+  }
+}
+
+/**
+ * Copies a Secret from one namespace to another.
+ * Idempotent — does nothing if the secret already exists in target.
+ */
+async function copySecret(name: string, fromNamespace: string, toNamespace: string): Promise<void> {
+  if (fromNamespace === toNamespace) return;
+
+  try {
+    // 1. Check if it already exists in target
+    try {
+      await coreV1.readNamespacedSecret(name, toNamespace);
+      return; // Already exists
+    } catch (err) {
+      if (httpStatus(err) !== 404) throw err;
+    }
+
+    // 2. Read from source
+    const { body: sourceSecret } = await coreV1.readNamespacedSecret(name, fromNamespace);
+
+    // 3. Create in target (strip out metadata specific to source)
+    await coreV1.createNamespacedSecret(toNamespace, {
+      metadata: {
+        name,
+        namespace: toNamespace,
+        labels: {
+          "app.kubernetes.io/managed-by": "kivo",
+          "kivo.ai/propagated-from":     fromNamespace,
+        },
+      },
+      type: sourceSecret.type,
+      data: sourceSecret.data,
+    });
+    
+    console.log(`[provisioner] Successfully propagated secret ${name} from ${fromNamespace} to ${toNamespace}`);
+  } catch (err: any) {
+    // If source secret doesn't exist, we just skip (might not be needed in all envs)
+    if (httpStatus(err) === 404) {
+      return;
+    }
+    throw err;
+  }
 }
 
 /**
