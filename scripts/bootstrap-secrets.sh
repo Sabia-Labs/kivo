@@ -51,27 +51,33 @@ if ! k get secret ghcr-pull-secret -n "$NS" >/dev/null 2>&1; then
   fi
 fi
 
-# 3. API Staging Secret (JWT, Tokens, etc.)
-if ! k get secret kivo-api-staging-secret -n "$NS" >/dev/null 2>&1; then
-  echo "   -> Initializing API secrets..."
-  JWT_SECRET=$(openssl rand -base64 32)
-  INTERNAL_TOKEN=$(openssl rand -base64 32)
-  
-  # Try to pull from local .env if available
-  OAI_KEY=$(grep "^OPENAI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  echo "   -> Updating API secrets..."
+  # Try to pull from local .env if available (check root and app dirs)
+  OAI_KEY=$(grep "^OPENAI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || grep "^OPENAI_API_KEY=" apps/kivo-api/.env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   GEMINI_KEY=$(grep "^GEMINI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   RESEND_KEY=$(grep "^RESEND_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_CLIENT_ID=$(grep "^GOOGLE_CLIENT_ID=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
 
-  k create secret generic kivo-api-staging-secret -n "$NS" \
-    --from-literal=JWT_SECRET="$JWT_SECRET" \
-    --from-literal=INTERNAL_SERVICE_TOKEN="$INTERNAL_TOKEN" \
-    --from-literal=OPENAI_API_KEY="$OAI_KEY" \
-    --from-literal=GOOGLE_CLIENT_ID="$G_CLIENT_ID" \
-    --from-literal=GOOGLE_CLIENT_SECRET="$G_CLIENT_SECRET" \
-    --from-literal=GEMINI_API_KEY="$GEMINI_KEY" \
-    --from-literal=RESEND_API_KEY="$RESEND_KEY"
-fi
+  # Generate or reuse sensitive tokens
+  JWT_SECRET=$(k get secret kivo-api-staging-secret -n "$NS" -o jsonpath='{.data.JWT_SECRET}' 2>/dev/null | base64 -d || openssl rand -base64 32)
+  INTERNAL_TOKEN=$(k get secret kivo-api-staging-secret -n "$NS" -o jsonpath='{.data.INTERNAL_SERVICE_TOKEN}' 2>/dev/null | base64 -d || openssl rand -base64 32)
+
+  cat <<EOF | k apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kivo-api-staging-secret
+  namespace: $NS
+type: Opaque
+stringData:
+  JWT_SECRET: "$JWT_SECRET"
+  INTERNAL_SERVICE_TOKEN: "$INTERNAL_TOKEN"
+  OPENAI_API_KEY: "$OAI_KEY"
+  GOOGLE_CLIENT_ID: "$G_CLIENT_ID"
+  GOOGLE_CLIENT_SECRET: "$G_CLIENT_SECRET"
+  GEMINI_API_KEY: "$GEMINI_KEY"
+  RESEND_API_KEY: "$RESEND_KEY"
+EOF
 
 echo "✅ Secrets initialized for $ENV."
