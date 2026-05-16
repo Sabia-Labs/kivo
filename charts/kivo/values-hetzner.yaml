@@ -60,6 +60,7 @@ controller:
     tag: f28cb1cb264278930de66fdefe8c811a75d4889a
     pullPolicy: Always
   agentImage: "ghcr.io/sabia-labs/kivo-agent:latest"
+  agentImagePullPolicy: Always
   consumerImage: "ghcr.io/sabia-labs/kivo-consumer:latest"
 ingress:
   enabled: true

@@ -205,16 +205,24 @@ fi
 # ── Notion MCP
 if [ "${NOTION_ENABLED:-false}" = "true" ] && [ -n "${NOTION_ACCESS_TOKEN:-}" ]; then
   echo "==> Notion MCP enabled"
-  NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/bin/cli.mjs"
-  # Fallback for different package structures
-  if [ ! -f "$NOTION_MCP_BIN" ]; then
-    NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/dist/index.js"
-  fi
-  if [ ! -f "$NOTION_MCP_BIN" ]; then
-    NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/build/index.js"
-  fi
+  
+  # Detect Notion MCP binary across possible package structures
+  NOTION_MCP_BIN=""
+  for bin_path in "bin/cli.mjs" "dist/index.js" "build/index.js"; do
+    if [ -f "$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/$bin_path" ]; then
+      NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/$bin_path"
+      break
+    fi
+  done
 
-  update_mcp_config "notion" "{\"command\":\"node\",\"args\":[\"$NOTION_MCP_BIN\"],\"env\":{\"NOTION_TOKEN\":\"${NOTION_ACCESS_TOKEN}\"}}"
+  if [ -n "$NOTION_MCP_BIN" ]; then
+    echo "  -> Found Notion MCP at: $NOTION_MCP_BIN"
+    update_mcp_config "notion" "{\"command\":\"node\",\"args\":[\"$NOTION_MCP_BIN\"],\"env\":{\"NOTION_TOKEN\":\"${NOTION_ACCESS_TOKEN}\"}}"
+  else
+    echo "  !! ERROR: Notion MCP package found in image, but executable not found in node_modules."
+    echo "  !! Checked: bin/cli.mjs, dist/index.js, build/index.js"
+    echo "  !! Integration will be disabled for this agent."
+  fi
 
   # Ensure the skill is available
   mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills/notion"
