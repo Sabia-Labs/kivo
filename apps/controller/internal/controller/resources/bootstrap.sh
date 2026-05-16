@@ -132,33 +132,48 @@ async function fetchBootstrap() {
 fetchBootstrap();
 "
 
-  # ── Seed shared skills (FIRST BOOT ONLY) ─────────────────────────────────
-  SHARED_SKILLS_SRC="/opt/kivo/profiles/shared/skills"
-  if [ -d "$SHARED_SKILLS_SRC" ]; then
-    echo "==> Seeding shared skills from $SHARED_SKILLS_SRC (first boot only)"
-    mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills"
-    cp -r "$SHARED_SKILLS_SRC/"* "$OPENCLAW_CONFIG_DIR/workspace/skills/"
-  fi
-
   touch "$OPENCLAW_CONFIG_DIR/.bootstrapped"
   echo "==> Bootstrap core complete"
 else
-  echo "==> Already bootstrapped — skipping (PVC state preserved)"
+  echo "==> Already bootstrapped — skipping onboarding (PVC state preserved)"
+fi
+
+# ── Seed shared skills (Runs every boot to keep instructions fresh) ──────────
+SHARED_SKILLS_SRC="/opt/kivo/profiles/shared/skills"
+if [ -d "$SHARED_SKILLS_SRC" ]; then
+  echo "==> Syncing shared skills from $SHARED_SKILLS_SRC"
+  mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills"
+  cp -r "$SHARED_SKILLS_SRC/"* "$OPENCLAW_CONFIG_DIR/workspace/skills/"
 fi
 
 # ── Configuration (Runs every boot) ───────────────────────────────────────────
 
-# ── Linear MCP
-ENABLE_LINEAR_MCP=false
-if [ "${LINEAR_ENABLED:-false}" = "true" ] && [ -n "${LINEAR_API_KEY:-}" ]; then
-  ENABLE_LINEAR_MCP=true
-  echo "==> Linear MCP enabled"
-fi
+# Helper to update openclaw.json directly (faster/reliable than openclaw mcp set during bootstrap)
+update_mcp_config() {
+  SERVER_NAME="$1"
+  SERVER_JSON="$2"
+  node -e "
+    const fs = require('fs');
+    const configPath = '$OPENCLAW_CONFIG_DIR/openclaw.json';
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+      
+      // Clean up any old/invalid locations that cause crashes
+      if (config.gateway && config.gateway.mcp) delete config.gateway.mcp;
+      
+      config.mcp = config.mcp || { servers: {} };
+      config.mcp.servers = config.mcp.servers || {};
+      config.mcp.servers['$SERVER_NAME'] = $SERVER_JSON;
+      fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    }
+  "
+}
 
-if [ "$ENABLE_LINEAR_MCP" = "true" ]; then
+# ── Linear MCP
+if [ "${LINEAR_ENABLED:-false}" = "true" ] && [ -n "${LINEAR_API_KEY:-}" ]; then
+  echo "==> Linear MCP enabled"
   LINEAR_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@sylphx/linear-mcp/dist/index.js"
-  JSON_ARG="{\"command\":\"node\",\"args\":[\"$LINEAR_MCP_BIN\"],\"env\":{\"LINEAR_API_KEY\":\"${LINEAR_API_KEY}\"}}"
-  openclaw mcp set linear "$JSON_ARG" || true
+  update_mcp_config "linear" "{\"command\":\"node\",\"args\":[\"$LINEAR_MCP_BIN\"],\"env\":{\"LINEAR_API_KEY\":\"${LINEAR_API_KEY}\"}}"
 
   mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills/linear"
   cat >"$OPENCLAW_CONFIG_DIR/workspace/skills/linear/SKILL.md" <<'SKILL_EOF'
@@ -175,36 +190,52 @@ SKILL_EOF
 fi
 
 # ── GitHub MCP
-ENABLE_GITHUB_MCP=false
 GITHUB_AUTH_MODE="${GITHUB_AUTH_MODE:-pat}"
 if [ "${GITHUB_ENABLED:-false}" = "true" ]; then
+  GITHUB_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@modelcontextprotocol/server-github/dist/index.js"
   if [ "$GITHUB_AUTH_MODE" = "pat" ] && [ -n "${GITHUB_PERSONAL_ACCESS_TOKEN:-}" ]; then
-    ENABLE_GITHUB_MCP=true
     echo "==> GitHub MCP enabled (PAT mode)"
+    update_mcp_config "github" "{\"command\":\"node\",\"args\":[\"$GITHUB_MCP_BIN\"],\"env\":{\"GITHUB_PERSONAL_ACCESS_TOKEN\":\"${GITHUB_PERSONAL_ACCESS_TOKEN}\"}}"
   elif [ "$GITHUB_AUTH_MODE" = "app" ] && [ -n "${GITHUB_APP_ID:-}" ]; then
-    ENABLE_GITHUB_MCP=true
     echo "==> GitHub MCP enabled (App mode)"
+    update_mcp_config "github" "{\"command\":\"node\",\"args\":[\"$GITHUB_MCP_BIN\"],\"env\":{\"GITHUB_APP_ID\":\"${GITHUB_APP_ID}\",\"GITHUB_INSTALLATION_ID\":\"${GITHUB_INSTALLATION_ID}\",\"GITHUB_APP_PRIVATE_KEY\":\"${GITHUB_APP_PRIVATE_KEY}\"}}"
   fi
 fi
 
-if [ "$ENABLE_GITHUB_MCP" = "true" ]; then
-  GITHUB_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@modelcontextprotocol/server-github/dist/index.js"
-
-  if [ "$GITHUB_AUTH_MODE" = "pat" ]; then
-    JSON_ARG="{\"command\":\"node\",\"args\":[\"$GITHUB_MCP_BIN\"],\"env\":{\"GITHUB_PERSONAL_ACCESS_TOKEN\":\"${GITHUB_PERSONAL_ACCESS_TOKEN}\"}}"
-  else
-    JSON_ARG="{\"command\":\"node\",\"args\":[\"$GITHUB_APP_ID\":\"${GITHUB_APP_ID}\",\"GITHUB_INSTALLATION_ID\":\"${GITHUB_INSTALLATION_ID}\",\"GITHUB_APP_PRIVATE_KEY\":\"${GITHUB_APP_PRIVATE_KEY}\"}}"
+# ── Notion MCP
+if [ "${NOTION_ENABLED:-false}" = "true" ] && [ -n "${NOTION_ACCESS_TOKEN:-}" ]; then
+  echo "==> Notion MCP enabled"
+  NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/bin/cli.mjs"
+  # Fallback for different package structures
+  if [ ! -f "$NOTION_MCP_BIN" ]; then
+    NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/dist/index.js"
+  fi
+  if [ ! -f "$NOTION_MCP_BIN" ]; then
+    NOTION_MCP_BIN="$MCP_PACKAGES_DIR/node_modules/@notionhq/notion-mcp-server/build/index.js"
   fi
 
-  openclaw mcp set github "$JSON_ARG" || true
+  update_mcp_config "notion" "{\"command\":\"node\",\"args\":[\"$NOTION_MCP_BIN\"],\"env\":{\"NOTION_TOKEN\":\"${NOTION_ACCESS_TOKEN}\"}}"
+
+  # Ensure the skill is available
+  mkdir -p "$OPENCLAW_CONFIG_DIR/workspace/skills/notion"
+  cat >"$OPENCLAW_CONFIG_DIR/workspace/skills/notion/SKILL.md" <<'SKILL_EOF'
+---
+name: notion
+description: Manage Notion pages, databases, and search natively via MCP.
+metadata: { "openclaw": { "emoji": "📓" } }
+---
+
+# Notion Integration
+
+You have direct access to Notion through native MCP tools.
+SKILL_EOF
 fi
 
 # ── Kivo API MCP
 echo "==> Configuring Kivo API MCP"
 MCP_API_BASE="${KIVO_API_INTERNAL_URL:-http://kivo-api.${KIVO_NAMESPACE:-kivo}.svc.cluster.local:4000}"
 KIVO_MCP_URL="${MCP_API_BASE}/mcp/sse?token=${OPENCLAW_GATEWAY_TOKEN:-}"
-KIVO_JSON_ARG="{\"type\":\"sse\",\"url\":\"$KIVO_MCP_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
-openclaw mcp set kivo "$KIVO_JSON_ARG" || true
+update_mcp_config "kivo" "{\"type\":\"sse\",\"url\":\"$KIVO_MCP_URL\",\"headers\":{\"Authorization\":\"Bearer ${OPENCLAW_GATEWAY_TOKEN:-}\"}}"
 
 # ── Telegram channel
 if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then

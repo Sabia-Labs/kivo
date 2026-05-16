@@ -153,7 +153,7 @@ docker_build(
   context='apps/kivo-web',
   dockerfile='apps/kivo-web/Dockerfile',
   build_args={
-    'NEXT_PUBLIC_API_URL': '/api',
+    'NEXT_PUBLIC_API_URL': 'http://localhost:4000',
     'API_INTERNAL_URL': 'http://kivo-api:4000',
   },
   ignore=['node_modules', '.next', '*.md'],
@@ -165,8 +165,8 @@ docker_build(
   context='apps/admin-web',
   dockerfile='apps/kivo-web/Dockerfile', # Reuse same generic Dockerfile
   build_args={
-    'NEXT_PUBLIC_API_URL': '/admin-api',
-    'API_INTERNAL_URL': 'http://kivo-admin-api.kivo-admin:4001',
+    'NEXT_PUBLIC_API_URL': 'http://localhost:4001',
+    'API_INTERNAL_URL': 'http://kivo-admin-api:4001',
   },
   ignore=['node_modules', '.next', '*.md'],
 )
@@ -333,12 +333,16 @@ k8s_yaml(
       'kivoApi.env.OPENAI_API_KEY=' + OPENAI_KEY,
       'kivoApi.env.MODEL_PROVIDER=' + MODEL_PROVIDER,
       'kivoApi.env.MODEL_NAME=' + MODEL_NAME,
-      'kivoApi.env.ADMIN_API_INTERNAL_URL=http://kivo-admin-api.kivo-admin:4001',
+      'kivoApi.env.ADMIN_API_INTERNAL_URL=http://kivo-admin-api:4001',
       'kivoApi.env.INTERNAL_SERVICE_TOKEN=kivo-local-dev-token',
-      'adminApi.env.KIVO_API_INTERNAL_URL=http://kivo-api.kivo:4000',
+      'adminApi.env.KIVO_API_INTERNAL_URL=http://kivo-api:4000',
       'adminApi.env.INTERNAL_SERVICE_TOKEN=kivo-local-dev-token',
       'adminApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
       'adminApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
+      'controller.agentImage=' + AGENT_IMAGE,
+      'controller.consumerImage=' + CONSUMER_IMAGE,
+      'controller.agentImagePullPolicy=IfNotPresent',
+      'controller.consumerImagePullPolicy=IfNotPresent',
     ],
   )
 )
@@ -396,6 +400,15 @@ k8s_resource(
   ],
   links=[
     link('http://localhost:3001', 'Admin/Marketing Portal'),
+  ],
+)
+
+k8s_resource(
+  'kivo-agent-controller',
+  resource_deps=['kivo-api', 'ensure-namespace'],
+  labels=['app'],
+  extra_pod_selectors=[
+    {'app.kubernetes.io/name': 'kivo-agent-controller'},
   ],
 )
 

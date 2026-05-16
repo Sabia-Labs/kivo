@@ -101,6 +101,8 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 		envFromSecret("GITHUB_PERSONAL_ACCESS_TOKEN", secretRef, "GITHUB_PERSONAL_ACCESS_TOKEN"),
 		envFromSecret("GITHUB_ENABLED", secretRef, "GITHUB_ENABLED"),
 		envFromSecret("GITHUB_AUTH_MODE", secretRef, "GITHUB_AUTH_MODE"),
+		envFromSecret("NOTION_ACCESS_TOKEN", secretRef, "NOTION_ACCESS_TOKEN"),
+		envFromSecret("NOTION_ENABLED", secretRef, "NOTION_ENABLED"),
 	}
 
 	initEnv := append(sharedEnv, secretEnv...)

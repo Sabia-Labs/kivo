@@ -1,6 +1,8 @@
 import { PassThrough } from "stream";
 import * as k8s from "@kubernetes/client-node";
-import type { Agent } from "../db/schema";
+import { eq } from "drizzle-orm";
+import { db } from "../db/client";
+import { type Agent, integrations } from "../db/schema";
 import { kc, coreV1, appsV1, customObjects, KIVO_AI_GROUP, KIVO_AI_VERSION, KIVO_AI_PLURAL } from "./client";
 
 /**
@@ -107,6 +109,12 @@ export async function applyCredentialsSecret(
   const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
   const name = `${agent.id}-creds`;
 
+  // Fetch team-level integrations
+  const teamIntegrations = await db
+    .select()
+    .from(integrations)
+    .where(eq(integrations.teamId, agent.teamId));
+
   // Platform-level fallbacks — set in kivo-api env via vars from .env (Local)
   // or via OPENAI_API_KEY / GEMINI_API_KEY (Staging/Prod via Helm)
   const platformOpenAIKey = process.env.OPENAI_API_KEY;
@@ -123,11 +131,40 @@ export async function applyCredentialsSecret(
   if (apiInternalUrl)                        stringData.KIVO_API_INTERNAL_URL   = apiInternalUrl;
   
   if (metadata.telegramBotToken)             stringData.TELEGRAM_BOT_TOKEN      = String(metadata.telegramBotToken);
-  if (metadata.linearApiKey)                 stringData.LINEAR_API_KEY           = String(metadata.linearApiKey);
-  if (metadata.linearEnabled)                stringData.LINEAR_ENABLED            = String(metadata.linearEnabled);
-  if (metadata.githubToken)                  stringData.GITHUB_PERSONAL_ACCESS_TOKEN = String(metadata.githubToken);
-  if (metadata.githubEnabled)                stringData.GITHUB_ENABLED            = String(metadata.githubEnabled);
-  if (metadata.githubAuthMode)               stringData.GITHUB_AUTH_MODE          = String(metadata.githubAuthMode);
+  
+  // Linear (check metadata first, then team integrations)
+  if (metadata.linearApiKey) {
+    stringData.LINEAR_API_KEY = String(metadata.linearApiKey);
+    stringData.LINEAR_ENABLED = String(metadata.linearEnabled ?? "true");
+  } else {
+    const linear = teamIntegrations.find(i => i.provider === "linear");
+    if (linear) {
+      stringData.LINEAR_API_KEY = linear.apiKey || "";
+      stringData.LINEAR_ENABLED = "true";
+    }
+  }
+
+  // GitHub (check metadata first, then team integrations)
+  if (metadata.githubToken) {
+    stringData.GITHUB_PERSONAL_ACCESS_TOKEN = String(metadata.githubToken);
+    stringData.GITHUB_ENABLED = String(metadata.githubEnabled ?? "true");
+    stringData.GITHUB_AUTH_MODE = String(metadata.githubAuthMode ?? "pat");
+  } else {
+    const github = teamIntegrations.find(i => i.provider === "github");
+    if (github) {
+      stringData.GITHUB_PERSONAL_ACCESS_TOKEN = github.apiKey || "";
+      stringData.GITHUB_ENABLED = "true";
+      stringData.GITHUB_AUTH_MODE = "pat";
+    }
+  }
+
+  // Notion (team integration only)
+  const notion = teamIntegrations.find(i => i.provider === "notion");
+  if (notion) {
+    stringData.NOTION_ACCESS_TOKEN = notion.apiKey || "";
+    stringData.NOTION_ENABLED = "true";
+  }
+
   // Agent-specific key takes priority; fall back to platform key
   const openaiKey = metadata.openaiApiKey ? String(metadata.openaiApiKey) : platformOpenAIKey;
   if (openaiKey)                             stringData.OPENAI_API_KEY            = openaiKey;
@@ -206,7 +243,7 @@ export async function applyKivoAgentCR(
       },
       persistence: { 
         size: "1Gi",
-        storageClassName: "standard-rwo"
+        storageClassName: process.env.AGENT_STORAGE_CLASS || "standard-rwo"
       },
     },
   };

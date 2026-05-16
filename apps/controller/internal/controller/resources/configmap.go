@@ -1,4 +1,4 @@
-package resources
+package resources // rebuild for cleanup fix v4
 
 import (
 	_ "embed"
