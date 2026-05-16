@@ -21,4 +21,5 @@ USER node
 RUN npm install --prefix $MCP_PACKAGES_DIR --save \
     @sylphx/linear-mcp \
     @modelcontextprotocol/server-github \
+    @notionhq/notion-mcp-server \
     && npm cache clean --force

@@ -5,7 +5,9 @@ ENV ?= local
 NAMESPACE = kivo-staging
 CTX = docker-desktop
 
-ifeq ($(ENV),staging)
+ifeq ($(ENV),local)
+	NAMESPACE = kivo
+else ifeq ($(ENV),staging)
 	CTX = gke_sabia-infra_europe-west3_kivo-staging
 	NAMESPACE = kivo-staging
 else ifeq ($(ENV),hetzner)

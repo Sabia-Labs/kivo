@@ -61,7 +61,7 @@ function TrelloIcon({ className }: { className?: string }) {
 
 function NotionIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
       <path d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"/>
     </svg>
   );
@@ -221,11 +221,13 @@ export default function TeamIntegrationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [team, setTeam] = useState<Team | null>(null);
   const [isSavingGitHub, setIsSavingGitHub] = useState(false);
+  const [isSavingNotion, setIsSavingNotion] = useState(false);
 
   // PM integrations
   const [selectedPm, setSelectedPm] = useState<string>("internal");
   // Doc integrations
   const [selectedDoc, setSelectedDoc] = useState<string>("internal");
+  const [notionToken, setNotionToken] = useState("");
   // GitHub repos
   const [repos, setRepos] = useState<GitHubRepo[]>([emptyRepo()]);
 
@@ -245,6 +247,17 @@ export default function TeamIntegrationsPage() {
       .then((d) => setTeam(d.data))
       .catch(() => toast.error("Failed to load team."))
       .finally(() => setIsLoading(false));
+
+    fetch(`${API_BASE}/teams/${teamId}/integrations`, { headers: authHeaders() })
+      .then((r) => r.json())
+      .then((d) => {
+        const notion = d.data.find((i: any) => i.provider === "notion");
+        if (notion) {
+          setNotionToken(notion.apiKey || "");
+          setSelectedDoc("notion");
+        }
+      })
+      .catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading]);
 
@@ -274,6 +287,25 @@ export default function TeamIntegrationsPage() {
     } catch {
       toast.error("Failed to save GitHub integration.");
     } finally { setIsSavingGitHub(false); }
+  };
+
+  const saveNotion = async () => {
+    if (!notionToken.trim()) { toast.error("Notion Integration Token is required."); return; }
+    setIsSavingNotion(true);
+    try {
+      const r = await fetch(`${API_BASE}/teams/${teamId}/integrations`, {
+        method: "POST", headers: authHeaders(),
+        body: JSON.stringify({
+          provider: "notion",
+          apiKey: notionToken.trim(),
+          metadata: {},
+        }),
+      });
+      if (!r.ok) throw new Error();
+      toast.success("Notion integration saved.");
+    } catch {
+      toast.error("Failed to save Notion integration.");
+    } finally { setIsSavingNotion(false); }
   };
 
   if (authLoading || isLoading) {
@@ -344,13 +376,35 @@ export default function TeamIntegrationsPage() {
             <ProviderCard id="doc-kivo" enabled selected={selectedDoc === "internal"} onSelect={() => setSelectedDoc("internal")}
               icon={<span className="text-2xl">📁</span>}
               label="Kivo" description="Built-in knowledge base" />
-            <ProviderCard id="doc-notion" enabled={false} comingSoon selected={false}
+            <ProviderCard id="doc-notion" enabled selected={selectedDoc === "notion"} onSelect={() => setSelectedDoc("notion")}
               icon={<NotionIcon className="size-6 text-foreground" />}
               label="Notion" description="Connected workspace" />
             <ProviderCard id="doc-confluence" enabled={false} comingSoon selected={false}
               icon={<ConfluenceIcon className="size-6" />}
               label="Confluence" description="Atlassian wiki" />
           </div>
+
+          {selectedDoc === "notion" && (
+            <div className="mt-6 flex flex-col gap-4 border-t border-border pt-6">
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="notion-token" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Integration Token
+                </label>
+                <Input id="notion-token" type="password" value={notionToken}
+                  onChange={(e) => setNotionToken(e.target.value)}
+                  placeholder="secret_..." />
+                <p className="text-xs text-muted-foreground">
+                  Create an internal integration in your <a href="https://www.notion.so/my-integrations" target="_blank" rel="noreferrer" className="text-primary hover:underline">Notion settings</a> and paste the token here.
+                </p>
+              </div>
+              <Button id="save-notion" className="gap-2 font-semibold"
+                disabled={isSavingNotion} onClick={saveNotion}>
+                {isSavingNotion
+                  ? <><Loader2 className="size-3.5 animate-spin" /> Saving…</>
+                  : <><Check className="size-3.5" /> Save Notion Integration</>}
+              </Button>
+            </div>
+          )}
 
           {selectedDoc === "internal" && (
             <div className="mt-4 flex items-center gap-2 rounded-xl bg-primary/5 border border-primary/20 px-4 py-3">

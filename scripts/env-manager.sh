@@ -33,14 +33,16 @@ case $ACTION in
 
   "deploy")
     echo "☸️ Deploying Helm chart to $ENV..."
+    RELEASE_NAME="kivo"
     VALUES_FILE="charts/kivo/values.yaml"
     if [ "$ENV" = "hetzner" ]; then
       VALUES_FILE="charts/kivo/values-hetzner.yaml"
+      RELEASE_NAME="kivo-hetzner"
     elif [ "$ENV" = "alibaba" ]; then
       VALUES_FILE="charts/kivo/values-alibaba.yaml"
     fi
     
-    h upgrade --install kivo ./charts/kivo \
+    h upgrade --install "$RELEASE_NAME" ./charts/kivo \
       --namespace "$NS" \
       --create-namespace \
       -f "$VALUES_FILE"
@@ -54,8 +56,12 @@ case $ACTION in
     k delete agents --all -n "$NS" --ignore-not-found --timeout=30s || true
     
     # 2. Uninstall Helm
-    echo "→ Uninstalling Helm release..."
-    h uninstall kivo -n "$NS" --ignore-not-found
+    RELEASE_NAME="kivo"
+    if [ "$ENV" = "hetzner" ]; then
+      RELEASE_NAME="kivo-hetzner"
+    fi
+    echo "→ Uninstalling Helm release $RELEASE_NAME..."
+    h uninstall "$RELEASE_NAME" -n "$NS" --ignore-not-found
     
     # 3. Wipe Workspace Namespaces
     echo "→ Deleting ephemeral workspaces (kivo-ws-*)..."
@@ -68,6 +74,12 @@ case $ACTION in
     # 4. IMPLODE Primary Namespace
     echo "🔥 Imploding primary namespace: $NS"
     k delete ns "$NS" --ignore-not-found
+    
+    # 5. Clean up admin namespace if it exists (for local legacy/unified cleanup)
+    if [ "$NS" = "kivo" ]; then
+      echo "🔥 Cleaning up admin namespace (kivo-admin)..."
+      k delete ns kivo-admin --ignore-not-found
+    fi
     
     echo "✨ $ENV is now clean."
     ;;

@@ -25,6 +25,7 @@ export const integrationProviderEnum = pgEnum("integration_provider", [
   "jira",
   "trello",
   "github",
+  "notion",
 ]);
 
 export const counterpartTypeEnum = pgEnum("counterpart_type", [

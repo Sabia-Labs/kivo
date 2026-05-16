@@ -3,7 +3,7 @@
 This document provides foundational mandates for Gemini CLI when operating within this workspace. These instructions take absolute precedence over general defaults.
 
 ## 🎯 Project Overview
-- **Stack:** Kubernetes, OpenClaw, Node.js, React, git, MCP (Linear integration), Telegram (Bot API).
+- **Stack:** Kubernetes, OpenClaw, Node.js, React, git, MCP (Linear, GitHub, Notion integrations), Telegram (Bot API).
 - **Core Goal:** Deploy and manage one or more autonomous AI developers as containers in a Kubernetes cluster. These agents act as full-stack developers, with state/memory persisted in Git for portability and interaction via Telegram.
 
 ## 🛠 Engineering Standards

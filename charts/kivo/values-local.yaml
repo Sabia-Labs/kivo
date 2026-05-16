@@ -2,6 +2,7 @@
 # Used by: tilt up, helm install ... -f values-local.yaml
 
 namespace: kivo
+adminNamespace: kivo
 
 # Tells Helm templates to skip resources that Tilt manages directly
 # (e.g. RabbitmqCluster CR, applied after Operator CRD is installed).
@@ -24,6 +25,8 @@ kivoApi:
     NODE_ENV: development
     PORT: "4000"
     CORS_ORIGIN: "http://kivo.localhost,http://localhost:3000"
+    AGENT_STORAGE_CLASS: "standard"
+    KIVO_NAMESPACE: "kivo"
     # JWT_SECRET inline for local dev only (not a real secret)
     JWT_SECRET: "kivo-local-dev-secret-change-in-prod"
     # RabbitMQ management API (used by kivo-api to provision tenants)
@@ -54,6 +57,9 @@ adminApi:
     NODE_ENV: development
     ADMIN_PORT: "4001"
     JWT_SECRET: "kivo-local-dev-secret-change-in-prod"
+    ADMIN_WEB_URL: "http://localhost:3001"
+    GOOGLE_REDIRECT_URI: "http://localhost:4001/auth/google/callback"
+    KIVO_API_INTERNAL_URL: "http://kivo-api:4000"
   runMigrations: false
 
 kivoWeb:
@@ -93,8 +99,9 @@ adminWeb:
   env:
     NODE_ENV: development
     PORT: "3001"
-    API_INTERNAL_URL: "http://kivo-admin-api.kivo-admin:4001"
+    API_INTERNAL_URL: "http://kivo-admin-api:4001"
     NEXT_PUBLIC_API_URL: "/admin-api"
+    KIVO_WEB_URL: "http://kivo.kivo.localhost"
 
 
 ingress:
@@ -125,14 +132,14 @@ controller:
   # Image the controller will use for agent Pods.
   # In local dev: built by Tilt with pullPolicy=Never.
   # In prod: override with the published ghcr.io reference.
-  agentImage: "kivo/agent:local"
-  agentImagePullPolicy: "Never"
+  agentImage: "kivo/agent"
+  agentImagePullPolicy: "IfNotPresent"
   # Consumer sidecar image — built by Tilt locally.
   # Set to empty string here; the kivo-consumer-image ConfigMap (applied by Tilt)
   # overrides this when the build is ready. While the build is pending, the controller
   # reads an empty string → skips sidecar injection → agents start as 1/1.
   consumerImage: ""
-  consumerImagePullPolicy: "Never"
+  consumerImagePullPolicy: "IfNotPresent"
 
 # ── RabbitMQ local dev ──────────────────────────────────────────────────────────
 rabbitmq:
