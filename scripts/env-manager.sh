@@ -28,7 +28,11 @@ h() {
 case $ACTION in
   "bootstrap")
     echo "🔐 Initializing secrets for $ENV..."
-    "$SCRIPT_DIR/bootstrap-secrets.sh" "$ENV" "$CTX" "$NS"
+    RELEASE_NAME="kivo"
+    if [ "$ENV" = "hetzner" ]; then
+      RELEASE_NAME="kivo-hetzner"
+    fi
+    "$SCRIPT_DIR/bootstrap-secrets.sh" "$ENV" "$CTX" "$NS" "$RELEASE_NAME"
     ;;
 
   "deploy")

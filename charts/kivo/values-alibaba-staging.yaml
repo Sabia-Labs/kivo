@@ -18,7 +18,7 @@ kivoApi:
     NODE_ENV: production
     PORT: "4000"
     # CORS_ORIGIN: "https://app.kivo-alibaba.nip.io" # To be updated with SLB IP
-  existingSecret: kivo-api-staging-secret
+  existingSecret: kivo-api-secret
   databaseSecret: kivo-db-credentials
 
 kivoWeb:
@@ -36,7 +36,7 @@ adminApi:
   image:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-api
     tag: "latest"
-  existingSecret: kivo-api-staging-secret
+  existingSecret: kivo-api-secret
   databaseSecret: kivo-admin-db-credentials
 
 adminWeb:
