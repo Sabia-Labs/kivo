@@ -7,8 +7,9 @@ set -euo pipefail
 ENV=$1
 CTX=$2
 NS=$3
+RELEASE_NAME=${4:-kivo}
 
-echo "🔐 Bootstrapping secrets for $ENV in namespace $NS..."
+echo "🔐 Bootstrapping secrets for $ENV in namespace $NS (Release: $RELEASE_NAME)..."
 
 # Helper to run kubectl in context
 k() {
@@ -18,7 +19,7 @@ k() {
 # Ensure namespace exists and has Helm ownership metadata
 k create namespace "$NS" --dry-run=client -o yaml | k apply -f -
 k label namespace "$NS" app.kubernetes.io/managed-by=Helm --overwrite
-k annotate namespace "$NS" meta.helm.sh/release-name=kivo --overwrite
+k annotate namespace "$NS" meta.helm.sh/release-name="$RELEASE_NAME" --overwrite
 k annotate namespace "$NS" meta.helm.sh/release-namespace="$NS" --overwrite
 
 # 1. Database Credentials (if not exist)
@@ -60,14 +61,14 @@ fi
   G_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
 
   # Generate or reuse sensitive tokens
-  JWT_SECRET=$(k get secret kivo-api-staging-secret -n "$NS" -o jsonpath='{.data.JWT_SECRET}' 2>/dev/null | base64 -d || openssl rand -base64 32)
-  INTERNAL_TOKEN=$(k get secret kivo-api-staging-secret -n "$NS" -o jsonpath='{.data.INTERNAL_SERVICE_TOKEN}' 2>/dev/null | base64 -d || openssl rand -base64 32)
+  JWT_SECRET=$(k get secret kivo-api-secret -n "$NS" -o jsonpath='{.data.JWT_SECRET}' 2>/dev/null | base64 -d || openssl rand -base64 32)
+  INTERNAL_TOKEN=$(k get secret kivo-api-secret -n "$NS" -o jsonpath='{.data.INTERNAL_SERVICE_TOKEN}' 2>/dev/null | base64 -d || openssl rand -base64 32)
 
   cat <<EOF | k apply -f -
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kivo-api-staging-secret
+  name: kivo-api-secret
   namespace: $NS
 type: Opaque
 stringData:

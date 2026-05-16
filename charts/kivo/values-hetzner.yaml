@@ -12,7 +12,7 @@ kivoApi:
     repository: ghcr.io/sabia-labs/kivo-api
     tag: 238377d8ce632dd02656bd7ac17045a012bf18ec
     pullPolicy: Always
-  existingSecret: "kivo-api-staging-secret"
+  existingSecret: "kivo-api-secret"
   databaseSecret: "kivo-db-credentials"
   runMigrations: true
   env:
@@ -24,7 +24,7 @@ adminApi:
     repository: ghcr.io/sabia-labs/kivo-admin-api
     tag: 238377d8ce632dd02656bd7ac17045a012bf18ec
     pullPolicy: Always
-  existingSecret: "kivo-api-staging-secret"
+  existingSecret: "kivo-api-secret"
   databaseSecret: "kivo-admin-db-credentials"
   runMigrations: true
   env:

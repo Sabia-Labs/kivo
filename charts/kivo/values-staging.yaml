@@ -24,7 +24,7 @@ kivoApi:
     CORS_ORIGIN: "https://app.kivo-staging.34-141-70-109.nip.io"
     ADMIN_API_INTERNAL_URL: "http://kivo-admin-api:4001"
     KIVO_SHARED_NAMESPACE: "kivo-staging"
-  existingSecret: kivo-api-staging-secret
+  existingSecret: kivo-api-secret
   databaseSecret: kivo-db-credentials
   runMigrations: false
 kivoWeb:
@@ -63,7 +63,7 @@ adminApi:
     GOOGLE_REDIRECT_URI: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api/auth/google/callback"
     KIVO_API_INTERNAL_URL: "http://kivo-api:4000"
     KIVO_SHARED_NAMESPACE: "kivo-staging"
-  existingSecret: kivo-api-staging-secret
+  existingSecret: kivo-api-secret
   databaseSecret: kivo-admin-db-credentials
 adminWeb:
   replicaCount: 1

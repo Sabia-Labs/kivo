@@ -38,9 +38,22 @@ k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -
 # 3. Port-forward for migrations
 echo "🔌 Starting temporary port-forward..."
 LOCAL_PORT=5433
-k port-forward svc/"$POSTGRES_SVC" "$LOCAL_PORT":5432 -n "$NS" > /dev/null 2>&1 &
+k port-forward svc/"$POSTGRES_SVC" "$LOCAL_PORT":5432 -n "$NS" &
 PF_PID=$!
-sleep 5
+
+echo "⏳ Waiting for port-forward to be ready..."
+MAX_RETRIES=30
+RETRIES=0
+until nc -z localhost $LOCAL_PORT >/dev/null 2>&1 || [ $RETRIES -eq $MAX_RETRIES ]; do
+  sleep 1
+  RETRIES=$((RETRIES + 1))
+done
+
+if [ $RETRIES -eq $MAX_RETRIES ]; then
+  echo "❌ Port-forward failed to become ready."
+  kill $PF_PID || true
+  exit 1
+fi
 
 # 4. Run Migrations & Seed
 DB_BASE="postgres://$DB_USER:$DB_PWD@localhost:$LOCAL_PORT"
