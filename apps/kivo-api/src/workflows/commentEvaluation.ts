@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
 import { db } from "../db/client";
-import { requests, tasks, comments } from "../db/schema";
+import { requests, tasks, comments, conversations, messages, agents, teams } from "../db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { runRequestContinuation } from "./requestContinuation";
 import { updateRequest, addCommentToRequest } from "../controllers/requestsController";
+import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -29,6 +30,61 @@ function getLlm() {
     });
   }
   return llmInstance;
+}
+
+async function notifyAgentOfTask(task: any, requestIdentifier: string) {
+  const teamId = task.teamId;
+  const assignedAgentId = task.assignedToId;
+
+  if (!assignedAgentId) {
+    console.warn(`[notifyAgentOfTask] Task ${task.id} has no assigned agent.`);
+    return;
+  }
+
+  // 1. Create a conversation or reuse system conversation
+  const [conversation] = await db.insert(conversations).values({
+    agentId: assignedAgentId,
+    counterpartType: "external",
+    counterpartId: "system",
+    counterpartName: "System Orchestrator"
+  }).returning();
+
+  let messageContent = `A task has been updated/retried for you.
+  Task ID: ${task.id}
+  Task Title: ${task.title}
+  Related Request: ${requestIdentifier}`;
+
+  messageContent += `\n\n  Please re-read the task using the Kivo MCP, paying special attention to the newly appended instructions under [HUMAN OPERATOR RETRY CORRECTION], and execute it again.`;
+
+  const [userMessage] = await db.insert(messages).values({
+    conversationId: conversation.id,
+    role: "user",
+    content: messageContent
+  }).returning();
+
+  const [agent] = await db.select().from(agents).where(eq(agents.id, assignedAgentId));
+  if (agent) {
+    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
+    const workspaceId = team?.workspaceId;
+    
+    if (workspaceId) {
+      const namespace = workspaceNamespace(workspaceId);
+      
+      try {
+        const delivered = await deliverMessageToAgent(namespace, agent.id, {
+          sessionKey: conversation.id,
+          content: messageContent,
+          messageId: userMessage.id,
+        });
+
+        if (delivered) {
+          await db.update(messages).set({ deliveredAt: new Date() }).where(eq(messages.id, userMessage.id));
+        }
+      } catch (err) {
+        console.error("[notifyAgentOfTask] HTTP push failed:", err);
+      }
+    }
+  }
 }
 
 export async function evaluateHumanComment(
@@ -82,7 +138,7 @@ Classify the intent into one of these 4 values:
 1. "retry": The operator wants to re-run the failed task, typically providing new details, solutions, corrections, API keys, credentials, or simply asking to try again (e.g., "tenta de novo", "run again", "try with 8080", "here is the correct credentials").
 2. "bypass": The operator wants to skip the failed task and proceed to the next task in the workflow (e.g., "pula essa parte", "ignora", "segue para a próxima", "skip this step").
 3. "cancel": The operator wants to abort/cancel the entire request (e.g., "cancela tudo", "para o fluxo", "abort").
-4. "chat": The operator is just talking, asking a question, saying thank you, saying hello, or making comments that do not imply a specific action.`;
+4. "chat": The operator is just talking, asking a question, saying thank you, saying hello, or making comments that do not imply a do-not-trigger action.`;
 
     const result = await structuredLlm.invoke(prompt);
     console.log(`[comment-evaluation] Classified intent: ${result.intent}. Reasoning: ${result.reasoning}`);
@@ -93,12 +149,12 @@ Classify the intent into one of these 4 values:
       // 1. Update task instructions and reset status to open
       const updatedInstructions = `${lastTask.instructions || ""}\n\n[HUMAN OPERATOR RETRY CORRECTION]:\n${result.extractedInstructions}`;
       
-      await db.update(tasks).set({
+      const [updatedTask] = await db.update(tasks).set({
         status: "open",
         instructions: updatedInstructions,
         failureReason: null,
         updatedAt: new Date()
-      }).where(eq(tasks.id, lastTask.id));
+      }).where(eq(tasks.id, lastTask.id)).returning();
 
       // 2. Add system comment on the Task itself
       await db.insert(comments).values({
@@ -116,10 +172,8 @@ Classify the intent into one of these 4 values:
       // 4. Update request status to in_progress
       await updateRequest(requestId, { status: "in_progress" }, teamId, "agent");
 
-      // 5. Trigger the continuation workflow
-      runRequestContinuation(lastTask.id, requestId, teamId).catch(err => {
-        console.error(`[comment-evaluation] Failed to resume continuation workflow for task ${lastTask.id}:`, err);
-      });
+      // 5. Notify the agent directly to rerun the task
+      await notifyAgentOfTask(updatedTask, request.identifier);
 
     } else if (result.intent === "bypass") {
       // 1. Update task status to success and add bypass message
