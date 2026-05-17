@@ -2,7 +2,7 @@ import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { db } from "../db/client";
-import { requests, tasks } from "../db/schema";
+import { requests, tasks, notifications } from "../db/schema";
 import { eq, asc } from "drizzle-orm";
 import { updateRequest, completeRequest, addCommentToRequest } from "../controllers/requestsController";
 import { getCapabilityByIdentifier } from "../controllers/capabilitiesController";
@@ -65,6 +65,21 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
     if (allTasks.length >= capabilitiesWorkflow.length) {
       console.log(`[request-continuation] Task failed on the last capability. Completing request as failed.`);
       await completeRequest(state.requestId, "failed", taskRecord.failureReason || "Task failed.");
+
+      // Create Alert Notification
+      if (requestRecord.requesterUserId) {
+        await db.insert(notifications).values({
+          teamId: state.teamId,
+          recipientId: requestRecord.requesterUserId,
+          recipientType: "human",
+          title: "Request Workflow Failed",
+          content: `Request ${requestRecord.identifier} has failed on step "${taskRecord.title}": ${taskRecord.failureReason || "Task failed."}`,
+          priority: "alert",
+          relatedEntityId: state.requestId,
+          relatedEntityType: "request"
+        });
+      }
+
       return { task: taskRecord, request: requestRecord };
     } else {
       // Case 2: Multi-step workflow with more tasks remaining.
@@ -89,6 +104,20 @@ How should we proceed?`;
         "agent", 
         commentContent
       );
+
+      // Create Alert Notification
+      if (requestRecord.requesterUserId) {
+        await db.insert(notifications).values({
+          teamId: state.teamId,
+          recipientId: requestRecord.requesterUserId,
+          recipientType: "human",
+          title: "Step Failed in Request Workflow",
+          content: `Step "${taskRecord.title}" in Request ${requestRecord.identifier} failed: ${failureReason}`,
+          priority: "alert",
+          relatedEntityId: state.requestId,
+          relatedEntityType: "request"
+        });
+      }
       
       // Re-fetch updated request
       const [updatedRequest] = await db.select().from(requests).where(eq(requests.id, state.requestId));
