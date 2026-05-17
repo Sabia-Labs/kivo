@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Bell, Check, Info, AlertTriangle, AlertCircle, X } from "lucide-react";
 import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,22 @@ export function NotificationBell() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+
+    if (dropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   const fetchNotifications = useCallback(() => {
     if (!token) return;
@@ -85,7 +101,7 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setDropdownOpen(!dropdownOpen)}
         className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -99,9 +115,7 @@ export function NotificationBell() {
       </button>
 
       {dropdownOpen && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setDropdownOpen(false)} />
-          <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg ring-1 ring-black/5 sm:w-96">
+        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg ring-1 ring-black/5 sm:w-96">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="font-semibold text-foreground">Notifications</h3>
               {unreadCount > 0 && (
@@ -169,7 +183,6 @@ export function NotificationBell() {
               )}
             </div>
           </div>
-        </>
       )}
     </div>
   );

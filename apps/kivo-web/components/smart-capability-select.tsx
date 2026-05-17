@@ -61,7 +61,10 @@ export function SmartCapabilitySelect({
             "flex gap-1.5 p-2 w-full rounded-md border bg-transparent text-sm shadow-sm transition-colors",
             isFocused ? "border-primary ring-1 ring-primary" : "border-input"
           )}
-          onClick={() => inputRef.current?.focus()}
+          onClick={() => {
+            inputRef.current?.focus();
+            setIsFocused(true);
+          }}
         >
           <input
             ref={inputRef}

@@ -32,6 +32,8 @@ const FieldInsightState = Annotation.Root({
   teamId: Annotation<string>,
   requestDetails: Annotation<string>,
   capabilityIdentifier: Annotation<string | null>,
+  operatorName: Annotation<string>,
+  lang: Annotation<string | null>,
 
   teamContext: Annotation<string>,
   capabilitiesSummary: Annotation<string>,
@@ -47,6 +49,46 @@ const FieldInsightState = Annotation.Root({
   suggestedCapabilityIdentifier: Annotation<string | null>,
   suggestedTitle: Annotation<string | null>
 });
+
+function getReadyToHelpMessage(lang: string | null | undefined): string {
+  const l = lang || "en";
+  if (l === "pt") {
+    return "Estou pronto para ajudar. Por favor, forneça mais detalhes sobre a sua solicitação para que eu possa coordenar a equipe.";
+  }
+  if (l === "zh") {
+    return "我已经准备好提供帮助。请提供有关您请求的更多详细信息，以便我协调团队。";
+  }
+  return "I'm ready to help. Please provide more details about your request so I can coordinate the team.";
+}
+
+function getNewActivityMessage(lang: string | null | undefined): string {
+  const l = lang || "en";
+  if (l === "pt") {
+    return "Esta parece ser uma nova atividade para nós. Forneça todos os detalhes e eu a atribuirei ao especialista correto.";
+  }
+  if (l === "zh") {
+    return "这似乎是我们需要处理的新型活动。请提供所有详细信息，我会将其分配给合适的专家。";
+  }
+  return "This seems like a new type of activity for us. Provide all details and I will assign it to the right specialist.";
+}
+
+function getNewActivityTitle(lang: string | null | undefined): string {
+  const l = lang || "en";
+  if (l === "pt") return "Nova Atividade";
+  if (l === "zh") return "新活动";
+  return "New Activity";
+}
+
+function getCapabilityNotFoundMessage(lang: string | null | undefined): string {
+  const l = lang || "en";
+  if (l === "pt") {
+    return "Não consegui encontrar os detalhes da capability selecionada. Por favor, descreva o que você precisa.";
+  }
+  if (l === "zh") {
+    return "我找不到所选功能的详细信息。请描述您需要什么。";
+  }
+  return "I couldn't find the details for the selected capability. Please describe what you need.";
+}
 
 async function fetchContextsNode(state: typeof FieldInsightState.State) {
   const team = await getTeamById(state.teamId);
@@ -76,9 +118,23 @@ async function classifyRequestNode(state: typeof FieldInsightState.State) {
     return { classification: { isSimpleQuestion: true } }; // Too short, treat as greeting/noise
   }
 
-  const prompt = `Based on the following user input, determine if this is just a simple question, greeting, or status check OR if it is an operational request for work to be done.
+  const prompt = `You are a classifier determining the nature of the text entered in a "New Request" details box for a team of autonomous AI agents.
   
-  User input: "${state.requestDetails}"
+  The person interacting with the UI is the Kivo Operator (the manager of the team).
+  
+  Determine if the following input is a conversational query/greeting directed *from* the Operator *to* the Team Lead (a Simple Question), OR if it is an operational task/work description (which can include copy-pasted customer support tickets, emails, bug reports, feature requests, or external client questions like "Antonio wants to know..."):
+  
+  Operational Request rules (isSimpleQuestion = false):
+  - Any copy-pasted support ticket, bug report, client email, error log, or task instructions.
+  - Text describing a problem, a question from an external client (e.g., "Antonio asks if..."), or a request for a feature.
+  - Even if the text contains a question, if it is a question *about an issue to be solved by the team*, it is an Operational Request (isSimpleQuestion = false).
+  
+  Simple Question rules (isSimpleQuestion = true):
+  - Direct conversational remarks from the Operator to the Team Lead (e.g., "hello", "hi there", "tell me what the team can do").
+  - Questions from the Operator asking about internal status or active tasks (e.g., "how are the active requests doing?", "what is the team mission?").
+  
+  User Input to classify:
+  "${state.requestDetails}"
   `;
 
   const structuredLlm = getLlm().withStructuredOutput(classificationSchema);
@@ -130,14 +186,18 @@ async function answerSimpleQuestionNode(state: typeof FieldInsightState.State) {
     }
   );
 
-  const prompt = `The user asked a simple question or made a conversational remark: "${state.requestDetails}".
+  const prompt = `The Operator (named "${state.operatorName}") asked a simple question or made a conversational remark: "${state.requestDetails}".
   
   Team Context:
   ${state.teamContext}
   
-  Respond as the Team Leader. Be helpful, professional and concise. 
+  Respond as the Team Leader. Be helpful, professional and concise. Greet the Operator by their name ("${state.operatorName}") if they are starting a new conversation.
   If they ask for status, use your tools. If they just say hi, say hi back and explain what the team can do.
-  Keep it under 3 sentences.`;
+  Keep it under 3 sentences.
+  
+  CRITICAL LANGUAGE RULE: 
+  - You must write your entire response in the requested language: "${state.lang || "en"}". If "pt", reply in Portuguese. If "zh", reply in Chinese. If "en", reply in English.
+  - DO NOT let the language of the Team Context or database logs bias your output. Respond strictly in the requested language ("${state.lang || "en"}").`;
 
   const agent = createReactAgent({
     llm: getLlm(),
@@ -161,7 +221,7 @@ const capabilityMatchSchema = z.object({
 async function matchCapabilityNode(state: typeof FieldInsightState.State) {
   if (!state.capabilitiesSummary || state.capabilitiesSummary.length < 10) {
     return { 
-      leaderThought: "I'm ready to help. Please provide more details about your request so I can coordinate the team." 
+      leaderThought: getReadyToHelpMessage(state.lang) 
     };
   }
 
@@ -182,31 +242,51 @@ async function matchCapabilityNode(state: typeof FieldInsightState.State) {
   }
 
   return { 
-    leaderThought: "This seems like a new type of activity for us. Provide all details and I will assign it to the right specialist.",
-    suggestedTitle: result.suggestedTitle || null
+    leaderThought: getNewActivityMessage(state.lang),
+    suggestedTitle: result.suggestedTitle || getNewActivityTitle(state.lang)
   };
 }
 
 async function evaluateMatchedCapabilityNode(state: typeof FieldInsightState.State) {
   if (!state.matchedCapability) return {};
 
-  const prompt = `The user wants to use: "${state.matchedCapability.name}".
-  Needs: ${state.matchedCapability.inputsDescription || "General context"}
+  const prompt = `You are the Team Leader (Coordinator) talking to the Kivo Operator (named "${state.operatorName}"). Your goal is to advise "${state.operatorName}" on submitting the request to the team.
   
-  Input: "${state.requestDetails}"
+  CRITICAL WORKSPACE RULES:
+  - **NEVER** try to execute, solve, answer, or simulate the execution of the task/ticket itself. For example, if the input is a customer ticket, DO NOT write a customer reply or say "Hello Antonio". You are speaking directly to "${state.operatorName}", NOT the client mentioned in the ticket.
+  - Address your response exclusively to "${state.operatorName}". Greet them by name in your message!
+  - The rhetoric of your response must always be about whether the request is ready to be submitted to the team (e.g. "We matched this to capability X. We have enough details. You can submit now so the team can work on it").
   
-  Evaluate if the input is sufficient. If not, ask for what's missing. If yes, summarize the plan. 
-  Respond as a Team Leader.`;
+  FORMAT RULES:
+  - Respond with an extremely short, concise, and direct message (maximum 2-3 sentences).
+  - DO NOT use headers, titles, markdown tables, or multiple paragraphs.
+  - Return the content as a single unified paragraph that looks like a short, natural chat message.
+  - **LANGUAGE RULE**: You must write your entire response in the requested language: "${state.lang || "en"}". If "pt", reply in Portuguese. If "zh", reply in Chinese. If "en", reply in English. DO NOT write in any other language.
+  
+  Based on the input, we matched the capability: "${state.matchedCapability.name}".
+  Input requirements for this capability: "${state.matchedCapability.inputsDescription || "None (Does not require specific inputs)"}".
+  The request details input: "${state.requestDetails.trim()}"
+  
+  Please evaluate under these rules:
+  1. If this capability does NOT require inputs:
+     - State that we matched this to "${state.matchedCapability.name}", which requires no inputs, and that they can submit the request now so the team can begin.
+     - Set "isSufficient" to true.
+  2. If this capability requires inputs:
+     - Check if the request details contain the required inputs.
+     - If sufficient: Reassure the Operator that we have enough details to run "${state.matchedCapability.name}", and they can submit the request now. Set "isSufficient" to true.
+     - If missing: Clearly list what required details are missing and guide the Operator to provide them so we can proceed with the submission. Set "isSufficient" to false.
+  `;
 
   const structuredLlm = getLlm().withStructuredOutput(z.object({
     isSufficient: z.boolean(),
-    message: z.string()
+    message: z.string().describe(`The Markdown response message to display as Leader thoughts. CRITICAL: You must write this message in the requested language: "${state.lang || "en"}" (if pt write in Portuguese, if zh in Chinese, if en in English).`)
   }));
   const result = await structuredLlm.invoke(prompt);
 
   return { 
     leaderThought: result.message,
-    suggestedCapabilityIdentifier: state.matchedCapability.identifier
+    suggestedCapabilityIdentifier: state.matchedCapability.identifier,
+    suggestedTitle: state.matchedCapability.name
   };
 }
 
@@ -216,28 +296,54 @@ async function evaluateSelectedCapabilityNode(state: typeof FieldInsightState.St
     cap = await getCapabilityByIdentifier(state.teamId, state.capabilityIdentifier);
   }
 
-  if (!cap) return { leaderThought: "I couldn't find the details for the selected capability. Please describe what you need." };
+  if (!cap) return { leaderThought: getCapabilityNotFoundMessage(state.lang), suggestedCapabilityIdentifier: null };
 
-  const prompt = `The user selected: "${cap.name}".
-  Needs: ${cap.inputsDescription || "General context"}
-  Input: "${state.requestDetails}"
+  const prompt = `You are the Team Leader (Coordinator) talking to the Kivo Operator (named "${state.operatorName}"). Your goal is to advise "${state.operatorName}" on submitting the request to the team.
   
-  Evaluate and respond as Team Leader.`;
+  CRITICAL WORKSPACE RULES:
+  - **NEVER** try to execute, solve, answer, or simulate the execution of the task/ticket itself. For example, if the input is a customer ticket, DO NOT write a customer reply or say "Hello Antonio". You are speaking directly to "${state.operatorName}", NOT the client mentioned in the ticket.
+  - Address your response exclusively to "${state.operatorName}". Greet them by name in your message!
+  - The rhetoric of your response must always be about whether the request is ready to be submitted to the team (e.g. "We have enough details to run this capability. You can submit now so the team can begin").
+  
+  FORMAT RULES:
+  - Respond with an extremely short, concise, and direct message (maximum 2-3 sentences).
+  - DO NOT use headers, titles, markdown tables, or multiple paragraphs.
+  - Return the content as a single unified paragraph that looks like a short, natural chat message.
+  - **LANGUAGE RULE**: You must write your entire response in the requested language: "${state.lang || "en"}". If "pt", reply in Portuguese. If "zh", reply in Chinese. If "en", reply in English. DO NOT write in any other language.
+  
+  The Operator has selected the capability: "${cap.name}".
+  Input requirements for this capability: "${cap.inputsDescription || "None (Does not require specific inputs)"}".
+  The request details input: "${state.requestDetails.trim()}"
+  
+  Please evaluate under these rules:
+  1. If this capability does NOT require inputs:
+     - State that "${cap.name}" requires no inputs, and that they can submit the request now so the team can begin.
+     - Set "isSufficient" to true.
+  2. If this capability requires inputs, and the request details is EMPTY:
+     - Explain what the capability does and state what inputs we need from them to begin (provide a short inline comma list, DO NOT use bullet points or lists).
+     - Set "isSufficient" to false.
+  3. If this capability requires inputs, and the request details is NOT empty:
+     - Check if the request details contain the required inputs.
+     - If sufficient: Reassure the Operator that we have enough details to run "${cap.name}", and they can submit the request now. Set "isSufficient" to true.
+     - If missing: Clearly list what required details are missing and guide the Operator to provide them so we can proceed with the submission. Set "isSufficient" to false.
+  `;
 
   const structuredLlm = getLlm().withStructuredOutput(z.object({
-    message: z.string()
+    isSufficient: z.boolean(),
+    message: z.string().describe(`The Markdown response message to display as Leader thoughts. CRITICAL: You must write this message in the requested language: "${state.lang || "en"}" (if pt write in Portuguese, if zh in Chinese, if en in English).`)
   }));
   const result = await structuredLlm.invoke(prompt);
 
   return { 
     leaderThought: result.message,
-    suggestedCapabilityIdentifier: cap.identifier
+    suggestedCapabilityIdentifier: cap.identifier,
+    suggestedTitle: cap.name
   };
 }
 
 function routeAfterClassification(state: typeof FieldInsightState.State) {
-  if (state.classification?.isSimpleQuestion) return "answerSimpleQuestion";
   if (state.capabilityIdentifier) return "evaluateSelectedCapability";
+  if (state.classification?.isSimpleQuestion) return "answerSimpleQuestion";
   return "matchCapability";
 }
 
@@ -263,8 +369,14 @@ const workflow = new StateGraph(FieldInsightState)
 
 export const fieldInsightWorkflow = workflow.compile();
 
-export async function runFieldInsight(teamId: string, requestDetails: string, capabilityIdentifier?: string) {
-  const result = await fieldInsightWorkflow.invoke({ teamId, requestDetails, capabilityIdentifier: capabilityIdentifier || null });
+export async function runFieldInsight(teamId: string, requestDetails: string, capabilityIdentifier?: string, operatorName?: string, lang?: string) {
+  const result = await fieldInsightWorkflow.invoke({ 
+    teamId, 
+    requestDetails, 
+    capabilityIdentifier: capabilityIdentifier || null,
+    operatorName: operatorName || "Operator",
+    lang: lang || "en"
+  });
   return {
     leaderThought: result.leaderThought,
     suggestedCapabilityIdentifier: result.suggestedCapabilityIdentifier,

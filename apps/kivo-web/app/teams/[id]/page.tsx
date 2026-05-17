@@ -105,19 +105,17 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
     setIsExpanded(!isExpanded);
   };
 
-  const statusLabel = req.status === "completed" 
-    ? (req.resolution === "success" ? t.teamsPage.statusLabels.ok : t.teamsPage.statusLabels.failed) 
-    : (t.teamsPage.statusLabels as any)[req.status] || req.status.replace("_", " ");
+  const statusLabel = req.status === "success" ? t.teamsPage.statusLabels.ok :
+    req.status === "failed" ? t.teamsPage.statusLabels.failed :
+    (t.teamsPage.statusLabels as any)[req.status] || req.status.replace("_", " ");
 
   const statusColorClass = req.status === "draft" ? "bg-muted text-muted-foreground" :
     req.status === "open" ? "bg-blue-500/10 text-blue-500" :
     req.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
     req.status === "waiting_user" ? "bg-purple-500/10 text-purple-500" :
-    req.status === "completed" ? (
-      req.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-    ) :
-    req.status === "cancelled" ? "bg-gray-500/10 text-gray-500" :
-    "bg-emerald-500/10 text-emerald-500";
+    req.status === "success" ? "bg-emerald-500/10 text-emerald-500" :
+    req.status === "failed" ? "bg-red-500/10 text-red-500" :
+    "bg-muted text-muted-foreground";
 
   return (
     <div className="flex flex-col border-b last:border-0 border-border/50 w-full">
@@ -334,7 +332,7 @@ export default function TeamDetailPage() {
 
   const teamLead = agents.find((a) => a.isLeader);
   const otherAgents = agents.filter((a) => !a.isLeader);
-  const openedRequests = requests.filter(r => r.status !== "completed" && r.status !== "cancelled");
+  const openedRequests = requests.filter(r => r.status !== "success" && r.status !== "failed");
 
 
   
@@ -536,16 +534,16 @@ export default function TeamDetailPage() {
                     {t.teamsPage.statusLabels.waiting_user}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
-                    checked={statusFilter.includes("completed")} 
-                    onCheckedChange={() => toggleStatusFilter("completed")}
+                    checked={statusFilter.includes("success")} 
+                    onCheckedChange={() => toggleStatusFilter("success")}
                   >
-                    {t.teamsPage.statusLabels.completed}
+                    {t.teamsPage.statusLabels.ok}
                   </DropdownMenuCheckboxItem>
                   <DropdownMenuCheckboxItem 
-                    checked={statusFilter.includes("cancelled")} 
-                    onCheckedChange={() => toggleStatusFilter("cancelled")}
+                    checked={statusFilter.includes("failed")} 
+                    onCheckedChange={() => toggleStatusFilter("failed")}
                   >
-                    {t.teamsPage.statusLabels.cancelled}
+                    {t.teamsPage.statusLabels.failed}
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -714,8 +712,14 @@ export default function TeamDetailPage() {
                 activities.slice(0, 5).map((act) => {
                   const isHuman = act.actorType === "human";
                   const agent = isHuman ? null : agents.find((a) => a.id === act.actorId);
-                  const title = act.activityTitle || act.payload?.title || act.entityId?.substring(0, 8) || act.requestId?.substring(0, 8) || act.taskId?.substring(0, 8) || "an item";
                   
+                  const relatedRequest = act.requestId ? requests.find((r) => r.id === act.requestId) : null;
+                  const reqIdentifier = relatedRequest?.identifier || act.payload?.identifier;
+                  const reqSuffix = reqIdentifier ? ` (${reqIdentifier})` : "";
+
+                  const hasActor = isHuman || !!agent;
+                  const actionText = act.activityTitle || `${t.teamsPage.updated} ${act.payload?.title || act.entityId?.substring(0, 8) || "an item"}`;
+
                   return (
                     <div key={act.id} className="flex gap-3 items-start">
                       <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs">
@@ -723,14 +727,17 @@ export default function TeamDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs leading-tight">
-                          <span className="font-medium text-foreground">{isHuman ? t.teamsPage.you : agent?.name || "Agent"}</span>
-                          {act.activityTitle ? (
-                            <span className="text-muted-foreground"> {act.activityTitle}</span>
-                          ) : (
+                          {hasActor ? (
                             <>
-                              <span className="text-muted-foreground"> {t.teamsPage.updated} </span>
-                              <span className="font-medium text-foreground">{title}</span>
+                              <span className="font-medium text-foreground">
+                                {isHuman ? t.teamsPage.you : agent?.name}
+                              </span>
+                              <span className="text-muted-foreground"> {actionText}{reqSuffix}</span>
                             </>
+                          ) : (
+                            <span className="text-muted-foreground capitalize">
+                              {actionText}{reqSuffix}
+                            </span>
                           )}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">

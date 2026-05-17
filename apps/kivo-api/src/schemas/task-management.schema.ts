@@ -14,9 +14,9 @@ export const createTaskSchema = z.object({
   taskList: z.string().nullable().optional(),
   workSummary: z.string().nullable().optional(),
   result: z.string().nullable().optional(),
+  failureReason: z.string().nullable().optional(),
   assignedToId: z.string().uuid().nullable().optional(),
-  status: z.enum(["open", "in_progress", "waiting_user", "completed", "cancelled"]).optional(),
-  resolution: z.enum(["success", "failed"]).nullable().optional(),
+  status: z.enum(["open", "in_progress", "success", "failed"]).optional(),
 });
 
 export const updateTaskSchema = createTaskSchema.partial().omit({ teamId: true });

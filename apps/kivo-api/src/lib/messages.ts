@@ -2,7 +2,7 @@ export function buildTeamRequestInstructions(teamRequest: { title: string; ident
   
   return `Instructions for handling this Team Request:
 
-      **BASIC RULE**: You must only respond to this Team Request after completing all work. Use the 'update_request_status' Kivo MCP tool to update the status of the request to 'completed' (resolution: 'success' or 'failed') and provide your response.
+      **BASIC RULE**: You must only respond to this Team Request after completing all work. Use the 'update_request_status' Kivo MCP tool to update the status of the request to 'success' (or 'failed' if you cannot fulfill it) and provide your response.
 
       ### STEP 1: Fetch Request Details and start analysis
       If you haven't done so yet, please use the 'get_request' Kivo MCP tool to fetch the full details of this Team Request (${teamRequest.identifier}).
@@ -25,7 +25,7 @@ export function buildTeamRequestInstructions(teamRequest: { title: string; ident
       - **Note**: There is no need to create a task for extremely simple requests: if the request is a simple question or something you can accomplish using your knowledge or available tools, ACCEPT IT and proceed to STEP 6.
       - **EXHAUST ALL OPTIONS BEFORE REJECTING**: You must make a strong effort to complete the request. Do NOT reject it immediately just because you feel information is missing. 
         You MUST first use all available tools (including MCP tools) to look up the missing information. 
-      - IF YOU ABSOLUTELY CANNOT FULFILL IT (only after exhausting all tools): Reject the request using the 'update_request_status' tool (status: 'completed', resolution: 'failed') and provide your reasoning in the 'response' field.
+      - IF YOU ABSOLUTELY CANNOT FULFILL IT (only after exhausting all tools): Reject the request using the 'update_request_status' tool (status: 'failed') and provide your reasoning in the 'response' field.
       - IF YOU ACCEPT THE REQUEST: Proceed to STEP 4.
 
       ### STEP 4: Create and Document TASK
@@ -48,7 +48,7 @@ export function buildTeamRequestInstructions(teamRequest: { title: string; ident
       You SHOULD also update this request to indicate that you have opened a new request and that it is linked to this request.
 
       ### STEP 6: Finalize Request (Respond)
-      1. Once all work is completely finished (whether successful or failed), you must finally call 'update_request_status' to update this request status to 'completed' (resolution: 'success' or 'failed'). 
+      1. Once all work is completely finished, you must call 'update_request_status' to update this request status to 'success' or 'failed'. 
       Pass the identifier '${teamRequest.identifier}' as the requestId.
       2. Provide your final response in the 'response' field:
          - If you created a TASK for this request, you may just refer to that task in your response.
@@ -61,11 +61,11 @@ export function buildTeamRequestMessage(teamRequest: { identifier: string; title
   Read all fields without exception and follow the instructions thoroughly to provide the best possible response and achieve the desired outcome of this request.`;
 }
 
-export function buildTeamRequestFinishedMessage(completedRequest: { identifier: string; title: string; resolution: string; response?: string }) {
+export function buildTeamRequestFinishedMessage(completedRequest: { identifier: string; title: string; status: string; response?: string }) {
   return `A Team Request you previously opened has been completed.
   Identifier: ${completedRequest.identifier}
   Title: ${completedRequest.title}
-  Resolution: ${completedRequest.resolution}
+  Status: ${completedRequest.status}
   
   You must use the 'get_request' Kivo MCP tool passing the identifier '${completedRequest.identifier}' to fetch the final details and response of this request if you need more context.
   

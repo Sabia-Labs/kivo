@@ -484,8 +484,6 @@ export const zh: Dictionary = {
     deleteRequest: "删除请求",
     deleteConfirm: "您确定要删除此请求吗？此操作无法撤销。",
     whatToAskPlaceholder: "您想向团队询问什么？",
-    reopenRequest: "重新开启请求",
-    requestReopened: "请求已重新开启",
     titleUpdated: "标题已更新",
     failedUpdateTitle: "更新标题失败",
     whatWasAsked: "提问内容",

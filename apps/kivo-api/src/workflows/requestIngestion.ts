@@ -324,8 +324,10 @@ CRITICAL TASK WORKFLOW INSTRUCTIONS:
 You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
 2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. If simple, provide a brief rationale in the 'plan' field.
-3. RESULT: Summarize your actions in the 'workSummary' field. Provide the final deliverable (fulfilling the acceptance criteria) in the 'result' field.
-4. COMPLETION: It is absolutely critical that you update the task 'status' to 'completed' when you finish the work and also the resolution field MUST be set to 'success' or 'failed' accordingly.`;
+3. RESULT: Summarize your actions in the 'workSummary' field.
+   - If the task was successful: populate the 'result' field with the final deliverable/outcome. Do NOT populate the 'failureReason' field.
+   - If the task failed or could not be completed: populate the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. Do NOT populate the 'result' field.
+4. COMPLETION: You MUST update the task 'status' field without fail once you finish. If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. Do not leave the task open; it must be resolved.`;
 
   const finalInstructions = `${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 

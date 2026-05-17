@@ -1,1 +1,0 @@
-ALTER TABLE "team_capabilities" DROP COLUMN "description_i18n_key";

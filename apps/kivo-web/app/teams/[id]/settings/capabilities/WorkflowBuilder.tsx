@@ -121,6 +121,7 @@ export function WorkflowBuilder({
               
               <div className="flex flex-col gap-3">
                 <SmartCapabilitySelect
+                  key={`next-node-select-${tasks.length}`}
                   value={null}
                   onChange={(val) => handleUpdateNode(tasks.length, val)}
                   availableCapabilities={allCapabilities.filter(c => c.type === 'task_template')}

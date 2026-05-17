@@ -23,8 +23,7 @@ const requestSchema = z.object({
   priority: z.number().int().min(0).max(4).optional(),
   capabilitiesWorkflow: z.any().optional(),
   state: z.array(z.string()).optional(),
-  status: z.enum(["draft", "open", "in_progress", "waiting_user", "completed", "cancelled"]).optional(),
-  resolution: z.enum(["success", "failed"]).optional().nullable(),
+  status: z.enum(["draft", "open", "in_progress", "waiting_user", "success", "failed"]).optional(),
   response: z.string().optional(),
   parentRequestId: z.string().optional().nullable(),
 });
@@ -123,7 +122,7 @@ requestsRouter.get("/", authMiddleware, async (req, res) => {
 
     const conditions: any[] = [eq(requests.teamId, teamId)];
     if (statusFilter) {
-      conditions.push(eq(requests.status, statusFilter as "draft" | "open" | "in_progress" | "waiting_user" | "completed" | "cancelled"));
+      conditions.push(eq(requests.status, statusFilter as "draft" | "open" | "in_progress" | "waiting_user" | "success" | "failed"));
     }
     if (targetAgentIdFilter) {
       conditions.push(eq(requests.targetAgentId, targetAgentIdFilter));
@@ -158,15 +157,23 @@ requestsRouter.get("/", authMiddleware, async (req, res) => {
 requestsRouter.post("/insight", authMiddleware, async (req, res) => {
   try {
     const teamId = String(req.params.teamId);
-    const { requestDetails, capabilitiesWorkflow } = req.body;
+    const { requestDetails, capabilitiesWorkflow, lang } = req.body;
+    const capabilityIdentifier = capabilitiesWorkflow && capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : undefined;
 
-    if (!requestDetails) {
+    const detailsText = typeof requestDetails === "string" ? requestDetails : "";
+    if (!detailsText.trim() && !capabilityIdentifier) {
       return res.status(400).json({ error: "requestDetails is required" });
     }
 
-    const capabilityIdentifier = capabilitiesWorkflow && capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : undefined;
+    let operatorName = "Operator";
+    if (req.actor?.type === "human") {
+      const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, req.actor.id)).limit(1);
+      if (user?.name) {
+        operatorName = user.name;
+      }
+    }
 
-    const insightResult = await runFieldInsight(teamId, requestDetails, capabilityIdentifier);
+    const insightResult = await runFieldInsight(teamId, detailsText, capabilityIdentifier, operatorName, lang);
 
     res.json({ data: insightResult });
   } catch (err: any) {

@@ -4,13 +4,11 @@ CREATE TYPE "public"."agent_k8s_status" AS ENUM('pending', 'provisioning', 'runn
 CREATE TYPE "public"."capability_type" AS ENUM('task_template', 'workflow');--> statement-breakpoint
 CREATE TYPE "public"."change_type" AS ENUM('data', 'status', 'relationship', 'creation', 'deletion');--> statement-breakpoint
 CREATE TYPE "public"."counterpart_type" AS ENUM('human', 'agent', 'external');--> statement-breakpoint
-CREATE TYPE "public"."integration_provider" AS ENUM('linear', 'jira', 'trello', 'github');--> statement-breakpoint
+CREATE TYPE "public"."integration_provider" AS ENUM('linear', 'jira', 'trello', 'github', 'notion');--> statement-breakpoint
 CREATE TYPE "public"."message_role" AS ENUM('user', 'assistant');--> statement-breakpoint
 CREATE TYPE "public"."notification_priority" AS ENUM('info', 'normal', 'high', 'alert');--> statement-breakpoint
-CREATE TYPE "public"."request_resolution" AS ENUM('success', 'failed');--> statement-breakpoint
-CREATE TYPE "public"."request_status" AS ENUM('draft', 'open', 'in_progress', 'waiting_user', 'completed', 'cancelled');--> statement-breakpoint
-CREATE TYPE "public"."task_resolution" AS ENUM('success', 'failed');--> statement-breakpoint
-CREATE TYPE "public"."task_status" AS ENUM('open', 'in_progress', 'waiting_user', 'completed', 'cancelled');--> statement-breakpoint
+CREATE TYPE "public"."request_status" AS ENUM('draft', 'open', 'in_progress', 'waiting_user', 'success', 'failed');--> statement-breakpoint
+CREATE TYPE "public"."task_status" AS ENUM('open', 'in_progress', 'success', 'failed');--> statement-breakpoint
 CREATE TABLE "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
@@ -131,7 +129,6 @@ CREATE TABLE "requests" (
 	"capabilities_workflow" jsonb,
 	"state" jsonb,
 	"status" "request_status" DEFAULT 'open' NOT NULL,
-	"resolution" "request_resolution",
 	"response" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -151,9 +148,9 @@ CREATE TABLE "tasks" (
 	"task_list" text,
 	"work_summary" text,
 	"result" text,
+	"failure_reason" text,
 	"assigned_to_id" uuid,
 	"status" "task_status" DEFAULT 'open' NOT NULL,
-	"resolution" "task_resolution",
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -162,7 +159,6 @@ CREATE TABLE "team_capabilities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
 	"name" text NOT NULL,
-	"description_i18n_key" text,
 	"identifier" text NOT NULL,
 	"instructions" text NOT NULL,
 	"inputs_description" text,

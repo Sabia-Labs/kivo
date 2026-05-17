@@ -64,9 +64,9 @@ export async function createTaskInternal(input: any, actor: { id: string, type: 
         taskList: input.taskList,
         workSummary: input.workSummary,
         result: input.result,
+        failureReason: input.failureReason,
         assignedToId: input.assignedToId,
         status: input.status,
-        resolution: input.resolution,
       })
       .returning();
 
@@ -179,7 +179,7 @@ tasksRouter.put("/:id", authMiddleware, async (req: Request, res: Response, next
       return updated;
     });
 
-    if (result.status === "completed" && result.requestId) {
+    if ((result.status === "success" || result.status === "failed") && result.requestId) {
       runRequestContinuation(result.id, result.requestId, result.teamId).catch(err => {
         console.error(`[request-continuation] Workflow failed for task ${result.id}:`, err);
       });

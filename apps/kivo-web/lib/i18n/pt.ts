@@ -482,8 +482,6 @@ export const pt = {
     deleteRequest: "Excluir Solicitação",
     deleteConfirm: "Tem certeza de que deseja excluir esta solicitação? Esta ação não pode ser desfeita.",
     whatToAskPlaceholder: "O que você gostaria de perguntar ao time?",
-    reopenRequest: "Reabrir Solicitação",
-    requestReopened: "Solicitação reaberta",
     titleUpdated: "Título atualizado",
     failedUpdateTitle: "Falha ao atualizar título",
     whatWasAsked: "O que foi perguntar",

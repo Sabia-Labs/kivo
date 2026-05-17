@@ -185,19 +185,15 @@ export default function TaskPage() {
 
   const assignedAgent = agents.find(a => a.id === task.assignedToId);
 
-  const statusLabel = task.status === "completed" 
-    ? (task.resolution === "success" ? "ok" : "failed") 
-    : task.status === "open" ? "created" : task.status.replace("_", " ");
+  const statusLabel = task.status === "success" ? "ok" :
+    task.status === "failed" ? "failed" :
+    task.status === "open" ? "created" : task.status.replace("_", " ");
 
-  const statusColorClass = task.status === "draft" ? "bg-muted text-muted-foreground" :
-    task.status === "open" ? "bg-blue-500/10 text-blue-500" :
+  const statusColorClass = task.status === "open" ? "bg-blue-500/10 text-blue-500" :
     task.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
-    task.status === "waiting_user" ? "bg-purple-500/10 text-purple-500" :
-    task.status === "completed" ? (
-      task.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-    ) :
-    task.status === "cancelled" ? "bg-gray-500/10 text-gray-500" :
-    "bg-emerald-500/10 text-emerald-500";
+    task.status === "success" ? "bg-emerald-500/10 text-emerald-500" :
+    task.status === "failed" ? "bg-red-500/10 text-red-500" :
+    "bg-muted text-muted-foreground";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:py-12">
@@ -271,14 +267,15 @@ export default function TaskPage() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-8 w-full">
-        {/* INPUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          {/* INPUT */}
         <section className="rounded-xl border bg-card p-6 space-y-6">
           <h2 className="text-lg font-semibold border-b pb-2">Input</h2>
           <div className="grid gap-6">
             <div className="space-y-2">
               <Label>Prompt</Label>
-              <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+              <div className="p-4 bg-muted/50 rounded-lg border text-sm">
                 <Markdown content={task.prompt || ""} />
               </div>
             </div>
@@ -305,7 +302,7 @@ export default function TaskPage() {
                 {task.plan && (
                   <div className="space-y-2">
                     <Label>Plan</Label>
-                    <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+                    <div className="p-4 bg-muted/50 rounded-lg border text-sm">
                       <Markdown content={task.plan} />
                     </div>
                   </div>
@@ -313,7 +310,7 @@ export default function TaskPage() {
                 {task.taskList && (
                   <div className="space-y-2">
                     <Label>Task List</Label>
-                    <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap font-mono">
+                    <div className="p-4 bg-muted/50 rounded-lg border text-sm font-mono">
                       <Markdown content={task.taskList} />
                     </div>
                   </div>
@@ -330,7 +327,7 @@ export default function TaskPage() {
             {task.workSummary && (
               <div className="space-y-2">
                 <Label>Work Summary</Label>
-                <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+                <div className="p-4 bg-muted/50 rounded-lg border text-sm">
                   <Markdown content={task.workSummary} />
                 </div>
               </div>
@@ -340,36 +337,46 @@ export default function TaskPage() {
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   Result
-                  {task.status === "completed" && (
-                    <span className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
-                      task.resolution === "success" ? "bg-emerald-500/10 text-emerald-500" : "bg-red-500/10 text-red-500"
-                    )}>
-                      {task.resolution === "success" ? "Success" : "Failed"}
+                  {task.status === "success" && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500">
+                      Success
                     </span>
                   )}
                 </Label>
-                <div className={cn(
-                  "p-4 rounded-lg border text-sm whitespace-pre-wrap mt-1",
-                  task.status === "completed" && task.resolution !== "success"
-                    ? "bg-red-500/5 border-red-500/20"
-                    : "bg-emerald-500/5 border-emerald-500/20"
-                )}>
+                <div className="p-4 rounded-lg border text-sm mt-1 bg-emerald-500/5 border-emerald-500/20">
                   <Markdown content={task.result} />
                 </div>
               </div>
             )}
+
+            {task.failureReason && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  Failure Reason
+                  {task.status === "failed" && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-red-500/10 text-red-500">
+                      Failed
+                    </span>
+                  )}
+                </Label>
+                <div className="p-4 rounded-lg border text-sm mt-1 bg-red-500/5 border-red-500/20">
+                  <Markdown content={task.failureReason} />
+                </div>
+              </div>
+            )}
             
-            {!task.workSummary && !task.result && (
+            {!task.workSummary && !task.result && !task.failureReason && (
               <div className="text-sm text-muted-foreground italic">
-                No result provided yet.
+                No result or failure reason provided yet.
               </div>
             )}
           </div>
         </section>
 
+        </div>
+
         {/* Comments Area */}
-        <div className="grid grid-cols-1 w-full mt-6">
+        <div className="space-y-6">
           <section className="rounded-xl border bg-card flex flex-col h-[500px]">
             <div className="border-b px-5 py-4 flex items-center gap-2 bg-muted/20">
               <MessageSquare className="size-4 text-muted-foreground" />
@@ -416,7 +423,7 @@ export default function TaskPage() {
                 <X className="size-4" />
               </Button>
             </div>
-            <div className="p-6 overflow-y-auto whitespace-pre-wrap text-sm leading-relaxed">
+            <div className="p-6 overflow-y-auto text-sm leading-relaxed">
               <Markdown content={task.instructions || ""} />
             </div>
             <div className="px-6 py-4 border-t bg-muted/20 flex justify-end">

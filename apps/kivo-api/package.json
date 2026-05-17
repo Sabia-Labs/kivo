@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "tsx seed/seed.ts"
+    "db:seed": "tsx seed/seed.ts",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.22.3",
