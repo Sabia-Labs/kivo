@@ -15,6 +15,7 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { DisplayStatus } from "@/lib/types";
 import { AgentChatArea } from "@/components/AgentChatArea";
+import { Markdown } from "@/components/Markdown";
 
 // ── Constants & Types ────────────────────────────────────────────────────────
 
@@ -399,6 +400,12 @@ export default function AgentPage() {
   type BrainField = "soul" | "identity" | "agentsInstructions";
   const [editingBrainField, setEditingBrainField] = useState<BrainField | null>(null);
   const [brainContent, setBrainContent] = useState("");
+
+  const fieldTitleMap: Record<BrainField, string> = {
+    soul: "Soul",
+    identity: "Identity",
+    agentsInstructions: "Process",
+  };
   const [isFetchingLive, setIsFetchingLive] = useState(false);
 
   const authHeaders = useCallback((): HeadersInit => ({
@@ -430,7 +437,7 @@ export default function AgentPage() {
     const filenameMap: Record<BrainField, string> = {
       soul: "SOUL.md",
       identity: "IDENTITY.md",
-      agentsInstructions: "PROCESS.MD"
+      agentsInstructions: "AGENTS.md"
     };
 
     const liveContent = await fetchLiveFile(filenameMap[field]);
@@ -697,7 +704,7 @@ export default function AgentPage() {
               <div className="mt-5 border rounded-xl p-4 bg-muted/10 animate-in fade-in slide-in-from-top-2">
                  <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm tracking-wide uppercase">{editingBrainField} Content</h4>
+                      <h4 className="font-semibold text-sm tracking-wide uppercase">{fieldTitleMap[editingBrainField]} Content</h4>
                       <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">READ-ONLY</span>
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingBrainField(null)}><X className="size-4" /></Button>
@@ -709,8 +716,12 @@ export default function AgentPage() {
                      <p className="text-xs text-muted-foreground animate-pulse">Reading from agent disk...</p>
                    </div>
                  ) : (
-                   <div className="w-full min-h-[250px] p-4 text-sm font-mono bg-background border rounded-md overflow-auto whitespace-pre-wrap">
-                     {brainContent || <span className="text-muted-foreground italic">No content found.</span>}
+                   <div className="w-full min-h-[250px] p-6 bg-background border rounded-md overflow-auto">
+                     {brainContent ? (
+                       <Markdown content={brainContent} />
+                     ) : (
+                       <span className="text-muted-foreground italic">No content found.</span>
+                     )}
                    </div>
                  )}
                  

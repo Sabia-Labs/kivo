@@ -437,6 +437,42 @@ export const zh: Dictionary = {
     newTeamComingSoon: "新建团队功能即将上线。",
     workspaceLabel: "工作区",
   },
+  teams: {
+    types: {
+      starter: {
+        name: "灵巢 Starter",
+        description: "配备一名行政助理，助您轻松开启。简单且灵活。",
+      },
+      "product-delivery": {
+        name: "产品交付",
+        description: "具备 SDLC 纪律的完整软件交付团队。",
+      },
+      "customer-support": {
+        name: "客户支持",
+        description: "为您的用户提供自动化的支持团队。",
+      },
+      sales: {
+        name: "销售与营收",
+        description: "推动增长并管理您的销售流水线。",
+      },
+      marketing: {
+        name: "市场与增长",
+        description: "建立您的品牌并生成需求。",
+      },
+      finance: {
+        name: "财务",
+        description: "管理您的预算和财务健康。",
+      },
+      legal: {
+        name: "法律",
+        description: "保护您的业务并确保合规。",
+      },
+      "executive-operations": {
+        name: "执行运营",
+        description: "协调优先级，跟踪 OKR，并保持执行节奏。",
+      },
+    },
+  },
   capabilities: {
     product_delivery: {
       triage: { name: "整理待办事项", desc: "组织并精炼项目待办事项。" },
