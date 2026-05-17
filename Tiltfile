@@ -324,6 +324,8 @@ k8s_yaml(
       'adminApi.image.tag=local',
       'kivoWeb.image.repository=' + KIVO_WEB_IMAGE,
       'kivoWeb.image.tag=local',
+      'kivoWeb.env.SITE_URL=http://' + TILT_HOST,
+      'kivoWeb.env.NEXT_PUBLIC_SITE_URL=http://' + TILT_HOST,
       'adminWeb.image.repository=' + ADMIN_WEB_IMAGE,
       'adminWeb.image.tag=local',
       'controller.image.repository=' + CONTROLLER_IMAGE,

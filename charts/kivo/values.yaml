@@ -157,6 +157,7 @@ kivoWeb:
   env:
     NODE_ENV: production
     PORT: "3000"
+    # SITE_URL: "http://kivo.localhost" (overridden in values-local.yaml or Tiltfile)
 
   livenessProbe:
     httpGet:
