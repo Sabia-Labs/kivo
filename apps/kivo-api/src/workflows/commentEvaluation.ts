@@ -135,9 +135,9 @@ Your goal is to classify the human's intent and extract any new instructions.
 "${newCommentContent}"
 
 Classify the intent into one of these 4 values:
-1. "retry": The operator wants to re-run the failed task, typically providing new details, solutions, corrections, API keys, credentials, or simply asking to try again (e.g., "tenta de novo", "run again", "try with 8080", "here is the correct credentials").
-2. "bypass": The operator wants to skip the failed task and proceed to the next task in the workflow (e.g., "pula essa parte", "ignora", "segue para a próxima", "skip this step").
-3. "cancel": The operator wants to abort/cancel the entire request (e.g., "cancela tudo", "para o fluxo", "abort").
+1. "retry": The operator wants to re-run the failed task, typically providing new details, solutions, corrections, API keys, credentials, or simply asking to try again (e.g., "try again", "try with a different input", "here is the correct credentials").
+2. "bypass": The operator wants to skip the failed task and proceed to the next task in the workflow (e.g., "skip this step").
+3. "cancel": The operator wants to abort/cancel the entire request (e.g., "cancel everything", "stop the flow", "abort it").
 4. "chat": The operator is just talking, asking a question, saying thank you, saying hello, or making comments that do not imply a do-not-trigger action.`;
 
     const result = await structuredLlm.invoke(prompt);
@@ -169,8 +169,15 @@ Classify the intent into one of these 4 values:
       const replyContent = `I have received your new instructions and will retry executing the step **${lastTask.title}** right away!\n\n**Additional Instructions Applied:**\n${result.extractedInstructions}`;
       await addCommentToRequest(requestId, teamId, actorId, "agent", replyContent);
 
-      // 4. Update request status to in_progress
-      await updateRequest(requestId, { status: "in_progress" }, teamId, "agent");
+      // 4. Update request status to in_progress and append state entry
+      const retryStateEntry = `Operator requested a retry on failed task '${lastTask.title}'. Human Comment: "${newCommentContent}". Summarized Instructions Applied: "${result.extractedInstructions}"`;
+      const updatedState = [...(request.state || []), retryStateEntry];
+
+      await db.update(requests).set({
+        status: "in_progress",
+        state: updatedState,
+        updatedAt: new Date()
+      }).where(eq(requests.id, requestId));
 
       // 5. Notify the agent directly to rerun the task
       await notifyAgentOfTask(updatedTask, request.identifier);
@@ -188,8 +195,15 @@ Classify the intent into one of these 4 values:
       const replyContent = `Understood. Bypassing the failed step **${lastTask.title}** and proceeding to the next task in the workflow.`;
       await addCommentToRequest(requestId, teamId, actorId, "agent", replyContent);
 
-      // 3. Update request status to in_progress
-      await updateRequest(requestId, { status: "in_progress" }, teamId, "agent");
+      // 3. Update request status to in_progress and append state entry
+      const bypassStateEntry = `Operator requested a bypass on failed task '${lastTask.title}'. Human Comment: "${newCommentContent}". Task was skipped by operator instructions.`;
+      const updatedState = [...(request.state || []), bypassStateEntry];
+
+      await db.update(requests).set({
+        status: "in_progress",
+        state: updatedState,
+        updatedAt: new Date()
+      }).where(eq(requests.id, requestId));
 
       // 4. Trigger continuation workflow to move to the next capability
       runRequestContinuation(lastTask.id, requestId, teamId).catch(err => {
@@ -197,8 +211,15 @@ Classify the intent into one of these 4 values:
       });
 
     } else if (result.intent === "cancel") {
-      // 1. Cancel request by setting it to failed
-      await updateRequest(requestId, { status: "failed" }, teamId, "agent");
+      // 1. Cancel request by setting it to failed and append state entry
+      const cancelStateEntry = `Operator requested a cancellation of the request workflow on task '${lastTask.title}'. Human Comment: "${newCommentContent}".`;
+      const updatedState = [...(request.state || []), cancelStateEntry];
+
+      await db.update(requests).set({
+        status: "failed",
+        state: updatedState,
+        updatedAt: new Date()
+      }).where(eq(requests.id, requestId));
 
       // 2. Add cancelled comment on Request
       const replyContent = `Understood. I have cancelled the request workflow as requested.`;
