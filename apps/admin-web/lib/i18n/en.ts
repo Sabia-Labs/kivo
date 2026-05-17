@@ -106,32 +106,6 @@ export const en = {
     sectionTitle: "Deployable team infrastructure.",
     sectionSubtitle:
       "Instantly provision specialized AI teams pre-configured with the right roles, prompts, and workflows for your domain.",
-    items: [
-      {
-        key: "product-delivery",
-        icon: "🚀",
-        title: "Product Delivery",
-        description: "Full software delivery squad with SDLC discipline. Includes Product Manager, Architect, and Engineers.",
-        badge: "Popular",
-        cta: "Deploy Delivery Team",
-      },
-      {
-        key: "sales",
-        icon: "💰",
-        title: "Sales & Revenue",
-        description: "Automate your revenue engine. Identify leads, qualify opportunities, and manage your sales pipeline.",
-        badge: "New",
-        cta: "Deploy Sales Team",
-      },
-      {
-        key: "customer-support",
-        icon: "🎧",
-        title: "Customer Support",
-        description: "Provide exceptional, timely support. Automated triage, resolution, and knowledge management.",
-        badge: "",
-        cta: "Deploy Support Team",
-      },
-    ],
   },
   controlPlane: {
     sectionBadge: "Control Plane",
@@ -231,43 +205,6 @@ export const en = {
     step3: {
       title: "Choose your team template",
       subtitle: "Pick a starting structure. You can always add more agents later.",
-      templates: {
-        starter: {
-          icon: "🧩",
-          title: "Kivo Starter",
-          description: "An executive assistant to get you going. Simple and flexible.",
-        },
-        product_delivery: {
-          icon: "🚀",
-          title: "Product Delivery",
-          description: "Full software delivery squad with SDLC discipline.",
-        },
-        customer_support: {
-          icon: "🎧",
-          title: "Customer Support",
-          description: "Automated support team for your users.",
-        },
-        sales: {
-          icon: "💰",
-          title: "Sales & Revenue",
-          description: "Drive growth and manage your sales pipeline.",
-        },
-        marketing: {
-          icon: "📣",
-          title: "Marketing & Growth",
-          description: "Build your brand and generate demand.",
-        },
-        finance: {
-          icon: "🏦",
-          title: "Finance",
-          description: "Manage your budget and financial health.",
-        },
-        legal: {
-          icon: "⚖️",
-          title: "Legal",
-          description: "Protect your business and ensure compliance.",
-        },
-      },
       next: "Continue",
       back: "Back",
     },

@@ -100,32 +100,6 @@ export const zh: Dictionary = {
     sectionTitle: "从模板开始，\n按您的方式成长。",
     sectionSubtitle:
       "选择适合您用例的起始结构。模板定义初始角色组成——您的团队随时可以从这里演进。",
-    items: [
-      {
-        key: "starter",
-        icon: "🧩",
-        title: "灵巢 Starter",
-        description: "最简单的团队——仅一名组长即可开始。适合通用或探索性用途。",
-        badge: "",
-        cta: "立即开始",
-      },
-      {
-        key: "product-delivery",
-        icon: "🚀",
-        title: "产品交付",
-        description: "具备 SDLC 纪律的完整软件交付团队。包括产品经理、架构师和工程师。",
-        badge: "热门",
-        cta: "立即开始",
-      },
-      {
-        key: "customer-support",
-        icon: "🎧",
-        title: "客户支持",
-        description: "专为处理工单、路由问题和规模化维护客户 SLA 而设计的自动化支持团队。",
-        badge: "即将推出",
-        cta: "加入候补",
-      },
-    ],
   },
   controlPlane: {
     sectionBadge: "控制平面",
@@ -233,50 +207,6 @@ export const zh: Dictionary = {
     step3: {
       title: "选择您的团队模板",
       subtitle: "选择起始结构。您随时可以在此基础上添加更多智能体。",
-      templates: {
-        starter: {
-          icon: "🧩",
-          title: "灵巢 Starter",
-          description: "配备一名行政助理，助您轻松开启。简单且灵活。",
-          comingSoon: false,
-        },
-        product_delivery: {
-          icon: "🚀",
-          title: "产品交付",
-          description: "具备 SDLC 纪律的完整软件交付团队。",
-          comingSoon: false,
-        },
-        customer_support: {
-          icon: "🎧",
-          title: "客户支持",
-          description: "为您的用户提供自动化的支持团队。",
-          comingSoon: false,
-        },
-        sales: {
-          icon: "💰",
-          title: "销售与营收",
-          description: "推动增长并管理您的销售流水线。",
-          comingSoon: false,
-        },
-        marketing: {
-          icon: "📣",
-          title: "市场与增长",
-          description: "建立您的品牌并生成需求。",
-          comingSoon: false,
-        },
-        finance: {
-          icon: "🏦",
-          title: "财务",
-          description: "管理您的预算和财务健康。",
-          comingSoon: false,
-        },
-        legal: {
-          icon: "⚖️",
-          title: "法务",
-          description: "保护您的业务并确保合规。",
-          comingSoon: false,
-        },
-      },
       next: "继续",
       back: "返回",
     },

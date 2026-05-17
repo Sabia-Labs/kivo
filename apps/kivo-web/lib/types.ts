@@ -21,7 +21,7 @@ export interface Team {
   icon?: string;
   mission?: string;
   waysOfWorking?: string;
-  template?: string;
+  templateId?: string | null;
   createdAt: string;
 }
 

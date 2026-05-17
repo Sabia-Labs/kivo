@@ -106,32 +106,6 @@ export const zh: Dictionary = {
     sectionBadge: "基础设施模板",
     sectionTitle: "可部署的团队基础设施。",
     sectionSubtitle: "立即部署针对您的领域预先配置了正确角色、提示词和工作流的专业 AI 团队。",
-    items: [
-      {
-        key: "product-delivery",
-        icon: "🚀",
-        title: "产品交付",
-        description: "具备 SDLC 纪律的完整软件交付团队。包括产品经理、架构师和工程师。",
-        badge: "热门",
-        cta: "部署交付团队",
-      },
-      {
-        key: "sales",
-        icon: "💰",
-        title: "销售与营收",
-        description: "自动化您的营收引擎。识别潜在客户、限定机会并管理您的销售流水线。",
-        badge: "新品",
-        cta: "部署销售团队",
-      },
-      {
-        key: "customer-support",
-        icon: "🎧",
-        title: "客户支持",
-        description: "提供卓越、及时的支持。自动化的分拣、解决和知识管理。",
-        badge: "",
-        cta: "部署支持团队",
-      },
-    ],
   },
   controlPlane: {
     sectionBadge: "控制平面",
@@ -230,43 +204,6 @@ export const zh: Dictionary = {
     step3: {
       title: "选择您的团队模板",
       subtitle: "选择起始结构。您随时可以在此基础上添加更多智能体。",
-      templates: {
-        starter: {
-          icon: "🧩",
-          title: "灵巢 Starter",
-          description: "配备一名行政助理，助您轻松开启。简单且灵活。",
-        },
-        product_delivery: {
-          icon: "🚀",
-          title: "产品交付",
-          description: "具备 SDLC 纪律的完整软件交付团队。",
-        },
-        customer_support: {
-          icon: "🎧",
-          title: "客户支持",
-          description: "为您的用户提供自动化的支持团队。",
-        },
-        sales: {
-          icon: "💰",
-          title: "销售与营收",
-          description: "推动增长并管理您的销售流水线。",
-        },
-        marketing: {
-          icon: "📣",
-          title: "市场与增长",
-          description: "建立您的品牌并生成需求。",
-        },
-        finance: {
-          icon: "🏦",
-          title: "财务",
-          description: "管理您的预算和财务健康。",
-        },
-        legal: {
-          icon: "⚖️",
-          title: "法务",
-          description: "保护您的业务并确保合规。",
-        },
-      },
       next: "继续",
       back: "返回",
     },

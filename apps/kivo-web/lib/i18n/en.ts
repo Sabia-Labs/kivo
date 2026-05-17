@@ -98,32 +98,6 @@ export const en = {
     sectionTitle: "Start with a template.\nGrow into your own.",
     sectionSubtitle:
       "Choose a starting structure that fits your use case. Templates define the initial role composition — your team can always evolve from there.",
-    items: [
-      {
-        key: "starter",
-        icon: "🧩",
-        title: "Kivo Starter",
-        description: "The simplest possible team — just a Team Lead to get you going. Perfect for general-purpose or exploratory use.",
-        badge: "",
-        cta: "Get Started",
-      },
-      {
-        key: "engineering",
-        icon: "💻",
-        title: "Engineering",
-        description: "A full software delivery squad with SDLC discipline — Engineer, Architect, and Product Manager working together.",
-        badge: "Popular",
-        cta: "Get Started",
-      },
-      {
-        key: "customer_support",
-        icon: "🎧",
-        title: "Customer Support",
-        description: "An automated support team designed to handle tickets, route issues, and maintain customer SLAs at scale.",
-        badge: "Coming Soon",
-        cta: "Join Waitlist",
-      },
-    ],
   },
   controlPlane: {
     sectionBadge: "Control Plane",
@@ -231,50 +205,6 @@ export const en = {
     step3: {
       title: "Choose your team template",
       subtitle: "Pick a starting structure. You can always add more agents later.",
-      templates: {
-        starter: {
-          icon: "🧩",
-          title: "Kivo Starter",
-          description: "An executive assistant to get you going. Simple and flexible.",
-          comingSoon: false,
-        },
-        product_delivery: {
-          icon: "🚀",
-          title: "Product Delivery",
-          description: "Full software delivery squad with SDLC discipline.",
-          comingSoon: false,
-        },
-        customer_support: {
-          icon: "🎧",
-          title: "Customer Support",
-          description: "Automated support team for your users.",
-          comingSoon: false,
-        },
-        sales: {
-          icon: "💰",
-          title: "Sales & Revenue",
-          description: "Drive growth and manage your sales pipeline.",
-          comingSoon: false,
-        },
-        marketing: {
-          icon: "📣",
-          title: "Marketing & Growth",
-          description: "Build your brand and generate demand.",
-          comingSoon: false,
-        },
-        finance: {
-          icon: "🏦",
-          title: "Finance",
-          description: "Manage your budget and financial health.",
-          comingSoon: false,
-        },
-        legal: {
-          icon: "⚖️",
-          title: "Legal",
-          description: "Protect your business and ensure compliance.",
-          comingSoon: false,
-        },
-      },
       next: "Continue",
       back: "Back",
     },

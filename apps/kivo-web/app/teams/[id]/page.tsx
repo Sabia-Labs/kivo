@@ -163,6 +163,7 @@ export default function TeamDetailPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [team, setTeam] = useState<Team | null>(null);
+  const [teamTemplate, setTeamTemplate] = useState<any | null>(null);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
@@ -243,11 +244,19 @@ export default function TeamDetailPage() {
       fetch(`${API_BASE}/teams/${teamId}/requests?parentRequestId=null`, { headers }),
       fetch(`${API_BASE}/teams/${teamId}/capabilities`, { headers }),
       fetch(`${API_BASE}/notifications?teamId=${teamId}&priority=high,alert`, { headers }),
+      fetch(`${API_BASE}/meta/team-types`, { headers }),
     ])
-      .then(async ([teamRes, _a, _act, requestsRes, capsRes, notifsRes]) => {
+      .then(async ([teamRes, _a, _act, requestsRes, capsRes, notifsRes, metaRes]) => {
         if (teamRes && teamRes.ok) {
           const d = await teamRes.json();
-          setTeam(d.data);
+          const teamData = d.data;
+          setTeam(teamData);
+
+          if (teamData?.templateId && metaRes.ok) {
+            const metaData = await metaRes.json();
+            const template = metaData.data?.find((t: any) => t.id === teamData.templateId);
+            setTeamTemplate(template);
+          }
         } else if (teamRes && !teamRes.ok) {
           toast.error("Team not found.");
           router.replace("/teams");
@@ -315,7 +324,11 @@ export default function TeamDetailPage() {
             </div>
             <h1 className="text-3xl font-bold tracking-tight">{team.name}</h1>
           </div>
-          {team.mission && (
+          {teamTemplate ? (
+             <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
+              {translate(teamTemplate.descriptionI18nKey)}
+            </p>
+          ) : team.mission && (
             <p className="mt-2 text-sm text-muted-foreground max-w-2xl">
               {team.mission}
             </p>

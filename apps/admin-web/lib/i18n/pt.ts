@@ -106,32 +106,6 @@ export const pt = {
     sectionTitle: "Infraestrutura de time implantável.",
     sectionSubtitle:
       "Provisione instantaneamente times de IA especializados pré-configurados com os papéis, prompts e fluxos certos para seu domínio.",
-    items: [
-      {
-        key: "product-delivery",
-        icon: "🚀",
-        title: "Entrega de Produto",
-        description: "Squad completo de entrega de software com disciplina SDLC. Inclui Gerente de Produto, Arquiteto e Engenheiros.",
-        badge: "Popular",
-        cta: "Implantar Time de Entrega",
-      },
-      {
-        key: "sales",
-        icon: "💰",
-        title: "Vendas e Receita",
-        description: "Automatize seu motor de receita. Identifique leads, qualifique oportunidades e gerencie seu pipeline de vendas.",
-        badge: "Novo",
-        cta: "Implantar Time de Vendas",
-      },
-      {
-        key: "customer-support",
-        icon: "🎧",
-        title: "Suporte ao Cliente",
-        description: "Forneça suporte excepcional e oportuno. Triagem automatizada, resolução e gestão de conhecimento.",
-        badge: "",
-        cta: "Implantar Time de Suporte",
-      },
-    ],
   },
   controlPlane: {
     sectionBadge: "Plano de Controle",
@@ -231,43 +205,6 @@ export const pt = {
     step3: {
       title: "Escolha seu template de time",
       subtitle: "Escolha uma estrutura inicial. Você sempre pode adicionar mais agentes depois.",
-      templates: {
-        starter: {
-          icon: "🧩",
-          title: "Kivo Starter",
-          description: "Um assistente executivo para você começar. Simples e flexível.",
-        },
-        product_delivery: {
-          icon: "🚀",
-          title: "Entrega de Produto",
-          description: "Squad completo de entrega de software com disciplina SDLC.",
-        },
-        customer_support: {
-          icon: "🎧",
-          title: "Suporte ao Cliente",
-          description: "Time de suporte automatizado para seus usuários.",
-        },
-        sales: {
-          icon: "💰",
-          title: "Vendas e Receita",
-          description: "Impulsione o crescimento e gerencie seu pipeline de vendas.",
-        },
-        marketing: {
-          icon: "📣",
-          title: "Marketing e Crescimento",
-          description: "Construa sua marca e gere demanda.",
-        },
-        finance: {
-          icon: "🏦",
-          title: "Finanças",
-          description: "Gerencie seu orçamento e saúde financeira.",
-        },
-        legal: {
-          icon: "⚖️",
-          title: "Legal",
-          description: "Proteja seu negócio e garanta conformidade.",
-        },
-      },
       next: "Continuar",
       back: "Voltar",
     },
