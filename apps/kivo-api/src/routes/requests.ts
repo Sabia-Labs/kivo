@@ -9,6 +9,7 @@ import { assignAgentToRequest } from "../lib/agent-assignment";
 import { buildTeamRequestMessage, buildTeamRequestInstructions, buildTeamRequestFinishedMessage } from "../lib/messages";
 import { completeRequest, handleRequestCompletedState, handleRequestCreatedState, updateRequest } from "../controllers/requestsController";
 import { runFieldInsight } from "../workflows/fieldInsight";
+import { evaluateHumanComment } from "../workflows/commentEvaluation";
 import { randomBytes } from "crypto";
 
 export const requestsRouter = Router({ mergeParams: true });
@@ -355,6 +356,12 @@ requestsRouter.post("/:requestId/comments", authMiddleware, async (req, res) => 
         content: body.content,
       })
       .returning();
+
+    if (actorType === "human") {
+      evaluateHumanComment(teamId, request.id, body.content).catch(err => {
+        console.error("[requests-router] Error in evaluateHumanComment background flow:", err);
+      });
+    }
 
     res.status(201).json({ data: newComment });
   } catch (err: any) {
