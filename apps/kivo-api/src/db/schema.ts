@@ -43,21 +43,16 @@ export const requestStatusEnum = pgEnum("request_status", [
   "open", 
   "in_progress", 
   "waiting_user", 
-  "completed", 
-  "cancelled"
+  "success", 
+  "failed"
 ]);
-
-export const requestResolutionEnum = pgEnum("request_resolution", ["success", "failed"]);
 
 export const taskStatusEnum = pgEnum("task_status", [
   "open", 
   "in_progress", 
-  "waiting_user", 
-  "completed", 
-  "cancelled"
+  "success", 
+  "failed"
 ]);
-
-export const taskResolutionEnum = pgEnum("task_resolution", ["success", "failed"]);
 
 export const changeTypeEnum = pgEnum("change_type", ["data", "status", "relationship", "creation", "deletion"]);
 
@@ -250,9 +245,9 @@ export const tasks = pgTable("tasks", {
   taskList: text("task_list"),
   workSummary: text("work_summary"),
   result: text("result"),
+  failureReason: text("failure_reason"),
   assignedToId: uuid("assigned_to_id"),
   status: taskStatusEnum("status").notNull().default("open"),
-  resolution: taskResolutionEnum("resolution"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -275,7 +270,6 @@ export const requests = pgTable("requests", {
   capabilitiesWorkflow: jsonb("capabilities_workflow"),
   state: jsonb("state").$type<string[]>(),
   status: requestStatusEnum("status").notNull().default("open"),
-  resolution: requestResolutionEnum("resolution"),
   response: text("response"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

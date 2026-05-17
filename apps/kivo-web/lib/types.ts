@@ -38,32 +38,34 @@ export interface Task {
   taskList?: string | null;
   workSummary?: string | null;
   result?: string | null;
+  failureReason?: string | null;
   assignedToId?: string | null;
-  status: string;
-  resolution?: string | null;
+  status: "open" | "in_progress" | "success" | "failed";
   createdAt: string;
   updatedAt: string;
 }
 
-export type RequestStatus = "created" | "processing" | "responded";
+export type RequestStatus = "draft" | "open" | "in_progress" | "waiting_user" | "success" | "failed";
 
 export interface TeamRequest {
   id: string;
   number: number;
   identifier: string;
   teamId: string;
-  requesterId: string;
-  requesterType: "human" | "agent";
-  targetAgentId: string;
-  taskId?: string | null;
-  inputData?: any | null;
+  requesterUserId?: string | null;
+  requesterAgentId?: string | null;
+  targetAgentId?: string | null;
+  targetRole?: string | null;
+  title: string;
+  requestDetails?: string | null;
+  priority: number;
   capabilitiesWorkflow?: any | null;
   state?: string[] | null;
   status: RequestStatus;
-  responseStatusCode?: number | null;
-  responseMetadata?: any | null;
+  response?: string | null;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string | null;
 }
 
 export type ActivityType =

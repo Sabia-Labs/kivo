@@ -17,8 +17,7 @@ export async function handleRequestCreatedState(requestRecord: any) {
     
     // Fail the request so the user is informed
     await db.update(requests).set({
-      status: "completed",
-      resolution: "failed",
+      status: "failed",
       response: "An unexpected error occurred during request analysis and it could not be processed. Please check the logs."
     }).where(eq(requests.id, requestRecord.id));
   }
@@ -31,9 +30,9 @@ export async function handleRequestCompletedState(requestRecord: any) {
       teamId: requestRecord.teamId,
       recipientId: requestRecord.requesterUserId,
       recipientType: "human",
-      title: requestRecord.resolution === "failed" ? "Request Failed" : "Request Completed",
-      content: `Request ${requestRecord.identifier} has been completed with resolution: ${requestRecord.resolution}.`,
-      priority: requestRecord.resolution === "failed" ? "alert" : requestRecord.priority > 2 ? "high" : "normal",
+      title: requestRecord.status === "failed" ? "Request Failed" : "Request Completed",
+      content: `Request ${requestRecord.identifier} has been completed with status: ${requestRecord.status}.`,
+      priority: requestRecord.status === "failed" ? "alert" : requestRecord.priority > 2 ? "high" : "normal",
       relatedEntityId: requestRecord.id,
       relatedEntityType: "request"
     });
@@ -54,7 +53,7 @@ export async function handleRequestCompletedState(requestRecord: any) {
     const messageContent = buildTeamRequestFinishedMessage({
       identifier: requestRecord.identifier,
       title: requestRecord.title,
-      resolution: requestRecord.resolution || "success",
+      status: requestRecord.status,
       response: requestRecord.response
     });
 
@@ -91,10 +90,9 @@ export async function handleRequestCompletedState(requestRecord: any) {
   }
 }
 
-export async function completeRequest(requestId: string, resolution: "success" | "failed", response: string) {
+export async function completeRequest(requestId: string, status: "success" | "failed", response: string) {
   const updatedRequest = await updateRequest(requestId, {
-    status: "completed",
-    resolution,
+    status,
     response
   });
 
@@ -141,12 +139,9 @@ export async function updateRequest(
       await logActivity({ teamId, actorId: finalActorId, actorType: finalActorType, changeType: "status", activityTitle: "Request opened", requestId: updatedRequest.id });
       handleRequestCreatedState(updatedRequest).catch(console.error);
       isStatusChangeHandled = true;
-    } else if (existing.status === "completed" && updatedRequest.status === "open") {
-      await logActivity({ teamId, actorId: finalActorId, actorType: finalActorType, changeType: "status", activityTitle: "Request reopened", requestId: updatedRequest.id });
-      handleRequestCreatedState(updatedRequest).catch(console.error);
-      isStatusChangeHandled = true;
     } else if (
-      existing.status !== "completed" &&
+      existing.status !== "success" &&
+      existing.status !== "failed" &&
       updatedRequest.status === "open" && 
       (updates.targetAgentId !== undefined && updates.targetAgentId !== existing.targetAgentId || 
        updates.targetRole !== undefined && updates.targetRole !== existing.targetRole)
@@ -157,8 +152,9 @@ export async function updateRequest(
     } else if (updates.status === "in_progress" && existing.status !== "in_progress") {
       await logActivity({ teamId, actorId: finalActorId, actorType: finalActorType, changeType: "status", activityTitle: "Request in progress", requestId: updatedRequest.id });
       isStatusChangeHandled = true;
-    } else if (updates.status === "completed" && existing.status !== "completed") {
-      await logActivity({ teamId, actorId: finalActorId, actorType: finalActorType, changeType: "status", activityTitle: "Request completed", requestId: updatedRequest.id, newState: { resolution: updatedRequest.resolution } });
+    } else if ((updates.status === "success" || updates.status === "failed") && (existing.status !== "success" && existing.status !== "failed")) {
+      const activityTitle = updates.status === "success" ? "Request completed successfully" : "Request failed";
+      await logActivity({ teamId, actorId: finalActorId, actorType: finalActorType, changeType: "status", activityTitle, requestId: updatedRequest.id });
       await handleRequestCompletedState(updatedRequest);
       isStatusChangeHandled = true;
     }

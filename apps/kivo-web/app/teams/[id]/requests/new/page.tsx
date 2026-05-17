@@ -16,7 +16,7 @@ import { Markdown } from "@/components/Markdown";
 
 export default function NewRequestPage() {
   const { token, isLoading: authLoading } = useAuth();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   const params = useParams();
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const capabilityIdParam = searchParams?.get("capabilityId");
@@ -130,6 +130,7 @@ export default function NewRequestPage() {
         body: JSON.stringify({
           requestDetails: details,
           capabilitiesWorkflow: caps,
+          lang: lang,
         }),
       });
       if (!res.ok) {
@@ -177,7 +178,7 @@ export default function NewRequestPage() {
     }
     
     const cleanValue = value.trim();
-    if (!cleanValue) {
+    if (!cleanValue && capabilitiesWorkflow.length === 0) {
       setLeaderThought(null);
       setIsLeaderThinking(false);
       return;
@@ -186,33 +187,24 @@ export default function NewRequestPage() {
     typingTimeoutRef.current = setTimeout(() => {
       setIsLeaderThinking(true);
       fetchFieldInsight(cleanValue, capabilitiesWorkflow);
-    }, 2000);
+    }, 1500);
   };
   
   // Also trigger thinking when capabilities change
   useEffect(() => {
     if (!authLoading && capabilitiesWorkflow.length > 0) {
-      if (requestDetails.trim()) {
-        setLeaderThought(null);
-        setIsLeaderThinking(true);
-        const to = setTimeout(() => {
-          fetchFieldInsight(requestDetails.trim(), capabilitiesWorkflow);
-        }, 1500);
-        return () => clearTimeout(to);
-      } else {
-        setLeaderThought(null);
-        setIsLeaderThinking(true);
-        const to = setTimeout(() => {
-          setIsLeaderThinking(false);
-          setLeaderThought(t.teamsPage.updatedExecutionPlan);
-        }, 1500);
-        return () => clearTimeout(to);
-      }
+      setLeaderThought(null);
+      setIsLeaderThinking(true);
+      const to = setTimeout(() => {
+        fetchFieldInsight(requestDetails.trim(), capabilitiesWorkflow);
+      }, 1500);
+      return () => clearTimeout(to);
     }
   }, [capabilitiesWorkflow, authLoading]);
 
   const handleSubmit = async (status: "draft" | "open") => {
-    if (!requestDetails.trim()) {
+    const hasCap = capabilitiesWorkflow.length > 0 || !!suggestedCapability;
+    if (!requestDetails.trim() && !hasCap) {
       toast.error(t.teamsPage.requestDetailsRequired);
       return;
     }
@@ -255,6 +247,9 @@ export default function NewRequestPage() {
       setIsSubmitting(false);
     }
   };
+
+  const hasCapability = capabilitiesWorkflow.length > 0 || !!suggestedCapability;
+  const isSubmitEnabled = !isSubmitting && (requestDetails.trim().length > 0 || (hasCapability && !isLeaderThinking));
 
   const leadAgent = agents.find(a => a.isLeader);
 
@@ -327,7 +322,7 @@ export default function NewRequestPage() {
         </div>
 
         {/* Title and Capability Fields */}
-        {title && (
+        {(title || requestDetails.trim().length > 0 || capabilitiesWorkflow.length > 0) && (
           <div className="space-y-4 pt-4 border-t animate-in fade-in">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm font-medium">{t.teamsPage.requestTitle}</Label>
@@ -352,7 +347,7 @@ export default function NewRequestPage() {
             size="sm" 
             className="text-muted-foreground"
             onClick={() => handleSubmit("draft")}
-            disabled={isSubmitting}
+            disabled={!isSubmitEnabled}
           >
             <Save className="size-4 mr-2" />
             {t.teamsPage.saveDraft}
@@ -364,7 +359,7 @@ export default function NewRequestPage() {
             </Button>
             <Button 
               onClick={() => handleSubmit("open")}
-              disabled={isSubmitting || !requestDetails.trim()}
+              disabled={!isSubmitEnabled}
               className="px-8 shadow-md"
             >
               <Send className="size-4 mr-2" />

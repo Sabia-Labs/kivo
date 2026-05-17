@@ -1,5 +1,5 @@
 {
-  "id": "c2d97044-1f68-45ff-8576-cdc6d6256757",
+  "id": "f2d889e8-21ad-4a78-b304-e6872cf607a1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -888,13 +888,6 @@
           "notNull": true,
           "default": "'open'"
         },
-        "resolution": {
-          "name": "resolution",
-          "type": "request_resolution",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
         "response": {
           "name": "response",
           "type": "text",
@@ -1078,6 +1071,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "failure_reason": {
+          "name": "failure_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "assigned_to_id": {
           "name": "assigned_to_id",
           "type": "uuid",
@@ -1091,13 +1090,6 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'open'"
-        },
-        "resolution": {
-          "name": "resolution",
-          "type": "task_resolution",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -1171,12 +1163,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "description_i18n_key": {
-          "name": "description_i18n_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         },
         "identifier": {
           "name": "identifier",
@@ -1724,7 +1710,8 @@
         "linear",
         "jira",
         "trello",
-        "github"
+        "github",
+        "notion"
       ]
     },
     "public.message_role": {
@@ -1745,14 +1732,6 @@
         "alert"
       ]
     },
-    "public.request_resolution": {
-      "name": "request_resolution",
-      "schema": "public",
-      "values": [
-        "success",
-        "failed"
-      ]
-    },
     "public.request_status": {
       "name": "request_status",
       "schema": "public",
@@ -1761,14 +1740,6 @@
         "open",
         "in_progress",
         "waiting_user",
-        "completed",
-        "cancelled"
-      ]
-    },
-    "public.task_resolution": {
-      "name": "task_resolution",
-      "schema": "public",
-      "values": [
         "success",
         "failed"
       ]
@@ -1779,9 +1750,8 @@
       "values": [
         "open",
         "in_progress",
-        "waiting_user",
-        "completed",
-        "cancelled"
+        "success",
+        "failed"
       ]
     }
   },

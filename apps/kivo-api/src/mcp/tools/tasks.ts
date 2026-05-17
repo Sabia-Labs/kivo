@@ -50,11 +50,11 @@ export function registerTaskTools(server: McpServer, actor: any, authHeader: str
       prompt: z.string().optional().describe("Command/instruction describing what to do"),
       instructions: z.string().optional().describe("Guidelines and how to execute this task"),
       workSummary: z.string().optional().describe("Final summary of what was done"),
-      result: z.string().optional().describe("The deliverable or final outcome/result of the work done"),
+      result: z.string().optional().describe("The deliverable or final outcome/result of the work done (Optional, only populate if status is 'success')"),
+      failureReason: z.string().optional().describe("The reason or explanation for why the task failed or was blocked (Optional, only populate if status is 'failed')"),
       assignedToId: z.string().optional().describe("Agent ID or User ID assigned to the task"),
       requestId: z.string().optional().describe("ID of the request this task is fulfilling"),
-      status: z.enum(["open", "in_progress", "waiting_user", "completed", "cancelled"]).optional().describe("Current status of the task"),
-      resolution: z.enum(["success", "failed"]).optional().describe("Resolution of the task when finished"),
+      status: z.enum(["open", "in_progress", "success", "failed"]).optional().describe("Current status of the task. Set to 'success' or 'failed' when finished."),
 
     },
     async (params) => {
@@ -85,11 +85,11 @@ export function registerTaskTools(server: McpServer, actor: any, authHeader: str
       prompt: z.string().optional(),
       instructions: z.string().optional(),
       workSummary: z.string().optional(),
-      result: z.string().optional(),
+      result: z.string().optional().describe("The deliverable or final outcome/result of the work done (Optional, only populate if status is 'success')"),
+      failureReason: z.string().optional().describe("The reason or explanation for why the task failed or was blocked (Optional, only populate if status is 'failed')"),
       assignedToId: z.string().optional(),
       requestId: z.string().optional(),
-      status: z.enum(["open", "in_progress", "waiting_user", "completed", "cancelled"]).optional(),
-      resolution: z.enum(["success", "failed"]).optional(),
+      status: z.enum(["open", "in_progress", "success", "failed"]).optional(),
 
     },
     async ({ idOrIdentifier, ...body }) => {

@@ -482,8 +482,6 @@ export const en = {
     deleteRequest: "Delete Request",
     deleteConfirm: "Are you sure you want to delete this request? This action cannot be undone.",
     whatToAskPlaceholder: "What would you like to ask the team?",
-    reopenRequest: "Reopen Request",
-    requestReopened: "Request reopened",
     titleUpdated: "Title updated",
     failedUpdateTitle: "Failed to update title",
     whatWasAsked: "What was asked",

@@ -82,15 +82,14 @@ export function registerRequestTools(server: McpServer, actor: any, authHeader: 
     {
       teamId: z.string().optional().describe("The ID of the team (Optional, defaults to your own team)"),
       requestId: z.string().describe("The ID of the request"),
-      status: z.enum(["draft", "open", "in_progress", "waiting_user", "completed", "cancelled"]).describe("The new status. Use 'completed' with 'failed' resolution to reject."),
-      resolution: z.enum(["success", "failed"]).optional().describe("Resolution status. Required when status is completed"),
+      status: z.enum(["draft", "open", "in_progress", "waiting_user", "success", "failed"]).describe("The new status. Use 'failed' to reject/fail the request, and 'success' to mark as completed successfully."),
       response: z.string().optional().describe("Data or result payload returned upon completion or rejection (e.g., the reason for rejection)"),
     },
-    async ({ teamId, requestId, status, resolution, response }) => {
+    async ({ teamId, requestId, status, response }) => {
       try {
         const resolvedTeamId = teamId || actor?.teamId;
         if (!resolvedTeamId) throw new Error("teamId is required but could not be resolved from your context.");
-        const payload = { status, resolution, response };
+        const payload = { status, response };
         const data = await internalFetch(`/teams/${resolvedTeamId}/requests/${requestId}`, authHeader, {
           method: "PATCH",
           body: JSON.stringify(payload),

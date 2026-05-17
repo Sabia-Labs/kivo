@@ -53,9 +53,9 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
     setIsExpanded(!isExpanded);
   };
 
-  const statusLabel = req?.status === "completed" 
-    ? (req.resolution === "success" ? t?.teamsPage?.statusLabels?.ok : t?.teamsPage?.statusLabels?.failed) 
-    : (t?.teamsPage?.statusLabels as any)?.[req?.status || ""] || req?.status?.replace("_", " ") || "...";
+  const statusLabel = req?.status === "success" ? t?.teamsPage?.statusLabels?.ok :
+    req?.status === "failed" ? t?.teamsPage?.statusLabels?.failed :
+    (t?.teamsPage?.statusLabels as any)?.[req?.status || ""] || req?.status?.replace("_", " ") || "...";
 
   return (
     <div className="flex flex-col border-b last:border-0 border-border/50 w-full">
@@ -125,7 +125,7 @@ export default function RequestDetailsPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [childRequests, setChildRequests] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string[]>(["draft", "open", "in_progress", "waiting_user", "completed", "cancelled", "failed"]);
+  const [statusFilter, setStatusFilter] = useState<string[]>(["draft", "open", "in_progress", "waiting_user", "success", "failed"]);
 
   const [title, setTitle] = useState("");
   const [requestDetails, setRequestDetails] = useState("");
@@ -190,21 +190,6 @@ export default function RequestDetailsPage() {
     fetchData();
   }, [authLoading, token, fetchData]);
 
-  const handleReopen = async () => {
-    setIsSubmitting(true);
-    try {
-      const res = await fetch(`${API_BASE}/teams/${teamId}/requests/${requestId}`, {
-        method: "PATCH",
-        headers: headers(),
-        body: JSON.stringify({ status: "open", resolution: null }),
-      });
-      if (res.ok) {
-        toast.success(t?.teamsPage?.requestReopened || "Request reopened");
-        fetchData();
-      }
-    } catch (err: any) { toast.error(err.message); } finally { setIsSubmitting(false); }
-  };
-
   const handleUpdateTitle = async () => {
     if (!title.trim()) return;
     try {
@@ -239,6 +224,17 @@ export default function RequestDetailsPage() {
 
   if (authLoading || isLoading) return <div className="flex min-h-svh items-center justify-center"><div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>;
   if (!request) return null;
+  const requestStatusLabel = request?.status === "success" ? t?.teamsPage?.statusLabels?.ok :
+    request?.status === "failed" ? t?.teamsPage?.statusLabels?.failed :
+    (t?.teamsPage?.statusLabels as any)?.[request?.status || ""] || request?.status?.replace("_", " ") || "...";
+
+  const requestStatusColorClass = request?.status === "draft" ? "bg-muted text-muted-foreground" :
+    request?.status === "open" ? "bg-blue-500/10 text-blue-500" :
+    request?.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
+    request?.status === "waiting_user" ? "bg-purple-500/10 text-purple-500" :
+    request?.status === "success" ? "bg-emerald-500/10 text-emerald-500" :
+    request?.status === "failed" ? "bg-red-500/10 text-red-500" :
+    "bg-muted text-muted-foreground";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12">
@@ -261,11 +257,13 @@ export default function RequestDetailsPage() {
             <Button size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 size-8" onClick={() => setIsEditingTitle(true)}><Edit2 className="size-4" /></Button>
           </div>
         )}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <span className={cn("px-2 py-0.5 rounded-full text-xs font-medium capitalize shrink-0", requestStatusColorClass)}>
+            {requestStatusLabel}
+          </span>
           <p className="text-xs text-muted-foreground px-1">
             {t?.teamsPage?.createdBy} <span className="font-semibold text-foreground">{request?.requesterUserId ? (t?.teamsPage?.you || "You") : (agents?.find(a => a.id === request?.requesterAgentId)?.name || "Agent")}</span> {t?.teamsPage?.on} {request?.createdAt ? new Date(request.createdAt).toLocaleString() : ""}
           </p>
-          {request?.status === "completed" && <Button size="sm" variant="outline" onClick={handleReopen} disabled={isSubmitting}>{t?.teamsPage?.reopenRequest}</Button>}
         </div>
       </header>
 
@@ -274,14 +272,14 @@ export default function RequestDetailsPage() {
           <section className="rounded-xl border bg-card p-6 space-y-6">
             <div className="space-y-2">
               <Label>{t?.teamsPage?.whatWasAsked}</Label>
-              <div className="p-4 bg-muted/50 rounded-lg border text-sm whitespace-pre-wrap">
+              <div className="p-4 bg-muted/50 rounded-lg border text-sm">
                 <Markdown content={request?.requestDetails || t?.teamsPage?.noDetails} />
               </div>
             </div>
             {request?.response && (
               <div className="space-y-2">
                 <Label>{t?.teamsPage?.response}</Label>
-                <div className="p-4 bg-emerald-500/5 border-emerald-500/20 rounded-lg border text-sm whitespace-pre-wrap">
+                <div className="p-4 bg-emerald-500/5 border-emerald-500/20 rounded-lg border text-sm">
                   <Markdown content={typeof request.response === 'string' ? request.response : JSON.stringify(request.response, null, 2)} />
                 </div>
               </div>
