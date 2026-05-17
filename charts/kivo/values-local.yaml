@@ -82,6 +82,8 @@ kivoWeb:
     API_INTERNAL_URL: "http://kivo-api:4000"
     # Client-side: browser calls /api/* on the same origin → Next.js rewrites to API_INTERNAL_URL
     NEXT_PUBLIC_API_URL: "/api"
+    SITE_URL: "http://kivo.localhost"
+    NEXT_PUBLIC_SITE_URL: "http://kivo.localhost"
 
 adminWeb:
   replicaCount: 1
