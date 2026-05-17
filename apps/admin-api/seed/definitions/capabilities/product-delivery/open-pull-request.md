@@ -1,7 +1,6 @@
 ---
 id: open-pull-request
-name_i18n_key: capabilities.product_delivery.open_pr.name
-description_i18n_key: capabilities.product_delivery.open_pr.desc
+name: Open Pull Request
 type: task_template
 team_type: product-delivery
 featured: false

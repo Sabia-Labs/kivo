@@ -1,7 +1,6 @@
 ---
 id: draft-executive-briefing
-name_i18n_key: capabilities.executive_operations.draft_executive_briefing.name
-description_i18n_key: capabilities.executive_operations.draft_executive_briefing.desc
+name: Draft Executive Briefing
 type: task_template
 team_type: executive-operations
 featured: false

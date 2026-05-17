@@ -1,7 +1,6 @@
 ---
 id: copywriting-draft
-name_i18n_key: capabilities.marketing.copy.name
-description_i18n_key: capabilities.marketing.copy.desc
+name: Copywriting Draft
 type: task_template
 team_type: marketing
 featured: true

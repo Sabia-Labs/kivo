@@ -1,7 +1,6 @@
 ---
 id: triage-open-tickets
-name_i18n_key: capabilities.customer_support.triage.name
-description_i18n_key: capabilities.customer_support.triage.desc
+name: Queue Triage
 type: task_template
 team_type: customer-support
 featured: true

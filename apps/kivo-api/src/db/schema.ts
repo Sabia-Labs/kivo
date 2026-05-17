@@ -305,7 +305,6 @@ export const teamCapabilities = pgTable("team_capabilities", {
     .notNull()
     .references(() => teams.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
-  descriptionI18nKey: text("description_i18n_key"),
   identifier: text("identifier").notNull(),
   instructions: text("instructions").notNull(),
   inputsDescription: text("inputs_description"),

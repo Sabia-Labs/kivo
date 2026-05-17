@@ -67,7 +67,7 @@ echo "🏗 Running migrations and SEED..."
 # 5. Update Secret for Admin API (Internal DB URL)
 echo "🛠 Updating internal credentials..."
 NEW_URL_ADMIN=$(echo -n "postgres://$DB_USER:$DB_PWD@$POSTGRES_SVC:5432/kivo_admin" | base64)
-k patch secret kivo-admin-db-credentials -n "$NS" -p "{\"data\":{\"DATABASE_URL_ADMIN\":\"$NEW_URL_ADMIN\"}}"
+k patch secret kivo-admin-db-credentials -n "$NS" -p "{\"data\":{\"DATABASE_URL_ADMIN\":\"$NEW_URL_ADMIN\"}}" || echo "⚠️ kivo-admin-db-credentials secret not found, skipping patching (expected in local env)."
 
 # Cleanup
 kill $PF_PID || true

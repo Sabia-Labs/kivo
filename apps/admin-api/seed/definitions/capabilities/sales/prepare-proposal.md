@@ -1,7 +1,6 @@
 ---
 id: prepare-proposal
-name_i18n_key: capabilities.sales.proposal.name
-description_i18n_key: capabilities.sales.proposal.desc
+name: Prepare Proposal
 type: task_template
 team_type: sales
 featured: true

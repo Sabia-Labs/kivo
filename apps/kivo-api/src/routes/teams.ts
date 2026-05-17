@@ -140,8 +140,7 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
               await tx.insert(teamCapabilities).values(
                 templateCaps.map((tc: any) => ({
                   teamId: team.id,
-                  name: tc.capability.nameI18nKey,
-                  descriptionI18nKey: tc.capability.descriptionI18nKey,
+                  name: tc.capability.name,
                   identifier: tc.capability.id,
                   instructions: tc.capability.instructions,
                   inputsDescription: tc.capability.inputsDescription,

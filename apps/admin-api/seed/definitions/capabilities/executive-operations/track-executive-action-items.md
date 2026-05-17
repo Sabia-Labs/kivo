@@ -1,7 +1,6 @@
 ---
 id: track-executive-action-items
-name_i18n_key: capabilities.executive_operations.track_action_items.name
-description_i18n_key: capabilities.executive_operations.track_action_items.desc
+name: Track Executive Action Items
 type: task_template
 team_type: executive-operations
 featured: true

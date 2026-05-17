@@ -1,7 +1,6 @@
 ---
 id: expense-audit
-name_i18n_key: capabilities.finance.audit.name
-description_i18n_key: capabilities.finance.audit.desc
+name: Expense Audit
 type: task_template
 team_type: finance
 featured: true

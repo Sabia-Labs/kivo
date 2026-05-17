@@ -1,7 +1,6 @@
 ---
 id: write-kb-article
-name_i18n_key: capabilities.customer_support.write_kb.name
-description_i18n_key: capabilities.customer_support.write_kb.desc
+name: Write KB Article
 type: task_template
 team_type: customer-support
 featured: false

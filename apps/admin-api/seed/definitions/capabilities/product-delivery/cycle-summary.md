@@ -1,7 +1,6 @@
 ---
 id: cycle-summary
-name_i18n_key: capabilities.product_delivery.summary.name
-description_i18n_key: capabilities.product_delivery.summary.desc
+name: Cycle Summary
 type: task_template
 team_type: product-delivery
 featured: true

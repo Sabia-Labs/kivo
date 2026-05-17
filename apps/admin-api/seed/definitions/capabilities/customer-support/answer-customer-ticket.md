@@ -1,7 +1,6 @@
 ---
 id: answer-customer-ticket
-name_i18n_key: capabilities.customer_support.answer.name
-description_i18n_key: capabilities.customer_support.answer.desc
+name: Answer Ticket
 type: task_template
 team_type: customer-support
 featured: true

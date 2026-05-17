@@ -1,7 +1,6 @@
 ---
 id: content-ideation
-name_i18n_key: capabilities.marketing.ideation.name
-description_i18n_key: capabilities.marketing.ideation.desc
+name: Content Ideation
 type: task_template
 team_type: marketing
 featured: true

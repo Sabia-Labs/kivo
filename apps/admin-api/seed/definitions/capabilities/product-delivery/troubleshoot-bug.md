@@ -1,7 +1,6 @@
 ---
 id: troubleshoot-bug
-name_i18n_key: capabilities.product_delivery.troubleshoot.name
-description_i18n_key: capabilities.product_delivery.troubleshoot.desc
+name: Troubleshoot Bug
 type: task_template
 team_type: product-delivery
 featured: true
