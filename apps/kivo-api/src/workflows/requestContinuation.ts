@@ -252,7 +252,16 @@ async function createTaskNode(state: typeof ContinuationState.State) {
 CRITICAL TASK WORKFLOW INSTRUCTIONS:
 You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
-2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. If simple, provide a brief rationale in the 'plan' field. Summarize your actions and thoughts in the 'workSummary' field. If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. In whatever situation you MUST ALWAYS finish by updating the task 'status' field with 'success' or 'failed'. If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. Do not leave the task open; it must be resolved.`;
+2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. 
+   If simple, provide a brief rationale in the 'plan' field. 
+   Summarize your actions and thoughts in the 'workSummary' field. 
+   If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. 
+   If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate 
+   the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. 
+   In whatever situation you MUST ALWAYS finish by updating the task 'status' field with 'success' or 'failed'. 
+   If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable 
+   to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. 
+   Do not leave the task open; it must be resolved.`;
 
   const finalInstructions = `${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 
