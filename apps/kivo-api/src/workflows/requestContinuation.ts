@@ -2,7 +2,7 @@ import { StateGraph, Annotation, START, END } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
 import { db } from "../db/client";
-import { requests, tasks } from "../db/schema";
+import { requests, tasks, notifications } from "../db/schema";
 import { eq, asc } from "drizzle-orm";
 import { updateRequest, completeRequest, addCommentToRequest } from "../controllers/requestsController";
 import { getCapabilityByIdentifier } from "../controllers/capabilitiesController";
@@ -65,6 +65,21 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
     if (allTasks.length >= capabilitiesWorkflow.length) {
       console.log(`[request-continuation] Task failed on the last capability. Completing request as failed.`);
       await completeRequest(state.requestId, "failed", taskRecord.failureReason || "Task failed.");
+
+      // Create Alert Notification
+      if (requestRecord.requesterUserId) {
+        await db.insert(notifications).values({
+          teamId: state.teamId,
+          recipientId: requestRecord.requesterUserId,
+          recipientType: "human",
+          title: "Request Workflow Failed",
+          content: `Request ${requestRecord.identifier} has failed on step "${taskRecord.title}": ${taskRecord.failureReason || "Task failed."}`,
+          priority: "alert",
+          relatedEntityId: state.requestId,
+          relatedEntityType: "request"
+        });
+      }
+
       return { task: taskRecord, request: requestRecord };
     } else {
       // Case 2: Multi-step workflow with more tasks remaining.
@@ -89,6 +104,20 @@ How should we proceed?`;
         "agent", 
         commentContent
       );
+
+      // Create Alert Notification
+      if (requestRecord.requesterUserId) {
+        await db.insert(notifications).values({
+          teamId: state.teamId,
+          recipientId: requestRecord.requesterUserId,
+          recipientType: "human",
+          title: "Step Failed in Request Workflow",
+          content: `Step "${taskRecord.title}" in Request ${requestRecord.identifier} failed: ${failureReason}`,
+          priority: "alert",
+          relatedEntityId: state.requestId,
+          relatedEntityType: "request"
+        });
+      }
       
       // Re-fetch updated request
       const [updatedRequest] = await db.select().from(requests).where(eq(requests.id, state.requestId));
@@ -223,11 +252,16 @@ async function createTaskNode(state: typeof ContinuationState.State) {
 CRITICAL TASK WORKFLOW INSTRUCTIONS:
 You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
-2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. If simple, provide a brief rationale in the 'plan' field.
-3. RESULT: Summarize your actions in the 'workSummary' field.
-   - If the task was successful: populate the 'result' field with the final deliverable/outcome. Do NOT populate the 'failureReason' field.
-   - If the task failed or could not be completed: populate the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. Do NOT populate the 'result' field.
-4. COMPLETION: You MUST update the task 'status' field without fail once you finish. If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. Do not leave the task open; it must be resolved.`;
+2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. 
+   If simple, provide a brief rationale in the 'plan' field. 
+   Summarize your actions and thoughts in the 'workSummary' field. 
+   If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. 
+   If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate 
+   the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. 
+   In whatever situation you MUST ALWAYS finish by updating the task 'status' field with 'success' or 'failed'. 
+   If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable 
+   to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. 
+   Do not leave the task open; it must be resolved.`;
 
   const finalInstructions = `${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 

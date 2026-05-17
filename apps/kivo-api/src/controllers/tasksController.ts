@@ -18,7 +18,7 @@ export async function createTaskAndNotifyAgent(
   const [task] = await db.insert(tasks).values({
     teamId,
     requestId,
-    title: `Execute capability: ${capabilityName || "Task"} for request ${requestIdentifier}`,
+    title: `Execute: ${capabilityName || "Task"} for request ${requestIdentifier}`,
     prompt,
     instructions,
     assignedToId: assignedAgentId,
@@ -43,12 +43,12 @@ export async function createTaskAndNotifyAgent(
     counterpartName: "System Orchestrator"
   }).returning();
 
-  let messageContent = `A new task has been created for you.
+  let messageContent = `A NEW task has been created for you:
   Task ID: ${task.id}
   Task Title: ${task.title}
   Related Request: ${requestIdentifier}`;
 
-  messageContent += `\n\n  Please read the task using the Kivo MCP, paying special attention to its prompt and instructions, and execute what's requested.`;
+  messageContent += `\n\n  Please read the task using the Kivo MCP, paying special attention to its prompt and instructions, and execute what's requested. **ATTENTION** to the Task ID: ${task.id}. Forget eventual previous tasks: To update this task you MUST now use this current ID ${task.id}.`;
 
   const [userMessage] = await db.insert(messages).values({
     conversationId: conversation.id,

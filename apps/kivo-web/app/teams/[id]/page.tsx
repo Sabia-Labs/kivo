@@ -158,21 +158,38 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
               {t.teamsPage.noTasksOrNested}
             </div>
           )}
-          {tasks.map(task => (
-            <Link 
-              key={task.id} 
-              href={`/teams/${teamId}/tasks/${task.id}`} 
-              className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 hover:bg-muted/30 transition-colors border-b border-border/30 last:border-0" 
-              style={{ paddingLeft: `${1 + (level + 1) * 1.5}rem`, paddingRight: '1rem' }}
-            >
-              <div className="flex size-6 items-center justify-center shrink-0">
-                <FolderKanban className="size-3.5 text-muted-foreground/70" />
-              </div>
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="text-sm text-muted-foreground font-medium truncate">{task.title}</span>
-              </div>
-            </Link>
-          ))}
+          {tasks.map(task => {
+            const taskStatusLabel = task.status === "success" ? t?.teamsPage?.statusLabels?.ok :
+              task.status === "failed" ? t?.teamsPage?.statusLabels?.failed :
+              (t?.teamsPage?.statusLabels as any)?.[task.status || ""] || task.status?.replace("_", " ") || "...";
+
+            const taskStatusColor = task.status === "open" ? "bg-blue-500/10 text-blue-500" :
+              task.status === "in_progress" ? "bg-amber-500/10 text-amber-500" :
+              task.status === "success" ? "bg-emerald-500/10 text-emerald-500" :
+              task.status === "failed" ? "bg-red-500/10 text-red-500" :
+              "bg-muted text-muted-foreground";
+
+            return (
+              <Link 
+                key={task.id} 
+                href={`/teams/${teamId}/tasks/${task.id}`} 
+                className="flex items-center justify-between gap-3 p-3 hover:bg-muted/30 transition-colors border-b border-border/30 last:border-0 w-full" 
+                style={{ paddingLeft: `${1 + (level + 1) * 1.5}rem`, paddingRight: '1rem' }}
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex size-6 items-center justify-center shrink-0">
+                    <FolderKanban className="size-3.5 text-muted-foreground/70" />
+                  </div>
+                  <span className="text-sm text-muted-foreground font-medium truncate">{task.title}</span>
+                </div>
+                <div className="flex items-center gap-4 shrink-0 sm:ml-auto">
+                  <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold capitalize", taskStatusColor)}>
+                    {taskStatusLabel}
+                  </span>
+                </div>
+              </Link>
+            );
+          })}
           {subRequests.map(subReq => (
             <RequestRow key={subReq.id} req={subReq} teamId={teamId} level={level + 1} />
           ))}
