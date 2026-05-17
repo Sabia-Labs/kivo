@@ -193,7 +193,7 @@ func (r *AgentReconciler) observePhase(
 			podName := ""
 			podIP := ""
 			for _, p := range podList.Items {
-				if p.Status.Phase == corev1.PodRunning {
+				if p.Status.Phase == corev1.PodRunning && p.DeletionTimestamp == nil {
 					podName = p.Name
 					podIP = p.Status.PodIP
 					break

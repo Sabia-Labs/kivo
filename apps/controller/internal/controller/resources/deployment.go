@@ -277,6 +277,7 @@ func AgentDeployment(cr *kivov1alpha1.Agent, ownerRef *metav1.OwnerReference, ag
 				Image:           consumerImage,
 				ImagePullPolicy: corev1.PullPolicy(consumerPolicy),
 				Env:             mainEnv,
+				VolumeMounts:    stateMounts,
 				Ports: []corev1.ContainerPort{
 					{Name: "inbound", ContainerPort: 43124},
 					{Name: "qa-bus", ContainerPort: qaBusPort},
