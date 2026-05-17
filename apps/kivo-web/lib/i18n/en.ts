@@ -541,6 +541,16 @@ export const en = {
       ok: "ok",
       failed: "failed",
     },
+    fileSystem: {
+      title: "File System",
+      filename: "Filename",
+      dateModified: "Date modified",
+      fileSize: "File size",
+      download: "Download",
+      rename: "Rename",
+      delete: "Delete",
+      actionTriggered: "Action triggered",
+    },
   },
   teams: {
     types: {

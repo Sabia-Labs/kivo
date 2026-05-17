@@ -543,6 +543,16 @@ export const zh: Dictionary = {
       ok: "完成",
       failed: "失败",
     },
+    fileSystem: {
+      title: "文件系统",
+      filename: "文件名",
+      dateModified: "修改日期",
+      fileSize: "文件大小",
+      download: "下载",
+      rename: "重命名",
+      delete: "删除",
+      actionTriggered: "已触发操作",
+    },
   },
   teams: {
     types: {

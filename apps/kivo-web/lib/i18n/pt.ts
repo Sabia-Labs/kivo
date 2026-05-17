@@ -541,6 +541,16 @@ export const pt = {
       ok: "ok",
       failed: "falha",
     },
+    fileSystem: {
+      title: "Sistema de Arquivos",
+      filename: "Nome do arquivo",
+      dateModified: "Data de modificação",
+      fileSize: "Tamanho do arquivo",
+      download: "Download",
+      rename: "Renomear",
+      delete: "Excluir",
+      actionTriggered: "Ação executada",
+    },
   },
   teams: {
     types: {
