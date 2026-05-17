@@ -4,7 +4,8 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft, Bot, FolderKanban, Plus, Activity, AlertCircle, CheckCircle2, ChevronRight, ChevronDown, Crown, ListTodo, Filter
+  ArrowLeft, Bot, FolderKanban, Plus, Activity, AlertCircle, CheckCircle2, ChevronRight, ChevronDown, Crown, ListTodo, Filter,
+  FileText, FileSpreadsheet, FileImage, File, Download, Trash2, Edit2
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
@@ -31,6 +32,47 @@ function computeHealth(a: Agent): HealthStatus {
   if (k8s === "failed" || k8s === "terminated") return "offline";
   return "starting";
 }
+
+function getFileIcon(filename: string) {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "pdf":
+      return FileText;
+    case "doc":
+    case "docx":
+      return FileText;
+    case "xls":
+    case "xlsx":
+      return FileSpreadsheet;
+    case "png":
+    case "jpg":
+    case "jpeg":
+    case "gif":
+    case "svg":
+      return FileImage;
+    case "txt":
+      return FileText;
+    default:
+      return File;
+  }
+}
+
+const mockFiles = [
+  {
+    id: "1",
+    name: "q4_financial_report.pdf",
+    size: "2.4 MB",
+    updatedAt: "2026-05-10T14:32:00.000Z",
+    createdAt: "2026-05-10T14:32:00.000Z",
+  },
+  {
+    id: "2",
+    name: "marketing_strategy.docx",
+    size: "1.2 MB",
+    updatedAt: "2026-05-15T09:15:00.000Z",
+    createdAt: "2026-05-15T09:15:00.000Z",
+  },
+];
 
 function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, level?: number }) {
   const { token } = useAuth();
@@ -174,6 +216,7 @@ export default function TeamDetailPage() {
   const [showOnlyMine, setShowOnlyMine] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string[]>(["draft", "open", "in_progress", "waiting_user"]);
   const [filtersLoaded, setFiltersLoaded] = useState(false);
+  const [isFileSectionExpanded, setIsFileSectionExpanded] = useState(false);
 
   useEffect(() => {
     try {
@@ -518,6 +561,109 @@ export default function TeamDetailPage() {
                 ))
               )}
             </div>
+          </section>
+
+          {/* File System Box */}
+          <section className="rounded-xl border bg-card overflow-hidden">
+            <div className="border-b px-5 py-3 flex items-center justify-between bg-muted/20">
+              <div className="flex items-center gap-2 cursor-pointer select-none" onClick={() => setIsFileSectionExpanded(!isFileSectionExpanded)}>
+                <FolderKanban className="size-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">{t.teamsPage.fileSystem.title}</h3>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 gap-2 text-muted-foreground">
+                      <Filter className="size-3.5" />
+                      {t.teamsPage.filters}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem className="cursor-pointer" onClick={() => toast.info(t.teamsPage.filters)}>
+                      {t.teamsPage.filters}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="size-8 h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                  onClick={() => setIsFileSectionExpanded(!isFileSectionExpanded)}
+                >
+                  {isFileSectionExpanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                </Button>
+              </div>
+            </div>
+            {isFileSectionExpanded && (
+              <div className="flex flex-col w-full text-sm">
+                {/* Header Row */}
+                <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-border/40 bg-muted/5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-6">{t.teamsPage.fileSystem.filename}</div>
+                  <div className="col-span-3">{t.teamsPage.fileSystem.dateModified}</div>
+                  <div className="col-span-3 text-right pr-4">{t.teamsPage.fileSystem.fileSize}</div>
+                </div>
+                
+                {/* File Rows */}
+                {mockFiles.map(file => {
+                  const Icon = getFileIcon(file.name);
+                  return (
+                    <div key={file.id} className="grid grid-cols-12 gap-4 px-5 py-3.5 border-b border-border/30 last:border-0 hover:bg-muted/30 transition-colors items-center group relative">
+                      <div className="col-span-6 flex items-center gap-3 min-w-0">
+                        <Icon className="size-4 shrink-0 text-muted-foreground/70" />
+                        <span className="font-medium truncate text-foreground">{file.name}</span>
+                      </div>
+                      <div className="col-span-3 text-xs text-muted-foreground truncate">
+                        {new Date(file.updatedAt || file.createdAt).toLocaleDateString()}
+                      </div>
+                      <div className="col-span-3 text-right pr-4 flex items-center justify-end gap-2">
+                        <span className="text-xs text-muted-foreground">{file.size}</span>
+                        
+                        {/* Action buttons (only visible on hover, floats cleanly on the right) */}
+                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center gap-1 absolute right-4 bg-background/95 py-1 px-1.5 rounded-lg border shadow-md">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-7 h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+                            title={t.teamsPage.fileSystem.download}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toast.info(`${t.teamsPage.fileSystem.actionTriggered}: ${t.teamsPage.fileSystem.download} (${file.name})`);
+                            }}
+                          >
+                            <Download className="size-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-7 h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted"
+                            title={t.teamsPage.fileSystem.rename}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toast.info(`${t.teamsPage.fileSystem.actionTriggered}: ${t.teamsPage.fileSystem.rename} (${file.name})`);
+                            }}
+                          >
+                            <Edit2 className="size-3.5" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="size-7 h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            title={t.teamsPage.fileSystem.delete}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toast.info(`${t.teamsPage.fileSystem.actionTriggered}: ${t.teamsPage.fileSystem.delete} (${file.name})`);
+                            }}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
         </div>
 
