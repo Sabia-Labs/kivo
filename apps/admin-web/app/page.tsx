@@ -7,8 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
-import { useEffect, useState } from "react";
+import { useAuth, API_BASE } from "@/lib/auth";
+import { useEffect, useState, useCallback } from "react";
 
 
 // Mock Dashboard Components for the Hero
@@ -107,6 +107,37 @@ export default function HomePage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const signupHref = user ? `/redirect-app?path=/teams` : "/signup";
+
+  const [teamTypes, setTeamTypes] = useState<any[]>([]);
+  const [isFetchingTypes, setIsFetchingTypes] = useState(true);
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/meta/team-types`);
+        const data = await res.json();
+        if (!data.error) {
+          setTeamTypes(data.data.filter((tmpl: any) => tmpl.featured));
+        }
+      } catch (err) {
+        console.error("Failed to fetch team types", err);
+      } finally {
+        setIsFetchingTypes(false);
+      }
+    };
+    fetchTypes();
+  }, []);
+
+  const translate = useCallback((key: string) => {
+    if (!key) return "";
+    const parts = key.split(".");
+    let current: any = t;
+    for (const part of parts) {
+      if (current[part] === undefined) return key;
+      current = current[part];
+    }
+    return typeof current === "string" ? current : key;
+  }, [t]);
 
   return (
     <div className="flex flex-col bg-background selection:bg-primary/20">
@@ -256,26 +287,26 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
-            {t.templates.items.map((tmpl, i) => {
-              const isComingSoon = tmpl.badge === "Coming Soon" || tmpl.badge === "即将推出";
-              return (
-                <div key={i} className={`group relative flex flex-col rounded-2xl border bg-card p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isComingSoon ? 'opacity-70' : 'hover:border-primary/50'}`}>
-                  {tmpl.badge && (
-                    <Badge className={`absolute top-6 right-6 ${isComingSoon ? 'bg-muted text-muted-foreground' : 'bg-primary'}`} variant={isComingSoon ? "secondary" : "default"}>
-                      {tmpl.badge}
-                    </Badge>
-                  )}
+            {isFetchingTypes ? (
+              Array(3).fill(0).map((_, i) => (
+                <div key={i} className="h-64 rounded-2xl border bg-muted/20 animate-pulse" />
+              ))
+            ) : (
+              teamTypes.map((tmpl, i) => (
+                <div key={i} className="group relative flex flex-col rounded-2xl border bg-card p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 hover:border-primary/50">
                   <div className="mb-6 inline-flex size-12 items-center justify-center rounded-xl bg-primary/10 text-2xl text-primary ring-1 ring-inset ring-primary/20 group-hover:scale-110 transition-transform">
-                    {tmpl.icon}
+                    {tmpl.emoji}
                   </div>
-                  <h3 className="mb-3 text-xl font-semibold">{tmpl.title}</h3>
-                  <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">{tmpl.description}</p>
-                  <Button variant={isComingSoon ? "outline" : "default"} disabled={isComingSoon} asChild={!isComingSoon} className="w-full sm:w-auto self-start rounded-full">
-                    {isComingSoon ? <span>{tmpl.cta}</span> : <Link href={signupHref}>{tmpl.cta}</Link>}
+                  <h3 className="mb-3 text-xl font-semibold">{translate(tmpl.nameI18nKey)}</h3>
+                  <p className="text-muted-foreground mb-8 flex-1 leading-relaxed">{translate(tmpl.descriptionI18nKey)}</p>
+                  <Button asChild className="w-full sm:w-auto self-start rounded-full">
+                    <Link href={signupHref}>
+                      {(t as any).templates?.cta || "Get Started"}
+                    </Link>
                   </Button>
                 </div>
-              );
-            })}
+              ))
+            )}
           </div>
         </div>
       </section>

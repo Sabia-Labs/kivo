@@ -98,32 +98,6 @@ export const pt = {
     sectionTitle: "Comece com um template.\nEvolua para o seu próprio.",
     sectionSubtitle:
       "Escolha uma estrutura inicial que se adapte ao seu caso de uso. Templates definem a composição inicial de papéis — seu time sempre pode evoluir a partir daí.",
-    items: [
-      {
-        key: "starter",
-        icon: "🧩",
-        title: "Kivo Starter",
-        description: "O time mais simples possível — apenas um Líder de Time para você começar. Perfeito para uso geral ou exploratório.",
-        badge: "",
-        cta: "Começar",
-      },
-      {
-        key: "engineering",
-        icon: "💻",
-        title: "Engenharia",
-        description: "Um squad completo de entrega de software com disciplina SDLC — Engenheiro, Arquiteto e Gerente de Produto trabalhando juntos.",
-        badge: "Popular",
-        cta: "Começar",
-      },
-      {
-        key: "customer_support",
-        icon: "🎧",
-        title: "Suporte ao Cliente",
-        description: "Um time de suporte automatizado projetado para lidar com tickets, rotear problemas e manter SLAs de clientes em escala.",
-        badge: "Em breve",
-        cta: "Lista de Espera",
-      },
-    ],
   },
   controlPlane: {
     sectionBadge: "Plano de Controle",
@@ -231,50 +205,6 @@ export const pt = {
     step3: {
       title: "Escolha seu template de time",
       subtitle: "Escolha uma estrutura inicial. Você sempre pode adicionar mais agentes depois.",
-      templates: {
-        starter: {
-          icon: "🧩",
-          title: "Kivo Starter",
-          description: "Um assistente executivo para você começar. Simples e flexível.",
-          comingSoon: false,
-        },
-        product_delivery: {
-          icon: "🚀",
-          title: "Entrega de Produto",
-          description: "Squad completo de entrega de software com disciplina SDLC.",
-          comingSoon: false,
-        },
-        customer_support: {
-          icon: "🎧",
-          title: "Suporte ao Cliente",
-          description: "Time de suporte automatizado para seus usuários.",
-          comingSoon: false,
-        },
-        sales: {
-          icon: "💰",
-          title: "Vendas e Receita",
-          description: "Impulsione o crescimento e gerencie seu pipeline de vendas.",
-          comingSoon: false,
-        },
-        marketing: {
-          icon: "📣",
-          title: "Marketing e Crescimento",
-          description: "Construa sua marca e gere demanda.",
-          comingSoon: false,
-        },
-        finance: {
-          icon: "🏦",
-          title: "Finanças",
-          description: "Gerencie seu orçamento e saúde financeira.",
-          comingSoon: false,
-        },
-        legal: {
-          icon: "⚖️",
-          title: "Legal",
-          description: "Proteja seu negócio e garanta conformidade.",
-          comingSoon: false,
-        },
-      },
       next: "Continuar",
       back: "Voltar",
     },

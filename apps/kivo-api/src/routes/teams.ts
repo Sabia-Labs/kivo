@@ -74,12 +74,14 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
       // 0. Fetch template defaults if applicable
       let defaultMission = input.mission;
       let defaultWays = input.waysOfWorking;
+      let defaultIcon = input.icon;
 
       if (input.templateId) {
         const [template] = await tx.select().from(teamTypes).where(eq(teamTypes.id, input.templateId));
         if (template) {
           if (!defaultMission) defaultMission = template.mission;
           if (!defaultWays) defaultWays = template.waysOfWorking;
+          if (!defaultIcon) defaultIcon = template.emoji;
         }
       }
 
@@ -93,6 +95,7 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
           mission: defaultMission,
           waysOfWorking: defaultWays,
           templateId: input.templateId,
+          icon: defaultIcon,
         })
         .returning();
 
