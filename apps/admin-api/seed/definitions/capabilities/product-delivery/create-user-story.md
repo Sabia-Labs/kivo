@@ -1,7 +1,6 @@
 ---
 id: create-user-story
-name_i18n_key: capabilities.product_delivery.create_story.name
-description_i18n_key: capabilities.product_delivery.create_story.desc
+name: Create User Story
 type: task_template
 team_type: product-delivery
 featured: true

@@ -77,8 +77,7 @@ export const teamTypeRoles = pgTable("team_type_roles", {
 // ── Capabilities (Reference) ────────────────────────────────────────────────
 export const capabilities = pgTable("capabilities", {
   id: text("id").primaryKey(), // e.g., 'triage-open-tickets'
-  nameI18nKey: text("name_i18n_key").notNull(),
-  descriptionI18nKey: text("description_i18n_key").notNull(),
+  name: text("name").notNull(),
   type: text("type").notNull(), // 'task_template' | 'workflow'
   instructions: text("instructions").notNull(),
   inputsDescription: text("inputs_description"),

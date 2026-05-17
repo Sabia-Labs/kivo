@@ -1,7 +1,6 @@
 ---
 id: implement-work-item
-name_i18n_key: capabilities.product_delivery.implement.name
-description_i18n_key: capabilities.product_delivery.implement.desc
+name: Implement Issue
 type: task_template
 team_type: product-delivery
 featured: true

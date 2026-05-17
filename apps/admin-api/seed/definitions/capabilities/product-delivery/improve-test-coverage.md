@@ -1,7 +1,6 @@
 ---
 id: improve-test-coverage
-name_i18n_key: capabilities.product_delivery.test_coverage.name
-description_i18n_key: capabilities.product_delivery.test_coverage.desc
+name: Improve Test Coverage
 type: task_template
 team_type: product-delivery
 featured: false

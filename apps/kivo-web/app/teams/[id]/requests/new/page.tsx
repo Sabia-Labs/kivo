@@ -267,7 +267,7 @@ export default function NewRequestPage() {
 
       <div className="mb-8 space-y-2">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {selectedCapabilityInfo ? translate(selectedCapabilityInfo.name) : t.teamsPage.askAnything}
+          {selectedCapabilityInfo ? selectedCapabilityInfo.name : t.teamsPage.askAnything}
         </h1>
         <p className="text-muted-foreground text-sm">
           {selectedCapabilityInfo ? t.teamsPage.capabilityInfo : t.teamsPage.genericRequestInfo}

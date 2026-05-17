@@ -1,7 +1,6 @@
 ---
 id: contract-review
-name_i18n_key: capabilities.legal.review.name
-description_i18n_key: capabilities.legal.review.desc
+name: Contract Review
 type: task_template
 team_type: legal
 featured: true

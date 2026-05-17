@@ -52,8 +52,7 @@ interface Integration {
 
 interface Capability {
   id: string; 
-  name: string; // This holds the i18n key or raw name
-  descriptionI18nKey: string | null;
+  name: string; 
   identifier: string; 
   instructions: string;
   inputsDescription: string | null; 
@@ -621,9 +620,8 @@ export default function TeamSettingsPage() {
                           >
                             <Star className={cn("size-4", cap.isFavorite ? "fill-amber-500 text-amber-500" : "")} />
                           </button>
-                          <span className="font-medium text-sm text-foreground">{translate(cap.name)}</span>
+                          <span className="font-medium text-sm text-foreground">{cap.name}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground truncate max-w-lg">{translate(cap.descriptionI18nKey || "")}</span>
                       </div>
                       <div className="flex items-center gap-4">
                         <Link href={`/teams/${teamId}/settings/capabilities/${cap.id}`} className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"><Info className="size-3"/> Details</Link>

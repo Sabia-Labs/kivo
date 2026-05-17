@@ -1,7 +1,6 @@
 ---
 id: tech-debt-assessment
-name_i18n_key: capabilities.product_delivery.tech_debt.name
-description_i18n_key: capabilities.product_delivery.tech_debt.desc
+name: Tech Debt Assessment
 type: task_template
 team_type: product-delivery
 featured: true

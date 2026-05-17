@@ -1,7 +1,6 @@
 ---
 id: escalate-bug
-name_i18n_key: capabilities.customer_support.escalate.name
-description_i18n_key: capabilities.customer_support.escalate.desc
+name: Escalate Bug
 type: task_template
 team_type: customer-support
 featured: true

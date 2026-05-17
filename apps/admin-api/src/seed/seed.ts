@@ -165,8 +165,7 @@ export async function seed() {
 
     await db.insert(capabilities).values({
       id: data.id,
-      nameI18nKey: data.name_i18n_key,
-      descriptionI18nKey: data.description_i18n_key,
+      name: data.name,
       type: data.type,
       instructions,
       inputsDescription,
@@ -175,8 +174,7 @@ export async function seed() {
     }).onConflictDoUpdate({
       target: capabilities.id,
       set: {
-        nameI18nKey: data.name_i18n_key,
-        descriptionI18nKey: data.description_i18n_key,
+        name: data.name,
         type: data.type,
         instructions,
         inputsDescription,

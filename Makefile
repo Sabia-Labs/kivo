@@ -29,6 +29,13 @@ up: ## 🚀 Deploy environment (Bootstrap + Helm)
 	@scripts/env-manager.sh bootstrap $(ENV) $(CTX) $(NAMESPACE)
 	@scripts/env-manager.sh deploy $(ENV) $(CTX) $(NAMESPACE)
 
+dev: ## 🛠️ CLEAN START (Down + Secrets + Tilt)
+	@echo "🧹 Preparing a fresh local environment..."
+	@$(MAKE) down ENV=local
+	@$(MAKE) secrets ENV=local
+	@echo "🚀 Starting Tilt..."
+	@tilt up
+
 down: ## ☢ TOTAL WIPE (Delete Release + Namespace + Workspaces)
 	@chmod +x scripts/*.sh
 	@scripts/env-manager.sh down $(ENV) $(CTX) $(NAMESPACE)

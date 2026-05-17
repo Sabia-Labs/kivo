@@ -1,7 +1,6 @@
 ---
 id: research-lead
-name_i18n_key: capabilities.sales.research.name
-description_i18n_key: capabilities.sales.research.desc
+name: Research Lead
 type: task_template
 team_type: sales
 featured: true

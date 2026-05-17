@@ -1,7 +1,6 @@
 ---
 id: prepare-investor-update
-name_i18n_key: capabilities.executive_operations.prepare_investor_update.name
-description_i18n_key: capabilities.executive_operations.prepare_investor_update.desc
+name: Prepare Investor Update
 type: task_template
 team_type: executive-operations
 featured: true

@@ -1,7 +1,6 @@
 ---
 id: triage-backlog
-name_i18n_key: capabilities.product_delivery.triage.name
-description_i18n_key: capabilities.product_delivery.triage.desc
+name: Triage Backlog
 type: task_template
 team_type: product-delivery
 featured: true

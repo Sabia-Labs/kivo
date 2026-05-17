@@ -1,7 +1,6 @@
 ---
 id: run-okr-check-in
-name_i18n_key: capabilities.executive_operations.run_okr_check_in.name
-description_i18n_key: capabilities.executive_operations.run_okr_check_in.desc
+name: Run OKR Check-in
 type: task_template
 team_type: executive-operations
 featured: true
