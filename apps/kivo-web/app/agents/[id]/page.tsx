@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Bot, Check, ChevronDown, ChevronRight, Brain,
-  KeyRound, Loader2, Save, Send, Wifi, WifiOff, MessageSquare, Plus, X, Edit2
+  KeyRound, Loader2, Save, Send, Wifi, WifiOff, MessageSquare, Plus, X, Edit2, LineChart
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -547,7 +547,8 @@ export default function AgentPage() {
   if (!agent) return null;
 
   const status = computeDisplayStatus(agent);
-  const roleLabel = (agent.roleId || "agent").replace(/-/g, " ");
+  const normalizedRoleKey = (agent.roleId || "").replace(/-/g, "_");
+  const roleLabel = (t.agents.roleLabels as any)[normalizedRoleKey] || (agent.roleId || "agent").replace(/[_-]/g, " ");
   
   const statusLabels: Record<DisplayStatus, string> = {
     available: "Available", busy: "Processing", blocked: "Blocked",
@@ -561,7 +562,7 @@ export default function AgentPage() {
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12 pb-32">
       <Link href={agent.teamId ? `/teams/${agent.teamId}` : "/teams"} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="size-3.5" />
-        Back to Squad
+        {t.agentPage.backToSquad}
       </Link>
 
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
@@ -617,7 +618,7 @@ export default function AgentPage() {
             )}
             
             <div className="mt-1 flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground capitalize">{roleLabel}</span>
+              <span className="text-xs font-medium text-muted-foreground">{roleLabel}</span>
               <div className="h-3 w-px bg-border" />
               <div className="flex items-center gap-1.5">
                 <StatusIndicator status={status} />
@@ -625,6 +626,16 @@ export default function AgentPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Dashboard Access Button */}
+        <div className="shrink-0">
+          <Button variant="outline" className="gap-2 shadow-sm" asChild>
+            <Link href={`/agents/${agentId}/dashboard`}>
+              <LineChart className="size-4 text-primary" />
+              <span>{t.agentPage.openDashboard}</span>
+            </Link>
+          </Button>
         </div>
       </header>
 

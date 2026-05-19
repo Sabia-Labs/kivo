@@ -52,15 +52,28 @@ export function Navbar() {
           id="nav-logo"
           className="flex items-center gap-2 font-bold text-foreground transition-opacity hover:opacity-80"
         >
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              {/* connections */}
-              <path d="M6 17 L12 6 L18 17 Z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg overflow-hidden transition-transform hover:scale-105">
+            <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="kivo-logo-top-nav" x1="20" y1="20" x2="80" y2="50" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#67E8A6" />
+                  <stop offset="100%" stopColor="#1EAA6D" />
+                </linearGradient>
+                <linearGradient id="kivo-logo-bottom-nav" x1="20" y1="80" x2="80" y2="50" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#0E5A35" />
+                  <stop offset="60%" stopColor="#149457" />
+                  <stop offset="100%" stopColor="#0F6E40" />
+                </linearGradient>
+                <linearGradient id="kivo-logo-shadow-nav" x1="36" y1="54" x2="52" y2="70" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#042011" stopOpacity="0.6" />
+                  <stop offset="100%" stopColor="#042011" stopOpacity="0" />
+                </linearGradient>
+              </defs>
 
-              {/* nodes */}
-              <circle cx="6" cy="17" r="2" fill="currentColor" />
-              <circle cx="12" cy="6" r="2" fill="currentColor" />
-              <circle cx="18" cy="17" r="2" fill="currentColor" />
+              <path d="M 20 20 H 80 V 35 L 48 56 L 36 44 L 36 36 L 20 52 V 20 Z" fill="url(#kivo-logo-top-nav)" />
+              <path d="M 20 60 L 36 44 V 80 H 20 Z" fill="url(#kivo-logo-bottom-nav)" />
+              <path d="M 36 44 L 80 65 V 80 H 52 L 36 58 Z" fill="url(#kivo-logo-bottom-nav)" />
+              <path d="M 36 44 L 52 80 L 36 58 Z" fill="url(#kivo-logo-shadow-nav)" />
             </svg>
           </span>
           <span className="text-lg tracking-tight">Kivo</span>

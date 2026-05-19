@@ -1,0 +1,30 @@
+<svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradients matching the premium K logo -->
+    <linearGradient id="kivo-logo-top" x1="20" y1="20" x2="80" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#67E8A6" />
+      <stop offset="100%" stop-color="#1EAA6D" />
+    </linearGradient>
+    <linearGradient id="kivo-logo-bottom" x1="20" y1="80" x2="80" y2="50" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0E5A35" />
+      <stop offset="60%" stop-color="#149457" />
+      <stop offset="100%" stop-color="#0F6E40" />
+    </linearGradient>
+    <linearGradient id="kivo-logo-shadow" x1="36" y1="54" x2="52" y2="70" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#042011" stop-opacity="0.6" />
+      <stop offset="100%" stop-color="#042011" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Top Light Green Portion -->
+  <path d="M 20 20 H 80 V 35 L 48 56 L 36 44 L 36 36 L 20 52 V 20 Z" fill="url(#kivo-logo-top)" />
+
+  <!-- Bottom Left Stem Portion -->
+  <path d="M 20 60 L 36 44 V 80 H 20 Z" fill="url(#kivo-logo-bottom)" />
+
+  <!-- Bottom Right Arm Portion -->
+  <path d="M 36 44 L 80 65 V 80 H 52 L 36 58 Z" fill="url(#kivo-logo-bottom)" />
+
+  <!-- 3D Overlap Fold Shadow -->
+  <path d="M 36 44 L 52 80 L 36 58 Z" fill="url(#kivo-logo-shadow)" />
+</svg>

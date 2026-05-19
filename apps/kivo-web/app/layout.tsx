@@ -3,7 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LanguageProvider } from "@/lib/i18n";
 import { AuthProvider } from "@/lib/auth";
-import { Navbar } from "@/components/navbar";
+import { MainLayout } from "@/components/main-layout";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -51,8 +51,7 @@ export default function RootLayout({
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
-              <Navbar />
-              <main className="pt-16">{children}</main>
+              <MainLayout>{children}</MainLayout>
               <Toaster richColors position="top-right" />
             </AuthProvider>
           </LanguageProvider>

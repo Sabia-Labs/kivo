@@ -484,31 +484,60 @@ export default function TeamSettingsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-8">
-        <Link href={`/teams/${teamId}`} className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12 w-full flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* ── HEADER ── */}
+      <header className="flex flex-col gap-3 border-b pb-6 border-border/40">
+        <Link href={`/teams/${teamId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors">
           <ArrowLeft className="size-3.5" /> Back to Team
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Team Settings</h1>
-        <p className="mt-1 text-muted-foreground text-sm">Configure how this team works, what it can do, and which external tools it can access.</p>
-      </div>
+        <h1 className="text-3xl font-bold tracking-tight mt-1">Team Settings</h1>
+        <p className="text-muted-foreground text-sm mt-0.5">
+          Configure how this team works, what it can do, and which external tools it can access.
+        </p>
+      </header>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar */}
-        <nav className="flex md:w-64 shrink-0 flex-col gap-1">
-          <button onClick={() => setActiveTab("general")} className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", activeTab === "general" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
-            <LayoutTemplate className="size-4" /> General
-          </button>
-          <button onClick={() => setActiveTab("workflow")} className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", activeTab === "workflow" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
-            <Briefcase className="size-4" /> Workflow
-          </button>
-          <button onClick={() => setActiveTab("integrations")} className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors", activeTab === "integrations" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
-            <Globe className="size-4" /> Integrations
-          </button>
-        </nav>
+      {/* Tabs Menu */}
+      <nav className="flex border-b border-border/40 gap-6">
+        <button
+          onClick={() => setActiveTab("general")}
+          className={cn(
+            "flex items-center gap-2 pb-4 text-sm font-semibold transition-all relative border-b-2 border-transparent -mb-px",
+            activeTab === "general"
+              ? "text-primary border-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <LayoutTemplate className="size-4" />
+          <span>General</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("workflow")}
+          className={cn(
+            "flex items-center gap-2 pb-4 text-sm font-semibold transition-all relative border-b-2 border-transparent -mb-px",
+            activeTab === "workflow"
+              ? "text-primary border-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Briefcase className="size-4" />
+          <span>Workflow</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("integrations")}
+          className={cn(
+            "flex items-center gap-2 pb-4 text-sm font-semibold transition-all relative border-b-2 border-transparent -mb-px",
+            activeTab === "integrations"
+              ? "text-primary border-primary"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Globe className="size-4" />
+          <span>Integrations</span>
+        </button>
+      </nav>
 
-        {/* Content Area */}
-        <div className="flex-1 space-y-6 max-w-4xl pb-20">
+      {/* Content Area */}
+      <div className="space-y-6 max-w-5xl pb-20">
           
           {/* GENERAL */}
           {activeTab === "general" && (
@@ -700,7 +729,6 @@ export default function TeamSettingsPage() {
               </div>
             </div>
           )}
-        </div>
       </div>
       
     </div>

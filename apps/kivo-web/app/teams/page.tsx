@@ -22,6 +22,8 @@ interface Team {
   id: string; 
   name: string; 
   mission?: string; 
+  templateId?: string;
+  icon?: string;
   createdAt: string;
   agents: Agent[];
   workspace: { id: string; name: string };
@@ -60,21 +62,29 @@ function AgentAvatarGroup({ agents }: { agents: Agent[] }) {
 
 function TeamListItem({ team }: { team: Team }) {
   const { t } = useTranslation();
+  
+  // Resolve localized description using team.templateId if present
+  let displayDescription = team.mission || t.teamsPage.noMission;
+  const typesDict = t.teams?.types as any;
+  if (team.templateId && typesDict && typesDict[team.templateId]) {
+    displayDescription = typesDict[team.templateId].description || displayDescription;
+  }
+
   return (
     <Link
       href={`/teams/${team.id}`}
       className="group flex flex-col gap-4 rounded-xl border bg-card p-5 transition-all hover:border-primary/30 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
     >
       <div className="flex items-center gap-4">
-        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Users className="size-5" />
+        <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-2xl">
+          {team.icon || "🛡️"}
         </div>
         <div>
           <h2 className="text-base font-semibold tracking-tight text-foreground group-hover:text-primary transition-colors">
             {team.name}
           </h2>
           <p className="text-sm text-muted-foreground line-clamp-1 mt-0.5">
-            {team.mission || t.teamsPage.noMission}
+            {displayDescription}
           </p>
         </div>
       </div>
@@ -123,7 +133,7 @@ export default function TeamsPage() {
 
   const workspaceName = teams[0]?.workspace?.name ?? null;
 
-  if (authLoading || isLoading) {
+  if (authLoading) {
     return (
       <div className="flex min-h-svh items-center justify-center">
         <Loader2 className="size-6 animate-spin text-muted-foreground" />
@@ -132,51 +142,58 @@ export default function TeamsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:py-20">
-      <div className="flex flex-col gap-8">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            {workspaceName && (
-              <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold text-muted-foreground bg-muted/50 mb-3">
-                {workspaceName}
-              </span>
-            )}
-            <h1 className="text-3xl font-bold tracking-tight">{t.teamsPage.title}</h1>
-            <p className="text-muted-foreground mt-1">{t.teamsPage.subtitle}</p>
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12 w-full flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* ── HEADER ── */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b pb-6 border-border/40">
+        <div>
+          <div className="flex items-center gap-2">
+            <Users className="size-5 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
+              {t.nav.teams}
+            </span>
           </div>
-          <Button asChild>
+          <h1 className="text-3xl font-bold tracking-tight mt-1">
+            {t.teamsPage.title}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {t.teamsPage.subtitle}
+          </p>
+        </div>
+        <Button asChild>
+          <Link href="/newteam">
+            <Plus className="size-4 mr-2" />
+            {t.teamsPage.newTeam}
+          </Link>
+        </Button>
+      </header>
+
+      {/* ── CONTENT ── */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : teams.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-24 text-center bg-muted/10">
+          <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
+            <Users className="size-8 text-muted-foreground/60" />
+          </div>
+          <h2 className="text-lg font-semibold tracking-tight">{t.teamsPage.noTeams}</h2>
+          <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm text-balance">
+            {t.teamsPage.noTeamsSubtitle}
+          </p>
+          <Button asChild variant="outline">
             <Link href="/newteam">
-              <Plus className="size-4 mr-2" />
-              {t.teamsPage.newTeam}
+              {t.teamsPage.createTeam}
             </Link>
           </Button>
         </div>
-
-        {/* Content */}
-        {teams.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed py-24 text-center bg-muted/10">
-            <div className="flex size-16 items-center justify-center rounded-2xl bg-muted/50 mb-4">
-              <Users className="size-8 text-muted-foreground/60" />
-            </div>
-            <h2 className="text-lg font-semibold tracking-tight">{t.teamsPage.noTeams}</h2>
-            <p className="text-sm text-muted-foreground mt-1 mb-6 max-w-sm text-balance">
-              {t.teamsPage.noTeamsSubtitle}
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/newteam">
-                {t.teamsPage.createTeam}
-              </Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {teams.map((team) => (
-              <TeamListItem key={team.id} team={team} />
-            ))}
-          </div>
-        )}
-      </div>
+      ) : (
+        <div className="grid gap-3">
+          {teams.map((team) => (
+            <TeamListItem key={team.id} team={team} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
