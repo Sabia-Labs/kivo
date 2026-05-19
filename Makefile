@@ -13,13 +13,9 @@ else ifeq ($(ENV),staging)
 else ifeq ($(ENV),hetzner)
 	CTX = hetzner-vps
 	NAMESPACE = kivo-staging
-	KUBECONFIG = ../sabia-infra/infra/products/kivo/hetzner-vps/kubeconfig.yaml
-	export KUBECONFIG
 else ifeq ($(ENV),alibaba)
 	CTX = default
 	NAMESPACE = kivo-staging
-	KUBECONFIG = ../sabia-infra/infra/products/kivo/alibaba-vps/kubeconfig.yaml
-	export KUBECONFIG
 endif
 
 # ── CORE TARGETS ──────────────────────────────────────────────────────────────
