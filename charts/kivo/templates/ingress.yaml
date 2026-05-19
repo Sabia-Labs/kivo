@@ -29,6 +29,7 @@ spec:
         - {{ .Values.ingress.host }}
         - www.{{ .Values.ingress.host }}
         - kivo.{{ .Values.ingress.host }}
+        - auth.{{ .Values.ingress.host }}
       secretName: {{ .Values.ingress.tls.secretName }}
   {{- end }}
   rules:
@@ -44,6 +45,17 @@ spec:
                 port:
                   name: http
     - host: www.{{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kivo-admin-web
+                port:
+                  name: http
+    # Auth Portal
+    - host: auth.{{ .Values.ingress.host }}
       http:
         paths:
           - path: /
