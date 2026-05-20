@@ -19,6 +19,7 @@ export const zh: Dictionary = {
     knowledge: "知识库",
     settings: "设置",
     workspace: "工作区",
+    notifications: "通知",
   },
   hero: {
     badge: "AI智能体团队，以最佳实践管理",

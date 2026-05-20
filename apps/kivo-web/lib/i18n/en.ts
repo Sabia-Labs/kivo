@@ -17,6 +17,7 @@ export const en = {
     knowledge: "Knowledge",
     settings: "Settings",
     workspace: "Workspace",
+    notifications: "Notifications",
   },
   hero: {
     badge: "AI Agent Teams, Managed with Best Practices",

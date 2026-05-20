@@ -19,7 +19,7 @@ export interface Notification {
   teamId: string;
 }
 
-export function NotificationBell() {
+export function NotificationBell({ dropdownClassName }: { dropdownClassName?: string } = {}) {
   const { token, user } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -115,7 +115,7 @@ export function NotificationBell() {
       </button>
 
       {dropdownOpen && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg ring-1 ring-black/5 sm:w-96">
+        <div className={cn("absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border bg-card shadow-lg ring-1 ring-black/5 sm:w-96", dropdownClassName)}>
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <h3 className="font-semibold text-foreground">Notifications</h3>
               {unreadCount > 0 && (
