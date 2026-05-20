@@ -112,6 +112,38 @@ function AvatarPicker({ icon, color, onIconChange, onColorChange, onClose }: {
   );
 }
 
+// ── ComingSoonChannel ─────────────────────────────────────────────────────────
+
+interface ComingSoonChannelProps {
+  name: string;
+  icon: React.ReactNode;
+}
+
+function ComingSoonChannel({ name, icon }: ComingSoonChannelProps) {
+  return (
+    <div className="flex items-center justify-between py-3 opacity-60">
+      <div className="flex items-center gap-3">
+        {icon}
+        <div>
+          <p className="text-sm font-medium text-foreground">{name}</p>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Coming Soon</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled
+          className="relative inline-flex h-5 w-9 shrink-0 cursor-not-allowed items-center rounded-full border-2 border-transparent bg-muted-foreground/20 transition-colors focus:outline-none"
+          role="switch"
+        >
+          <span className="pointer-events-none inline-block size-4 translate-x-0 rounded-full bg-white shadow transition-transform" />
+        </button>
+        <ChevronRight className="size-3.5 text-muted-foreground/30" />
+      </div>
+    </div>
+  );
+}
+
 // ── TelegramChannel ───────────────────────────────────────────────────────────
 
 const BOTFATHER_GUIDE = 'Open Telegram, search for @BotFather and send /newbot. Choose a display name and a username ending in "bot". BotFather will reply with a token — paste it below.';
@@ -187,7 +219,9 @@ function TelegramChannel({
     <div>
       <div className="flex items-center justify-between py-3">
         <div className="flex items-center gap-3">
-          <span className="text-xl">✈️</span>
+          <svg className="size-5 text-[#24A1DE] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.193.926-.446l2.222-2.164 4.606 3.407c.847.466 1.458.225 1.671-.785l2.93-13.791c.301-1.208-.43-1.759-1.165-1.442z" />
+          </svg>
           <div>
             <p className="text-sm font-medium text-foreground">Telegram</p>
             <StatusBadge />
@@ -680,6 +714,31 @@ export default function AgentPage() {
                 telegramStatus={telegramStatus}
                 onTokenSaved={saveTelegramToken}
                 onPairingApproved={approveTelegramPairing}
+              />
+              <ComingSoonChannel
+                name="WhatsApp"
+                icon={
+                  <svg className="size-5 text-[#25D366] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12.001 2C6.486 2 2 6.485 2 12c0 2.37.817 4.557 2.19 6.279L2.835 22l3.87-1.346A9.91 9.91 0 0 0 12.001 22c5.514 0 10-4.485 10-10s-4.486-10-10-10zm5.358 14.398c-.287.794-1.666 1.464-2.277 1.57-.456.079-1.042.179-3.23-.728-2.678-1.104-4.44-3.874-4.577-4.056-.136-.182-1.117-1.487-1.117-2.837 0-1.35.58-2.016 1.054-2.525.26-.277.587-.367.828-.367.24 0 .48.006.69.014.219.008.52-.083.82.632.298.711 1.018 2.484 1.107 2.665.09.182.145.392.037.632-.108.24-.163.393-.325.575-.163.183-.343.404-.487.545-.145.141-.303.303-.127.603.177.301.785 1.332 1.684 2.158 1.155 1.057 2.137 1.353 2.434 1.493.297.141.474.119.653-.09.18-.21.776-.902.996-1.206.22-.304.442-.255.757-.145.315.111 2.01.954 2.355 1.127.345.174.574.258.658.404.084.146.084.846-.203 1.64z" />
+                  </svg>
+                }
+              />
+              <ComingSoonChannel
+                name="WeChat"
+                icon={
+                  <svg className="size-5 text-[#07C160] fill-current" viewBox="0 0 16 16" aria-hidden="true">
+                    <path d="M11.176 14.429c-2.665 0-4.826-1.8-4.826-4.018 0-2.22 2.159-4.02 4.824-4.02S16 8.191 16 10.411c0 1.21-.65 2.301-1.666 3.036a.32.32 0 0 0-.12.366l.218.81a.6.6 0 0 1 .029.117.166.166 0 0 1-.162.162.2.2 0 0 1-.092-.03l-1.057-.61a.5.5 0 0 0-.256-.074.5.5 0 0 0-.142.021 5.7 5.7 0 0 1-1.576.22M9.064 9.542a.647.647 0 1 0 .557-1 .645.645 0 0 0-.646.647.6.6 0 0 0 .09.353Zm3.232.001a.646.646 0 1 0 .546-1 .645.645 0 0 0-.644.644.63.63 0 0 0 .098.356" />
+                    <path d="M0 6.826c0 1.455.781 2.765 2.001 3.656a.385.385 0 0 1 .143.439l-.161.6-.1.373a.5.5 0 0 0-.032.14.19.19 0 0 0 .193.193q.06 0 .111-.029l1.268-.733a.6.6 0 0 1 .308-.088q.088 0 .171.025a6.8 6.8 0 0 0 1.625.26 4.5 4.5 0 0 1-.177-1.251c0-2.936 2.785-5.02 5.824-5.02l.15.002C10.587 3.429 8.392 2 5.796 2 2.596 2 0 4.16 0 6.826m4.632-1.555a.77.77 0 1 1-1.54 0 .77.77 0 0 1 1.54 0m3.875 0a.77.77 0 1 1-1.54 0 .77.77 0 0 1 1.54 0" />
+                  </svg>
+                }
+              />
+              <ComingSoonChannel
+                name="Slack"
+                icon={
+                  <svg className="size-5 text-[#E01E5A] fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1 2.522-2.52A2.528 2.528 0 0 1 13.879 5.042a2.527 2.527 0 0 1-2.522 2.521h-2.523V5.042zM7.563 8.835a2.527 2.527 0 0 1-2.521 2.521 2.527 2.527 0 0 1-2.521-2.521V2.523A2.528 2.528 0 0 1 5.042 0a2.528 2.528 0 0 1 2.521 2.522v6.313zM18.958 8.835a2.528 2.528 0 0 1 2.52 2.522 2.528 2.528 0 0 1-2.52 2.522 2.527 2.527 0 0 1-2.522-2.522v-2.522h2.522zM17.687 8.835a2.527 2.527 0 0 1-2.521 2.522 2.527 2.527 0 0 1-2.521-2.522V2.523A2.528 2.528 0 0 1 15.166 0a2.528 2.528 0 0 1 2.521 2.522v6.313zM15.166 18.958a2.528 2.528 0 0 1-2.522 2.521 2.528 2.528 0 0 1-2.521-2.521 2.527 2.527 0 0 1 2.521-2.522h2.522v2.522zM16.437 15.165a2.527 2.527 0 0 1 2.521 2.522 2.527 2.527 0 0 1-2.521 2.521h-6.313a2.528 2.528 0 0 1-2.522-2.521 2.528 2.528 0 0 1 2.522-2.522h6.313z" />
+                  </svg>
+                }
               />
             </div>
           </div>
