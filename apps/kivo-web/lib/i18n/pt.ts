@@ -17,6 +17,7 @@ export const pt = {
     knowledge: "Conhecimento",
     settings: "Configurações",
     workspace: "Workspace",
+    notifications: "Notificações",
   },
   hero: {
     badge: "Seu time de agentes, gerenciado pelas melhores práticas de mercado",
