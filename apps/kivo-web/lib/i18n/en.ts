@@ -620,9 +620,14 @@ export const en = {
       summary: { name: "Cycle Summary", desc: "Generate a summary of the current work cycle." },
     },
     customer_support: {
-      answer: { name: "Answer Ticket", desc: "Provide helpful responses to users." },
+      answer: { name: "Answer Customer Ticket", desc: "Draft a helpful and empathetic response to a customer." },
       escalate: { name: "Escalate Bug", desc: "Transform a ticket into an engineering bug." },
-      triage: { name: "Queue Triage", desc: "Prioritize and assign incoming support tickets." },
+      gather: { name: "Gather Support Information", desc: "Collect and synthesize relevant documentation and articles." },
+      read: { name: "Read Customer Ticket", desc: "Analyze and summarize a customer support ticket." },
+      read_open_tickets: { name: "Read Open Tickets", desc: "Connect to the ticketing tool and retrieve all open customer support tickets." },
+      resolution_flow: { name: "Customer Support Resolution Flow", desc: "End-to-end workflow to fetch, research, draft, and submit customer ticket answers." },
+      send_answer: { name: "Send Customer Answer", desc: "Write the response to the external ticket system." },
+      triage_open_tickets: { name: "Triage Open Tickets", desc: "Review, classify urgency, determine product area, and suggest actions for open tickets." },
       write_kb: { name: "Write KB Article", desc: "Create documentation from recurring issues." },
     },
     sales: {

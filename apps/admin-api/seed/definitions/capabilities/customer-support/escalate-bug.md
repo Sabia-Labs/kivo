@@ -3,7 +3,7 @@ id: escalate-bug
 name: Escalate Bug
 type: task_template
 team_type: customer-support
-featured: true
+featured: false
 default_assigned_role: support-analyst
 ---
 
