@@ -627,9 +627,10 @@ export const zh: Dictionary = {
       escalate: { name: "上报漏洞", desc: "将工单转化为工程漏洞。" },
       gather: { name: "收集支持信息", desc: "收集并综合相关的文档 and 页面。" },
       read: { name: "读取客户工单", desc: "分析和总结客户支持工单。" },
+      read_open_tickets: { name: "读取未结工单", desc: "连接到工单工具并检索所有处于开启状态的客户支持工单。" },
       resolution_flow: { name: "客户支持解决流程", desc: "用于获取、研究、起草和提交客户工单回复的端到端流程。" },
       send_answer: { name: "发送客户回复", desc: "将回复写入外部工单系统。" },
-      triage: { name: "分拣队列", desc: "优先排序并分配待处理的客服工单。" },
+      triage_open_tickets: { name: "分拣未结工单", desc: "审查、对紧急程度进行分类、确定产品领域并为开启状态的工单建议后续行动。" },
       write_kb: { name: "编写知识库文章", desc: "根据常见问题创建文档。" },
     },
     sales: {

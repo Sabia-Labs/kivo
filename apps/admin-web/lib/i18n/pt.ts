@@ -492,9 +492,10 @@ export const pt = {
       escalate: { name: "Escalar Bug", desc: "Transformar um ticket em um bug de engenharia." },
       gather: { name: "Reunir Informações de Suporte", desc: "Coletar e sintetizar documentações e artigos relevantes." },
       read: { name: "Ler Ticket do Cliente", desc: "Analisar e resumir um ticket de suporte do cliente." },
+      read_open_tickets: { name: "Ler Tickets em Aberto", desc: "Conectar à ferramenta de tickets e recuperar todos os chamados de suporte em aberto." },
       resolution_flow: { name: "Fluxo de Resolução de Suporte ao Cliente", desc: "Fluxo ponta a ponta para recuperar, pesquisar, redigir e enviar respostas a tickets de clientes." },
       send_answer: { name: "Enviar Resposta ao Cliente", desc: "Escrever a resposta no sistema externo de tickets." },
-      triage: { name: "Triagem de Fila", desc: "Priorizar e atribuir tickets de suporte recebidos." },
+      triage_open_tickets: { name: "Triar Tickets em Aberto", desc: "Revisar, classificar urgência, área do produto e propor ações para chamados em aberto." },
       write_kb: { name: "Escrever Artigo de KB", desc: "Criar documentação a partir de problemas recorrentes." },
     },
     sales: {

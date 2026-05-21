@@ -1,7 +1,8 @@
 ---
 id: triage-open-tickets
-name_i18n_key: capabilities.customer_support.triage.name
-description_i18n_key: capabilities.customer_support.triage.desc
+name: Triage Open Tickets
+name_i18n_key: capabilities.customer_support.triage_open_tickets.name
+description_i18n_key: capabilities.customer_support.triage_open_tickets.desc
 type: task_template
 team_type: customer-support
 featured: false
@@ -9,14 +10,14 @@ default_assigned_role: support-lead
 ---
 
 # INSTRUCTIONS
-Review open customer tickets, classify them by urgency and product area, and suggest next actions for the team.
+Perform a comprehensive triage and analysis of the open support tickets retrieved in the previous step.
+1. **Review & Analyze**: Carefully review the details of each open ticket to understand the customer's core inquiry, question, or problem.
+2. **Classify**: Assign each ticket to a product area, assess its urgency and priority level (Low, Medium, High, Urgent), and identify customer sentiment.
+3. **Suggest Next Actions**: Propose clear, actionable next steps for each ticket. If a ticket can be resolved immediately (e.g. simple FAQs, general questions that have clear existing solutions), explicitly highlight it and draft a quick resolution suggestion.
+4. **Compile Report**: Generate a highly detailed triage report summarizing the current queue state, categorized findings, and a prioritized queue recommendation.
 
 # INPUTS
-- List of open tickets
-- Urgency criteria
-- Product areas mapping
+- A structured list of open customer tickets with basic descriptions.
 
 # EXPECTED OUTPUTS
-- Categorized ticket list
-- Prioritized queue
-- Assigned responder suggestions
+- A detailed triage report with categorized tickets (by urgency and product area), prioritized next-action suggestions, and explicit callouts for tickets that can be resolved immediately.
