@@ -625,6 +625,8 @@ export const zh: Dictionary = {
     customer_support: {
       answer: { name: "回复工单", desc: "向用户提供有帮助的回复。" },
       escalate: { name: "上报漏洞", desc: "将工单转化为工程漏洞。" },
+      gather: { name: "收集支持信息", desc: "收集并综合相关的文档和文章。" },
+      read: { name: "读取客户工单", desc: "分析和总结客户支持工单。" },
       triage: { name: "分拣队列", desc: "优先排序并分配待处理的客服工单。" },
       write_kb: { name: "编写知识库文章", desc: "根据常见问题创建文档。" },
     },

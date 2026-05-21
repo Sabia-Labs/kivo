@@ -4,7 +4,7 @@ name_i18n_key: capabilities.customer_support.triage.name
 description_i18n_key: capabilities.customer_support.triage.desc
 type: task_template
 team_type: customer-support
-featured: true
+featured: false
 default_assigned_role: support-lead
 ---
 

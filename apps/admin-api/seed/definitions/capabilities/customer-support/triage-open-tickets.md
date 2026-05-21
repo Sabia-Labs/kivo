@@ -3,7 +3,7 @@ id: triage-open-tickets
 name: Queue Triage
 type: task_template
 team_type: customer-support
-featured: true
+featured: false
 default_assigned_role: support-lead
 ---
 

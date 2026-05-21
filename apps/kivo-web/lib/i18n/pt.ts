@@ -622,6 +622,8 @@ export const pt = {
     customer_support: {
       answer: { name: "Responder Ticket", desc: "Fornecer respostas úteis aos usuários." },
       escalate: { name: "Escalar Bug", desc: "Transformar um ticket em um bug de engenharia." },
+      gather: { name: "Reunir Informações de Suporte", desc: "Coletar e sintetizar documentações e artigos relevantes." },
+      read: { name: "Ler Ticket do Cliente", desc: "Analisar e resumir um ticket de suporte do cliente." },
       triage: { name: "Triagem de Fila", desc: "Priorizar e atribuir tickets de suporte recebidos." },
       write_kb: { name: "Escrever Artigo de KB", desc: "Criar documentação a partir de problemas recorrentes." },
     },
