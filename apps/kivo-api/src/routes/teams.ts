@@ -12,6 +12,8 @@ import {
   applyKivoAgentCR,
   ensureNamespace,
   workspaceNamespace,
+  deleteKivoAgentCR,
+  deleteCredentialsSecret,
 } from "../k8s/provisioner";
 import { requestsRouter } from "./requests";
 import { activitiesRouter } from "./activities";
@@ -240,14 +242,48 @@ teamsRouter.put("/:id", async (req: Request, res: Response, next: NextFunction) 
 });
 
 // ── DELETE /teams/:id ─────────────────────────────────────────────────────────
-teamsRouter.delete("/:id", async (req: Request, res: Response, next: NextFunction) => {
+teamsRouter.delete("/:id", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const teamId = String(req.params.id);
+
+    // 1. Fetch team to identify its workspace
+    const [team] = await db
+      .select()
+      .from(teams)
+      .where(eq(teams.id, teamId));
+
+    if (!team) return res.status(404).json(failure("Team not found"));
+
+    // 2. Fetch workspace to obtain the correct namespace
+    const [workspace] = await db
+      .select({ k8sNamespace: workspaces.k8sNamespace })
+      .from(workspaces)
+      .where(eq(workspaces.id, team.workspaceId));
+
+    const namespace = workspace?.k8sNamespace ?? workspaceNamespace(team.workspaceId);
+
+    // 3. Fetch all agents belonging to this team
+    const teamAgents = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.teamId, teamId));
+
+    // 4. De-provision each agent in Kubernetes (CR and credentials secret)
+    for (const agent of teamAgents) {
+      try {
+        await deleteKivoAgentCR(namespace, agent.id);
+        await deleteCredentialsSecret(namespace, agent.id);
+      } catch (k8sErr) {
+        console.error(`[teams] Failed to delete K8s resources for agent ${agent.id}:`, k8sErr);
+      }
+    }
+
+    // 5. Delete the team from PostgreSQL (cascades database tables)
     const [deleted] = await db
       .delete(teams)
-      .where(eq(teams.id, String(req.params.id)))
+      .where(eq(teams.id, teamId))
       .returning();
 
-    if (!deleted) return res.status(404).json(failure("Team not found"));
     res.status(200).json(success({ deleted: true, id: deleted.id }));
   } catch (err) {
     next(err);

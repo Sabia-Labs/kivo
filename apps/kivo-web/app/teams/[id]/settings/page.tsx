@@ -335,7 +335,7 @@ export default function TeamSettingsPage() {
   }, [t]);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"general" | "workflow" | "integrations">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "workflow" | "integrations" | "danger">("general");
 
   // General Settings
   const [teamName, setTeamName] = useState("");
@@ -360,6 +360,10 @@ export default function TeamSettingsPage() {
   // Integrations Settings
   const [integrations, setIntegrations] = useState<Integration[]>([]);
   const [enabledIntegrations, setEnabledIntegrations] = useState<Record<string, boolean>>({});
+
+  // Danger Zone
+  const [confirmName, setConfirmName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ── Data Fetching ───────────────────────────────────────────────────────────
 
@@ -463,6 +467,34 @@ export default function TeamSettingsPage() {
     setEnabledIntegrations(p => ({ ...p, [provider]: on }));
   };
 
+  const handleDeleteTeam = async () => {
+    if (!token) return;
+    if (confirmName !== teamName) {
+      toast.error("Please type the exact team name to confirm deletion.");
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/teams/${teamId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        toast.success("Team permanently deleted.");
+        router.replace("/teams");
+      } else {
+        const errorData = await res.json().catch(() => ({}));
+        toast.error(errorData.message || "Failed to delete team.");
+      }
+    } catch (e) {
+      toast.error("An unexpected error occurred during team deletion.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -533,6 +565,18 @@ export default function TeamSettingsPage() {
         >
           <Globe className="size-4" />
           <span>Integrations</span>
+        </button>
+        <button
+          onClick={() => setActiveTab("danger")}
+          className={cn(
+            "flex items-center gap-2 pb-4 text-sm font-semibold transition-all relative border-b-2 border-transparent -mb-px",
+            activeTab === "danger"
+              ? "text-red-500 border-red-500"
+              : "text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Trash2 className="size-4" />
+          <span>Danger Zone</span>
         </button>
       </nav>
 
@@ -726,6 +770,79 @@ export default function TeamSettingsPage() {
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* DANGER ZONE */}
+          {activeTab === "danger" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 shadow-sm p-6 space-y-6">
+                <div>
+                  <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Irreversible actions that affect your team, agents, and data.
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-red-500/30 bg-card p-5 space-y-4 shadow-sm">
+                  <div className="flex items-start gap-3.5">
+                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30">
+                      <Trash2 className="size-5 animate-pulse" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-sm text-foreground">Delete this team</h3>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        Once you delete this team, there is no going back. Please be certain.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-3.5 bg-muted/40 rounded-lg space-y-2 border border-border/40 text-xs text-muted-foreground">
+                    <p className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Info className="size-3.5 text-red-500" />
+                      The following resources will be permanently removed:
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 pl-1">
+                      <li>All AI agent containers and running Kubernetes pods</li>
+                      <li>State directories and Persistent Volume Claims (PVCs) for all agents</li>
+                      <li>All bootstrap ConfigMaps and credentials Secrets</li>
+                      <li>Database configurations, tasks, messages, and conversation history</li>
+                    </ul>
+                  </div>
+
+                  <div className="space-y-2 pt-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
+                      To confirm, type <span className="font-mono font-bold text-foreground select-all bg-muted px-1.5 py-0.5 rounded border">{teamName}</span> below:
+                    </label>
+                    <Input 
+                      placeholder={teamName}
+                      value={confirmName} 
+                      onChange={e => setConfirmName(e.target.value)} 
+                      className="font-mono text-sm max-w-md focus-visible:ring-red-500"
+                      disabled={isDeleting}
+                      autoComplete="off"
+                    />
+                  </div>
+
+                  <div className="flex justify-start pt-2">
+                    <Button 
+                      variant="destructive"
+                      onClick={handleDeleteTeam}
+                      disabled={confirmName !== teamName || isDeleting}
+                      className="shadow-sm font-semibold transition-all animate-pulse"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin mr-2" />
+                          Deleting Team...
+                        </>
+                      ) : (
+                        "Permanently Delete Team"
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
           )}
