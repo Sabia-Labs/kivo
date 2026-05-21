@@ -1,11 +1,12 @@
 import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { eq, count } from "drizzle-orm";
+import { eq, count, inArray } from "drizzle-orm";
 import { db } from "../db/client";
 import { agents, workspaces, teams, users } from "../db/schema";
 import { createAgentSchema, updateAgentSchema } from "../schemas/agent.schema";
 import { success, failure } from "../lib/response";
 import { replacePlaceholders } from "../lib/messages";
+import { authMiddleware } from "../middleware/authMiddleware";
 import {
   workspaceNamespace,
   ensureNamespace,
@@ -21,6 +22,9 @@ import {
 } from "../k8s/provisioner";
 
 export const agentsRouter = Router();
+
+// Apply authMiddleware globally to secure all endpoints under /agents
+agentsRouter.use(authMiddleware);
 
 // ── POST /agents ──────────────────────────────────────────────────────────────
 agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) => {
@@ -93,14 +97,63 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
 // ── GET /agents ───────────────────────────────────────────────────────────────
 agentsRouter.get("/", async (req: Request, res: Response, next: NextFunction) => {
   try {
+    const actor = req.actor!;
+    
+    // Support both human actors (scope by workspace) and agent actors (scope by team)
+    let userTeamIds: string[] = [];
+    
+    if (actor.type === "human") {
+      const [workspace] = await db
+        .select({ id: workspaces.id })
+        .from(workspaces)
+        .where(eq(workspaces.userId, actor.id))
+        .limit(1);
+
+      if (!workspace) {
+        res.json(success([]));
+        return;
+      }
+
+      const userTeams = await db
+        .select({ id: teams.id })
+        .from(teams)
+        .where(eq(teams.workspaceId, workspace.id));
+
+      userTeamIds = userTeams.map((t) => t.id);
+    } else if (actor.type === "agent") {
+      if (actor.teamId) {
+        userTeamIds = [actor.teamId];
+      }
+    }
+
+    if (userTeamIds.length === 0) {
+      res.json(success([]));
+      return;
+    }
+
     const { teamId } = req.query;
-    const rows = teamId
-      ? await db
-          .select()
-          .from(agents)
-          .where(eq(agents.teamId, String(teamId)))
-          .orderBy(agents.createdAt)
-      : await db.select().from(agents).orderBy(agents.createdAt);
+    if (teamId) {
+      const targetTeamId = String(teamId);
+      // Validate that the human/agent has access to the requested teamId
+      if (!userTeamIds.includes(targetTeamId)) {
+        res.status(403).json(failure("Access denied to this team's agents"));
+        return;
+      }
+      const rows = await db
+        .select()
+        .from(agents)
+        .where(eq(agents.teamId, targetTeamId))
+        .orderBy(agents.createdAt);
+      res.json(success(rows));
+      return;
+    }
+
+    // Return all agents belonging to the workspace's teams
+    const rows = await db
+      .select()
+      .from(agents)
+      .where(inArray(agents.teamId, userTeamIds))
+      .orderBy(agents.createdAt);
 
     res.json(success(rows));
   } catch (err) {
