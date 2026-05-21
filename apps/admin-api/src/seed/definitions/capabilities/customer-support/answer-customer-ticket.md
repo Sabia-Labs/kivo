@@ -1,5 +1,6 @@
 ---
 id: answer-customer-ticket
+name: Answer Customer Ticket
 name_i18n_key: capabilities.customer_support.answer.name
 description_i18n_key: capabilities.customer_support.answer.desc
 type: task_template
@@ -9,16 +10,15 @@ default_assigned_role: support-responder
 ---
 
 # INSTRUCTIONS
-Provide a clear, helpful, and empathetic response to a specific customer inquiry.
+Draft a clear, helpful, comprehensive, and empathetic response to a specific customer inquiry.
 
-1. **Context Discovery:** Review the customer's history and any previous related tickets.
-2. **Solution Search:** Check the Knowledge Base and recently resolved Issues to find a solution.
-3. **Drafting:** Write a response that acknowledges the user's frustration and provides a direct answer or next steps.
-4. **Follow-up Action:** If the issue requires a technical fix, notify the Support Analyst. If resolved, ask the user for confirmation before closing.
+1. **Review Context & Gathered Details:** Review the customer's ticket context, the description of their need, and any gathered support information (such as internal documentation or past similar tickets).
+2. **Analyze Solutions:** Examine knowledge base articles or technical findings related to the inquiry to determine the exact steps, solutions, or workarounds required.
+3. **Draft the Customer Response:** Write a complete response that directly addresses the customer's issues and answers their questions. Maintain a helpful and empathetic tone, acknowledging any frustration.
+4. **Structure & Refine:** Format the response clearly with paragraphs or bullet points for readability. Ensure there are no placeholders left in the draft. Do not connect to external systems or send this response to any tool; focus entirely on producing a high-quality written draft.
 
 # INPUTS
-- Ticket content and User ID.
+- Customer ticket details, summary of the customer's inquiry, and gathered support information.
 
 # EXPECTED OUTPUTS
-- Link to the suggested or sent response.
-- Status of the ticket after the action.
+- A fully drafted, comprehensive, and empathetic response addressed to the customer, ready to be sent.
