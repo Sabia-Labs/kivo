@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Bot, FolderKanban, Plus, Activity, AlertCircle, CheckCircle2, ChevronRight, ChevronDown, Crown, ListTodo, Filter,
-  FileText, FileSpreadsheet, FileImage, File, Download, Trash2, Edit2
+  FileText, FileSpreadsheet, FileImage, File, Download, Trash2, Edit2, X
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth, API_BASE } from "@/lib/auth";
@@ -436,50 +436,75 @@ export default function TeamDetailPage() {
           </div>
           <div className="flex flex-col gap-2">
             {teamAlerts.map(alert => (
-              <div key={alert.id} className="flex flex-col gap-1 rounded-lg bg-background/50 p-3 text-sm">
-                <span className="font-medium text-foreground">{alert.title}</span>
-                {alert.content && <span className="text-muted-foreground">{alert.content}</span>}
-                {alert.relatedEntityType === "request" && alert.relatedEntityId && (
-                  <div className="mt-1 flex items-center gap-3">
-                    <Link 
-                      href={`/teams/${teamId}/requests/${alert.relatedEntityId}`}
-                      className="text-xs font-semibold text-primary hover:underline"
-                    >
-                      {t.teamsPage.viewRequest}
-                    </Link>
-                    <button
-                      onClick={async () => {
-                        try {
-                          const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
-                          const res = await fetch(`${API_BASE}/teams/${teamId}/requests/${alert.relatedEntityId}`, {
-                            method: "PATCH",
-                            headers,
-                            body: JSON.stringify({ status: "cancelled" }),
-                          });
-                          if (!res.ok) throw new Error("Failed to cancel request");
-                          
-                          await fetch(`${API_BASE}/notifications/${alert.id}/read`, {
-                            method: "PATCH",
-                            headers,
-                          });
-                          
-                          setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
-                          setRequests(prev => prev.map(r => 
-                            (r.identifier === alert.relatedEntityId || r.id === alert.relatedEntityId) 
-                              ? { ...r, status: "cancelled" } 
-                              : r
-                          ));
-                          toast.success(t.teamsPage.requestCancelled);
-                        } catch (e) {
-                          toast.error(t.teamsPage.failedCancelRequest);
-                        }
-                      }}
-                      className="text-xs font-semibold text-destructive hover:underline"
-                    >
-                      {t.teamsPage.cancelRequest}
-                    </button>
-                  </div>
-                )}
+              <div key={alert.id} className="relative flex justify-between items-start gap-4 rounded-lg bg-background/50 p-3 text-sm">
+                <div className="flex-1 flex flex-col gap-1 min-w-0">
+                  <span className="font-medium text-foreground">{alert.title}</span>
+                  {alert.content && <span className="text-muted-foreground">{alert.content}</span>}
+                  {alert.relatedEntityType === "request" && alert.relatedEntityId && (
+                    <div className="mt-1 flex items-center gap-3">
+                      <Link 
+                        href={`/teams/${teamId}/requests/${alert.relatedEntityId}`}
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        {t.teamsPage.viewRequest}
+                      </Link>
+                      <button
+                        onClick={async () => {
+                          try {
+                            const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+                            const res = await fetch(`${API_BASE}/teams/${teamId}/requests/${alert.relatedEntityId}`, {
+                              method: "PATCH",
+                              headers,
+                              body: JSON.stringify({ status: "cancelled" }),
+                            });
+                            if (!res.ok) throw new Error("Failed to cancel request");
+                            
+                            await fetch(`${API_BASE}/notifications/${alert.id}/read`, {
+                              method: "PATCH",
+                              headers,
+                            });
+                            
+                            setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
+                            setRequests(prev => prev.map(r => 
+                              (r.identifier === alert.relatedEntityId || r.id === alert.relatedEntityId) 
+                                ? { ...r, status: "cancelled" } 
+                                : r
+                            ));
+                            toast.success(t.teamsPage.requestCancelled);
+                          } catch {
+                            toast.error(t.teamsPage.failedCancelRequest);
+                          }
+                        }}
+                        className="text-xs font-semibold text-destructive hover:underline"
+                      >
+                        {t.teamsPage.cancelRequest}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={async () => {
+                    try {
+                      const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+                      const res = await fetch(`${API_BASE}/notifications/${alert.id}/read`, {
+                        method: "PATCH",
+                        headers,
+                      });
+                      if (!res.ok) throw new Error("Failed to dismiss alert");
+                      
+                      setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
+                      toast.success(t.teamsPage.alertDismissed);
+                    } catch {
+                      toast.error(t.teamsPage.failedDismissAlert);
+                    }
+                  }}
+                  className="shrink-0 p-1 text-muted-foreground hover:text-foreground transition-colors rounded-full hover:bg-background/80"
+                  title={t.teamsPage.dismissAlert}
+                  aria-label={t.teamsPage.dismissAlert}
+                >
+                  <X className="size-4" />
+                </button>
               </div>
             ))}
           </div>

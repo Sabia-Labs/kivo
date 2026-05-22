@@ -66,20 +66,6 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
       console.log(`[request-continuation] Task failed on the last capability. Completing request as failed.`);
       await completeRequest(state.requestId, "failed", taskRecord.failureReason || "Task failed.");
 
-      // Create Alert Notification
-      if (requestRecord.requesterUserId) {
-        await db.insert(notifications).values({
-          teamId: state.teamId,
-          recipientId: requestRecord.requesterUserId,
-          recipientType: "human",
-          title: "Request Workflow Failed",
-          content: `Request ${requestRecord.identifier} has failed on step "${taskRecord.title}": ${taskRecord.failureReason || "Task failed."}`,
-          priority: "alert",
-          relatedEntityId: state.requestId,
-          relatedEntityType: "request"
-        });
-      }
-
       return { task: taskRecord, request: requestRecord };
     } else {
       // Case 2: Multi-step workflow with more tasks remaining.

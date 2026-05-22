@@ -91,14 +91,10 @@ export async function handleRequestCompletedState(requestRecord: any) {
 }
 
 export async function completeRequest(requestId: string, status: "success" | "failed", response: string) {
-  const updatedRequest = await updateRequest(requestId, {
+  await updateRequest(requestId, {
     status,
     response
   });
-
-  if (updatedRequest) {
-    await handleRequestCompletedState(updatedRequest);
-  }
 }
 
 export async function updateRequest(
