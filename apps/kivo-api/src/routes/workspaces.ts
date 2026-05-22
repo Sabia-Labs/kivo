@@ -1,0 +1,190 @@
+import { Router, type Request, type Response, type NextFunction } from "express";
+import { eq, and, sql } from "drizzle-orm";
+import { db } from "../db/client";
+import { workspaces, workspaceLlmKeys, vouchers, teams, agents } from "../db/schema";
+import { authMiddleware } from "../middleware/authMiddleware";
+import { success, failure } from "../lib/response";
+import { updateWorkspaceTierSchema, saveWorkspaceLlmKeySchema, redeemVoucherSchema } from "../schemas/workspace.schema";
+import { applyCredentialsSecret, applyKivoAgentCR, ensureNamespace, workspaceNamespace, rolloutRestartDeployment } from "../k8s/provisioner";
+
+export const workspacesRouter = Router();
+
+async function triggerWorkspaceProvisioning(workspaceId: string) {
+  const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
+  if (!workspace) return;
+  const namespace = workspace.k8sNamespace ?? workspaceNamespace(workspaceId);
+
+  await ensureNamespace(namespace).catch(console.error);
+  if (!workspace.k8sNamespace) {
+    await db.update(workspaces).set({ k8sNamespace: namespace }).where(eq(workspaces.id, workspaceId));
+  }
+
+  const workspaceTeams = await db.select().from(teams).where(eq(teams.workspaceId, workspaceId));
+  for (const team of workspaceTeams) {
+    const teamAgents = await db.select().from(agents).where(eq(agents.teamId, team.id));
+    for (const agent of teamAgents) {
+      try {
+        await applyCredentialsSecret(namespace, agent);
+        await applyKivoAgentCR(namespace, agent, workspaceId, team.name);
+        await rolloutRestartDeployment(namespace, agent.id).catch(() => {});
+        await db.update(agents).set({ k8sStatus: "provisioning", k8sResourceName: agent.id }).where(eq(agents.id, agent.id));
+      } catch (err) {
+        console.error(`[workspaces] Failed to provision agent ${agent.id}:`, err);
+      }
+    }
+  }
+}
+
+// Middleware to ensure workspace belongs to the user
+const requireWorkspaceOwnership = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const workspaceId = String(req.params.id);
+    if (!workspaceId || workspaceId === "undefined") return res.status(400).json(failure("Workspace ID is required"));
+
+    const [workspace] = await db
+      .select()
+      .from(workspaces)
+      .where(and(eq(workspaces.id, workspaceId), eq(workspaces.userId, req.actor!.id)));
+
+    if (!workspace) {
+      return res.status(403).json(failure("Forbidden: You do not own this workspace"));
+    }
+
+    // Attach workspace to request for downstream use if needed
+    (req as any).workspace = workspace;
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ── PUT /workspaces/:id/tier ──────────────────────────────────────────────────
+workspacesRouter.put("/:id/tier", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { tier } = updateWorkspaceTierSchema.parse(req.body);
+
+    const [updated] = await db
+      .update(workspaces)
+      .set({ tier })
+      .where(eq(workspaces.id, String(req.params.id)))
+      .returning();
+
+    res.json(success(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /workspaces/:id/llm-keys ──────────────────────────────────────────────
+workspacesRouter.post("/:id/llm-keys", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { provider, apiKey, model } = saveWorkspaceLlmKeySchema.parse(req.body);
+    const workspaceId = String(req.params.id);
+
+    // Check if key already exists
+    const [existing] = await db
+      .select()
+      .from(workspaceLlmKeys)
+      .where(and(eq(workspaceLlmKeys.workspaceId, workspaceId), eq(workspaceLlmKeys.provider, provider)));
+
+    let result;
+    if (existing) {
+      // Update existing key
+      const [updated] = await db
+        .update(workspaceLlmKeys)
+        .set({ apiKey, model, updatedAt: new Date() }) // TODO: Encrypt apiKey before saving
+        .where(eq(workspaceLlmKeys.id, existing.id))
+        .returning();
+      result = updated;
+    } else {
+      // Create new key
+      const [created] = await db
+        .insert(workspaceLlmKeys)
+        .values({
+          workspaceId,
+          provider,
+          apiKey, // TODO: Encrypt apiKey before saving
+          model: model || null,
+        })
+        .returning();
+      result = created;
+    }
+
+    // Ensure tier is set to free_byok if not already set or changing from pro
+    await db.update(workspaces).set({ tier: "free_byok" }).where(eq(workspaces.id, workspaceId));
+
+    // Provision agents now that tier is set
+    await triggerWorkspaceProvisioning(workspaceId);
+
+    res.json(success(result));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /workspaces/:id/llm-keys ───────────────────────────────────────────────
+workspacesRouter.get("/:id/llm-keys", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const keys = await db
+      .select({
+        id: workspaceLlmKeys.id,
+        provider: workspaceLlmKeys.provider,
+        model: workspaceLlmKeys.model,
+        updatedAt: workspaceLlmKeys.updatedAt,
+        // We do NOT return the raw API key to the frontend for security.
+        hasKey: sql<boolean>`true`.as('has_key')
+      })
+      .from(workspaceLlmKeys)
+      .where(eq(workspaceLlmKeys.workspaceId, String(req.params.id)));
+
+    res.json(success(keys));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /workspaces/:id/redeem-voucher ────────────────────────────────────────
+workspacesRouter.post("/:id/redeem-voucher", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code } = redeemVoucherSchema.parse(req.body);
+    const workspaceId = String(req.params.id);
+
+    // Check if voucher exists and is available
+    const [voucher] = await db
+      .select()
+      .from(vouchers)
+      .where(eq(vouchers.code, code));
+
+    if (!voucher) {
+      return res.status(404).json(failure("Voucher not found"));
+    }
+
+    if (voucher.status !== "available") {
+      return res.status(400).json(failure("Voucher has already been redeemed or is invalid"));
+    }
+
+    // Redeem voucher within a transaction
+    await db.transaction(async (tx) => {
+      await tx
+        .update(vouchers)
+        .set({
+          status: "redeemed",
+          redeemedByWorkspaceId: workspaceId,
+          redeemedAt: new Date(),
+        })
+        .where(eq(vouchers.id, voucher.id));
+
+      await tx
+        .update(workspaces)
+        .set({ tier: "pro" })
+        .where(eq(workspaces.id, workspaceId));
+    });
+
+    // Provision agents now that tier is set
+    await triggerWorkspaceProvisioning(workspaceId);
+
+    res.json(success({ message: "Voucher redeemed successfully", tier: "pro" }));
+  } catch (err) {
+    next(err);
+  }
+});

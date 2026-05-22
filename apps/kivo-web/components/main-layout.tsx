@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
 import { Sidebar } from "@/components/sidebar";
+import { PlanSelectionBanner } from "@/components/plan-selection-banner";
 import { Loader2 } from "lucide-react";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
         {/* Right Content Pane */}
         <main className="flex-1 min-w-0 overflow-y-auto relative flex flex-col">
+          <PlanSelectionBanner />
           {children}
         </main>
       </div>
