@@ -354,7 +354,23 @@ teamsRouter.put("/:id/capabilities/:capId", authMiddleware, async (req: Request,
     if (req.body.isEnabled !== undefined) updateData.isEnabled = Boolean(req.body.isEnabled);
     if (req.body.isFavorite !== undefined) updateData.isFavorite = Boolean(req.body.isFavorite);
     if (req.body.name !== undefined) updateData.name = String(req.body.name);
+    if (req.body.identifier !== undefined) updateData.identifier = String(req.body.identifier);
     if (req.body.instructions !== undefined) updateData.instructions = String(req.body.instructions);
+    if (req.body.inputsDescription !== undefined) {
+      updateData.inputsDescription = req.body.inputsDescription !== null ? String(req.body.inputsDescription) : null;
+    }
+    if (req.body.expectedOutputsDescription !== undefined) {
+      updateData.expectedOutputsDescription = req.body.expectedOutputsDescription !== null ? String(req.body.expectedOutputsDescription) : null;
+    }
+    if (req.body.tasksWorkflow !== undefined) updateData.tasksWorkflow = req.body.tasksWorkflow;
+    if (req.body.type !== undefined) updateData.type = req.body.type;
+    if (req.body.scheduleConfig !== undefined) updateData.scheduleConfig = req.body.scheduleConfig;
+    if (req.body.assignedAgentId !== undefined) {
+      updateData.assignedAgentId = req.body.assignedAgentId !== null ? String(req.body.assignedAgentId) : null;
+    }
+    if (req.body.assignedRole !== undefined) {
+      updateData.assignedRole = req.body.assignedRole !== null ? String(req.body.assignedRole) : null;
+    }
     
     const [updated] = await db.update(teamCapabilities)
       .set({ ...updateData, updatedAt: new Date() })
