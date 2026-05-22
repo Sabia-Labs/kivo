@@ -137,13 +137,13 @@ docker_build(
 
 docker_build(
   ADMIN_API_IMAGE,
-  context='apps/admin-api',
+  context='.',
   dockerfile='apps/admin-api/Dockerfile',
   ignore=[
-    'node_modules',
-    'dist',
-    '.env',
-    '*.md',
+    '**/node_modules',
+    '**/dist',
+    '**/.env',
+    '**/.next',
   ],
 )
 
