@@ -216,24 +216,7 @@ export function Sidebar() {
 
       {/* ── BOTTOM SECTION: NOTIFICATIONS ── */}
       <div className="px-3 py-2 border-t border-border/20">
-        <div
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-1.5",
-            isCollapsed && "justify-center px-1"
-          )}
-        >
-          <NotificationBell dropdownClassName="left-0 bottom-full mb-2 mt-0 right-auto" />
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-foreground truncate leading-tight">
-                {t.nav.notifications}
-              </p>
-              <p className="text-[10px] text-muted-foreground truncate leading-tight mt-1">
-                AI squad updates
-              </p>
-            </div>
-          )}
-        </div>
+        <NotificationBell variant="sidebar" isCollapsed={isCollapsed} />
       </div>
 
       {/* ── BOTTOM SECTION: WORKSPACE SELECTOR ── */}

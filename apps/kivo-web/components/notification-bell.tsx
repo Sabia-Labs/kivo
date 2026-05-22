@@ -6,6 +6,7 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/lib/i18n";
 
 export interface Notification {
   id: string;
@@ -19,8 +20,17 @@ export interface Notification {
   teamId: string;
 }
 
-export function NotificationBell({ dropdownClassName }: { dropdownClassName?: string } = {}) {
+export function NotificationBell({
+  dropdownClassName,
+  variant = "navbar",
+  isCollapsed = false,
+}: {
+  dropdownClassName?: string;
+  variant?: "navbar" | "sidebar";
+  isCollapsed?: boolean;
+} = {}) {
   const { token } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -122,32 +132,78 @@ export function NotificationBell({ dropdownClassName }: { dropdownClassName?: st
   };
 
   return (
-    <div className="relative inline-block text-left" ref={dropdownRef}>
-      <button
-        onClick={() => setDropdownOpen(!dropdownOpen)}
-        className={cn(
-          "relative flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground",
-          dropdownOpen && "bg-accent text-foreground ring-1 ring-border"
-        )}
-      >
-        <Bell className="size-4.5" />
-        {unreadCount > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground ring-2 ring-background">
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        )}
-      </button>
+    <div
+      className={cn(
+        "relative text-left",
+        variant === "navbar" ? "inline-block" : "w-full"
+      )}
+      ref={dropdownRef}
+    >
+      {variant === "navbar" ? (
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className={cn(
+            "relative flex h-9 w-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-all duration-200 hover:bg-accent hover:text-foreground",
+            dropdownOpen && "bg-accent text-foreground ring-1 ring-border"
+          )}
+        >
+          <Bell className="size-4.5" />
+          {unreadCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground ring-2 ring-background">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </button>
+      ) : (
+        /* variant === "sidebar" */
+        <div
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className={cn(
+            "w-full flex items-center gap-3 rounded-xl p-2 transition-colors duration-200 border border-transparent cursor-pointer text-muted-foreground hover:text-foreground",
+            dropdownOpen ? "bg-accent/50 text-foreground" : "hover:bg-accent/50",
+            isCollapsed && "justify-center p-1"
+          )}
+        >
+          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-popover text-muted-foreground transition-all duration-200">
+            <Bell className="size-4.5" />
+            {unreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground ring-2 ring-background">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </div>
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-xs font-semibold text-foreground truncate leading-tight">
+                {t.nav.notifications}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate leading-tight mt-1">
+                AI squad updates
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {dropdownOpen && (
-        /* Problem 1: Made it completely opaque (bg-popover), highly readable, elegant border and deep shadows */
-        <div className={cn(
-          "absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5 sm:w-96 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150",
-          dropdownClassName
-        )}>
+        <div
+          className={cn(
+            "absolute z-50 w-80 rounded-xl border border-border/80 bg-popover text-popover-foreground shadow-2xl ring-1 ring-black/5 sm:w-96 overflow-hidden",
+            variant === "navbar"
+              ? "right-0 top-full mt-2 animate-in fade-in slide-in-from-top-2 duration-150"
+              : cn(
+                  isCollapsed ? "left-16 bottom-0" : "left-0 bottom-full mb-2",
+                  "animate-in fade-in slide-in-from-bottom-2 duration-150"
+                ),
+            dropdownClassName
+          )}
+        >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-3 bg-muted/20">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-sm tracking-wide text-foreground">Notifications</span>
+              <span className="font-semibold text-sm tracking-wide text-foreground">
+                {t.nav.notifications}
+              </span>
               {unreadCount > 0 && (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
                   {unreadCount} new
@@ -156,14 +212,17 @@ export function NotificationBell({ dropdownClassName }: { dropdownClassName?: st
             </div>
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  markAllAsRead();
+                }}
                 className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors hover:underline"
               >
                 Mark all read
               </button>
             )}
           </div>
-          
+
           {/* Notifications List */}
           <div className="max-h-[380px] overflow-y-auto p-1.5 space-y-1 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
             {loading ? (
@@ -179,10 +238,10 @@ export function NotificationBell({ dropdownClassName }: { dropdownClassName?: st
               </div>
             ) : (
               notifications.map((n) => (
-                /* Problem 2: Entire block is clickable, marks as read, closes the dropdown and navigates */
                 <div
                   key={n.id}
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.stopPropagation();
                     if (!n.isRead) {
                       await markAsRead(n.id);
                     }
@@ -193,27 +252,32 @@ export function NotificationBell({ dropdownClassName }: { dropdownClassName?: st
                   }}
                   className={cn(
                     "group relative flex gap-3 rounded-lg p-3 text-left transition-all duration-200 border-l-2 cursor-pointer shadow-sm hover:translate-x-0.5",
-                    !n.isRead 
-                      ? "bg-primary/5 dark:bg-primary/10 border-primary text-foreground hover:bg-primary/10 dark:hover:bg-primary/15" 
+                    !n.isRead
+                      ? "bg-primary/5 dark:bg-primary/10 border-primary text-foreground hover:bg-primary/10 dark:hover:bg-primary/15"
                       : "bg-transparent border-transparent hover:bg-accent/40 text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {/* Icon section with priority badge */}
-                  <div className="mt-0.5 shrink-0">
-                    {priorityIcon[n.priority]}
-                  </div>
+                  <div className="mt-0.5 shrink-0">{priorityIcon[n.priority]}</div>
 
                   {/* Text Details */}
                   <div className="flex-1 space-y-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={cn(
-                        "text-xs leading-snug truncate pr-2",
-                        !n.isRead ? "text-foreground font-semibold" : "text-muted-foreground group-hover:text-foreground transition-colors"
-                      )}>
+                      <p
+                        className={cn(
+                          "text-xs leading-snug truncate pr-2",
+                          !n.isRead
+                            ? "text-foreground font-semibold"
+                            : "text-muted-foreground group-hover:text-foreground transition-colors"
+                        )}
+                      >
                         {n.title}
                       </p>
                       <span className="text-[9px] text-muted-foreground whitespace-nowrap pt-0.5">
-                        {new Date(n.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        {new Date(n.createdAt).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
 
@@ -226,7 +290,13 @@ export function NotificationBell({ dropdownClassName }: { dropdownClassName?: st
                     {n.relatedEntityType === "request" && n.relatedEntityId && (
                       <div className="pt-1.5 flex items-center gap-1 text-[11px] font-bold text-primary group-hover:text-primary/95 transition-colors">
                         <span>View Request</span>
-                        <svg className="size-3 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+                        <svg
+                          className="size-3 transition-transform group-hover:translate-x-0.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                        >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                         </svg>
                       </div>
