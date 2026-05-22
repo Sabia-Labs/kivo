@@ -6,7 +6,11 @@ import { db } from "../db/client";
 import { agentRoles, teamTypes, teamTypeRoles, capabilities, teamTypeCapabilities } from "../db/schema";
 import { eq } from "drizzle-orm";
 
-const DEFINITIONS_DIR = path.join(__dirname, "definitions");
+let definitionsPath = path.resolve(__dirname, "../../../../definitions");
+if (!fs.existsSync(definitionsPath)) {
+  definitionsPath = path.resolve(__dirname, "../../definitions");
+}
+const DEFINITIONS_DIR = definitionsPath;
 
 export async function seed() {
   console.log("🌱 Starting Admin API Seed (Control Plane)...");

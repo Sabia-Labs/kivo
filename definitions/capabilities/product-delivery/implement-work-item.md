@@ -1,6 +1,6 @@
 ---
 id: implement-work-item
-name: Implement Issue
+name: Implement Work Item
 type: task_template
 team_type: product-delivery
 featured: true

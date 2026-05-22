@@ -4,13 +4,13 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # Copy manifests first for layer caching
-COPY package.json package-lock.json* ./
+COPY apps/admin-api/package.json apps/admin-api/package-lock.json* ./
 RUN npm install
 
 # Copy source and compile
-COPY tsconfig.json ./
-COPY src ./src
-RUN npm run build && cp -r src/seed/definitions dist/seed/
+COPY apps/admin-api/tsconfig.json ./
+COPY apps/admin-api/src ./src
+RUN npm run build
 
 # ── Stage 2: Runtime ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runtime
@@ -18,13 +18,13 @@ FROM node:22-alpine AS runtime
 WORKDIR /app
 
 # Copy manifests and install production dependencies only
-COPY package.json package-lock.json* ./
+COPY apps/admin-api/package.json apps/admin-api/package-lock.json* ./
 RUN npm install --omit=dev
 
 # Copy compiled output from builder
 COPY --from=builder /app/dist ./dist
-COPY migrations ./migrations
-COPY seed ./seed
+COPY apps/admin-api/migrations ./migrations
+COPY definitions ./definitions
 
 # Install curl — required for k8s liveness/readiness probes
 RUN apk add --no-cache curl
