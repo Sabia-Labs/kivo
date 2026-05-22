@@ -81,7 +81,7 @@ jobs:
       - name: Build & push Admin API image
         uses: docker/build-push-action@v6
         with:
-          context: apps/admin-api
+          context: .
           file: apps/admin-api/Dockerfile
           push: true
           tags: |
