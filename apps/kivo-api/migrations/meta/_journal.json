@@ -8,6 +8,13 @@
       "when": 1779036248732,
       "tag": "0000_square_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779462548365,
+      "tag": "0001_hot_whistler",
+      "breakpoints": true
     }
   ]
 }

@@ -51,13 +51,19 @@ if [ ! -f "$OPENCLAW_CONFIG_DIR/.bootstrapped" ]; then
   MODEL_NAME="${ACTIVE_MODEL_NAME:-}"
 
   if [ "$PROVIDER" = "openai" ]; then
-    PRIMARY_MODEL="openai/${MODEL_NAME:-gpt-5.4}"
-    FALLBACK_MODEL="openai/gpt-5.4"
+    PRIMARY_MODEL="openai/${MODEL_NAME:-gpt-4o}"
+    FALLBACK_MODEL="openai/gpt-4o"
   elif [ "$PROVIDER" = "gemini" ]; then
     PRIMARY_MODEL="google/${MODEL_NAME:-gemini-2.5-flash}"
     FALLBACK_MODEL="google/gemini-2.0-flash"
+  elif [ "$PROVIDER" = "anthropic" ]; then
+    PRIMARY_MODEL="anthropic/${MODEL_NAME:-claude-3-5-sonnet-latest}"
+    FALLBACK_MODEL="anthropic/claude-3-5-haiku-latest"
+  elif [ "$PROVIDER" = "deepseek" ]; then
+    PRIMARY_MODEL="deepseek/${MODEL_NAME:-deepseek-coder}"
+    FALLBACK_MODEL="deepseek/deepseek-chat"
   else
-    echo "Unknown provider: $PROVIDER (accepted: openai, gemini, google)"
+    echo "Unknown provider: $PROVIDER (accepted: openai, gemini, google, anthropic, deepseek)"
     exit 1
   fi
 

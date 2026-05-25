@@ -63,6 +63,17 @@ export const capabilityTypeEnum = pgEnum("capability_type", [
   "workflow"
 ]);
 
+export const workspaceTierEnum = pgEnum("workspace_tier", ["free_byok", "pro"]);
+
+export const llmProviderEnum = pgEnum("llm_provider", [
+  "openai",
+  "gemini",
+  "anthropic",
+  "deepseek"
+]);
+
+export const voucherStatusEnum = pgEnum("voucher_status", ["available", "redeemed"]);
+
 // ── Reference Tables (Replica from Admin API) ────────────────────────────────
 
 export const agentRoles = pgTable("agent_roles", {
@@ -122,6 +133,7 @@ export const workspaces = pgTable("workspaces", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   k8sNamespace: text("k8s_namespace"),
+  tier: workspaceTierEnum("tier"),
 });
 
 export const teams = pgTable("teams", {
@@ -344,4 +356,32 @@ export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+
+export const workspaceLlmKeys = pgTable("workspace_llm_keys", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  workspaceId: uuid("workspace_id")
+    .notNull()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  provider: llmProviderEnum("provider").notNull(),
+  apiKey: text("api_key").notNull(),
+  model: text("model"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  unq_workspace_provider: unique().on(t.workspaceId, t.provider),
+}));
+
+export const vouchers = pgTable("vouchers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull().unique(),
+  status: voucherStatusEnum("status").notNull().default("available"),
+  redeemedByWorkspaceId: uuid("redeemed_by_workspace_id").references(() => workspaces.id, { onDelete: "set null" }),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type WorkspaceLlmKey = typeof workspaceLlmKeys.$inferSelect;
+export type NewWorkspaceLlmKey = typeof workspaceLlmKeys.$inferInsert;
+export type Voucher = typeof vouchers.$inferSelect;
+export type NewVoucher = typeof vouchers.$inferInsert;
 

@@ -2,7 +2,7 @@ import { PassThrough } from "stream";
 import * as k8s from "@kubernetes/client-node";
 import { eq } from "drizzle-orm";
 import { db } from "../db/client";
-import { type Agent, integrations } from "../db/schema";
+import { type Agent, integrations, teams, workspaces, workspaceLlmKeys } from "../db/schema";
 import { kc, coreV1, appsV1, customObjects, KIVO_AI_GROUP, KIVO_AI_VERSION, KIVO_AI_PLURAL } from "./client";
 
 /**
@@ -115,6 +115,19 @@ export async function applyCredentialsSecret(
     .from(integrations)
     .where(eq(integrations.teamId, agent.teamId));
 
+  const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
+  const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
+  
+  if (workspace && workspace.tier === null) {
+    console.log(`[provisioner] Workspace ${workspace.id} has no tier. Secret for agent ${agent.id} skipped.`);
+    return;
+  }
+
+  let wsLlmKeys: Array<typeof workspaceLlmKeys.$inferSelect> = [];
+  if (workspace && workspace.tier === "free_byok") {
+    wsLlmKeys = await db.select().from(workspaceLlmKeys).where(eq(workspaceLlmKeys.workspaceId, workspace.id));
+  }
+
   // Platform-level fallbacks — set in kivo-api env via vars from .env (Local)
   // or via OPENAI_API_KEY / GEMINI_API_KEY (Staging/Prod via Helm)
   const platformOpenAIKey = process.env.OPENAI_API_KEY;
@@ -166,10 +179,27 @@ export async function applyCredentialsSecret(
   }
 
   // Agent-specific key takes priority; fall back to platform key
-  const openaiKey = metadata.openaiApiKey ? String(metadata.openaiApiKey) : platformOpenAIKey;
+  let openaiKey = metadata.openaiApiKey ? String(metadata.openaiApiKey) : platformOpenAIKey;
+  let geminiKey = metadata.geminiApiKey ? String(metadata.geminiApiKey) : platformGeminiKey;
+  let anthropicKey = metadata.anthropicApiKey ? String(metadata.anthropicApiKey) : process.env.ANTHROPIC_API_KEY;
+  let deepseekKey = metadata.deepseekApiKey ? String(metadata.deepseekApiKey) : process.env.DEEPSEEK_API_KEY;
+
+  if (workspace && workspace.tier === "free_byok") {
+    const wsOpenAI = wsLlmKeys.find(k => k.provider === "openai");
+    const wsGemini = wsLlmKeys.find(k => k.provider === "gemini");
+    const wsAnthropic = wsLlmKeys.find(k => k.provider === "anthropic");
+    const wsDeepseek = wsLlmKeys.find(k => k.provider === "deepseek");
+    
+    if (wsOpenAI) openaiKey = wsOpenAI.apiKey;
+    if (wsGemini) geminiKey = wsGemini.apiKey;
+    if (wsAnthropic) anthropicKey = wsAnthropic.apiKey;
+    if (wsDeepseek) deepseekKey = wsDeepseek.apiKey;
+  }
+
   if (openaiKey)                             stringData.OPENAI_API_KEY            = openaiKey;
-  const geminiKey = metadata.geminiApiKey ? String(metadata.geminiApiKey) : platformGeminiKey;
   if (geminiKey)                             stringData.GEMINI_API_KEY            = geminiKey;
+  if (anthropicKey)                          stringData.ANTHROPIC_API_KEY         = anthropicKey;
+  if (deepseekKey)                           stringData.DEEPSEEK_API_KEY          = deepseekKey;
 
   const secretBody = {
     metadata: {
@@ -210,6 +240,23 @@ export async function applyKivoAgentCR(
   const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
   const name = agent.id;
 
+  const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
+  if (workspace && workspace.tier === null) {
+    console.log(`[provisioner] Workspace ${workspaceId} has no tier. Agent ${agent.id} CR provisioning skipped.`);
+    return;
+  }
+
+  let defaultProvider = process.env.MODEL_PROVIDER ?? "openai";
+  let defaultModelName = process.env.MODEL_NAME ?? "gpt-4o";
+
+  if (workspace && workspace.tier === "free_byok") {
+    const wsLlmKeys = await db.select().from(workspaceLlmKeys).where(eq(workspaceLlmKeys.workspaceId, workspace.id));
+    if (wsLlmKeys.length > 0) {
+      defaultProvider = wsLlmKeys[0].provider;
+      defaultModelName = wsLlmKeys[0].model || defaultModelName;
+    }
+  }
+
   const crBody: Record<string, unknown> = {
     apiVersion: `${KIVO_AI_GROUP}/${KIVO_AI_VERSION}`,
     kind: "Agent",
@@ -234,8 +281,8 @@ export async function applyKivoAgentCR(
       teamId:               agent.teamId,
       credentialsSecretRef: `${agent.id}-creds`,
       model: {
-        provider: String(metadata.modelProvider ?? process.env.MODEL_PROVIDER ?? "openai"),
-        name:     String(metadata.modelName     ?? process.env.MODEL_NAME     ?? "gpt-5.4"),
+        provider: String(metadata.modelProvider ?? defaultProvider),
+        name:     String(metadata.modelName     ?? defaultModelName),
       },
       resources: {
         requests: { cpu: "100m", memory: "256Mi" },

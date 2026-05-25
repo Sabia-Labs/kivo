@@ -75,7 +75,8 @@ export default function AgentsPage() {
       .finally(() => setIsLoading(false));
   }, [token, authLoading, router]);
 
-  const getHealthColor = (status?: string) => {
+  const getHealthColor = (status?: string, tier?: string | null) => {
+    if (tier === null) return "bg-amber-500 text-amber-500 animate-pulse";
     switch (status) {
       case "running":
         return "bg-emerald-500 text-emerald-500";
@@ -87,7 +88,8 @@ export default function AgentsPage() {
     }
   };
 
-  const getHealthText = (status?: string) => {
+  const getHealthText = (status?: string, tier?: string | null) => {
+    if (tier === null) return "Aguardando Plano";
     switch (status) {
       case "running":
         return t.agents.healthOnline;
@@ -216,8 +218,8 @@ export default function AgentsPage() {
                         {agent.name}
                       </h3>
                       <span
-                        className={`size-2 rounded-full shrink-0 ${getHealthColor(agent.k8sStatus)}`}
-                        title={getHealthText(agent.k8sStatus)}
+                        className={`size-2 rounded-full shrink-0 ${getHealthColor(agent.k8sStatus, matchedTeam?.workspace?.tier)}`}
+                        title={getHealthText(agent.k8sStatus, matchedTeam?.workspace?.tier)}
                       />
                     </div>
 
