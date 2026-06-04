@@ -8,15 +8,18 @@ default_assigned_role: support-responder
 ---
 
 # INSTRUCTIONS
-Identify and connect to the customer support tool, retrieve the specified ticket, and draft a detailed summary of the customer's request.
+Connect to the ticketing system, retrieve the specified ticket, and analyze its content.
 
-1. **Identify the Support Tool:** Verify which tool the team is using as the source for customer inquiries, questions, doubts, and general customer support tickets.
-2. **Fetch the Ticket:** Connect to this tool using an MCP connection and retrieve the specified ticket.
-3. **Analyze the Ticket:** Review the ticket to understand the issue, assess the customer's sentiment, and determine the priority, urgency, and subject.
-4. **Draft Summary:** Write a detailed summary of the context, the core need, and exactly what the customer is requesting.
+1. **Fetch Data:** Use `ticketing.get_details` with the provided ID.
+2. **Contextual Analysis:** Understand the customer's core problem, sentiment, and urgency based on the company's global policies.
+3. **Synthesis:** Draft a clean summary of the request for the next agents in the flow.
 
 # INPUTS
-- Ticket ID.
+- `ticketId`: The unique identifier of the ticket in the support tool.
 
 # EXPECTED OUTPUTS
-- Detailed description of what the customer/user is requesting.
+- `customerName`: Full name of the requester.
+- `issueType`: Category of the problem (e.g., Bug, Billing, Feature Request).
+- `customerRequest`: A clear summary of what the customer is asking for.
+- `issueContext`: Background information gathered from the ticket history.
+- `customerSentiment`: Current emotional state of the customer.

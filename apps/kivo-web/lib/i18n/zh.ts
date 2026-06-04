@@ -21,6 +21,15 @@ export const zh: Dictionary = {
     workspace: "工作区",
     notifications: "通知",
   },
+  notifications: {
+    squadUpdates: "AI 团队更新",
+    newCount: "{count} 条新通知",
+    markAllRead: "全部标记为已读",
+    loading: "正在加载通知...",
+    emptyTitle: "暂无通知",
+    emptySubtitle: "有新消息时我们会提醒您",
+    viewRequest: "查看请求",
+  },
   hero: {
     badge: "AI智能体团队，以最佳实践管理",
     headline: "您的智能体团队，\n像顶尖组织一样运转。",
@@ -694,5 +703,21 @@ export const zh: Dictionary = {
       apiVal: "运行正常",
       controller: "智能体控制器 v1.4.2 — Git Hash 0a87fbd",
     }
+  },
+  teamSettings: {
+    externalToolsTitle: "团队外部工具",
+    externalToolsDesc: "配置并提供有关智能体应使用的支持工具的上下文。",
+    selectProvider: "选择提供商",
+    apiKeyLabel: "API 密钥 / 令牌",
+    apiKeyPlaceholder: "粘贴令牌进行身份验证...",
+    instructionsLabel: "此角色的使用说明",
+    instructionsDesc: "这些说明将被插入到智能体的提示中，以引导他们正确使用该工具。",
+    instructionsPlaceholderLinear: "例如：使用此 Linear 读取带有 #support 标签的团队工单。未经人工签字，请勿解决工单。",
+    instructionsPlaceholderNotion: "例如：利用 Notion 的 FAQ 文档页面回答客户关于账单的问题。",
+    instructionsPlaceholderGithub: "例如：使用此代码库分析已开启的 PR 并检查代码质量规则。",
+    saveConfigButton: "保存配置",
+    noRecommendedTools: "此工作区的团队类型未注册任何推荐工具。",
+    providersSelectPlaceholder: "选择一个集成...",
+    providerLabel: "集成提供商",
   }
 };

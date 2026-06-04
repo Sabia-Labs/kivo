@@ -19,6 +19,15 @@ export const pt = {
     workspace: "Workspace",
     notifications: "Notificações",
   },
+  notifications: {
+    squadUpdates: "Atualizações do time de IA",
+    newCount: "{count} novas",
+    markAllRead: "Marcar todas como lidas",
+    loading: "Carregando notificações...",
+    emptyTitle: "Nenhuma notificação ainda",
+    emptySubtitle: "Nós o alertaremos quando houver novidades",
+    viewRequest: "Ver Solicitação",
+  },
   hero: {
     badge: "Seu time de agentes, gerenciado pelas melhores práticas de mercado",
     headline: "Excelência\nsob demanda.",
@@ -691,5 +700,21 @@ export const pt = {
       apiVal: "Operacional",
       controller: "Controlador de Agentes v1.4.2 — Git Hash 0a87fbd",
     }
+  },
+  teamSettings: {
+    externalToolsTitle: "Ferramentas Externas do Time",
+    externalToolsDesc: "Configure e dê contexto sobre as ferramentas de apoio que os agentes devem usar.",
+    selectProvider: "Selecionar Provedor",
+    apiKeyLabel: "Chave de API / Token",
+    apiKeyPlaceholder: "Cole o token para autenticar...",
+    instructionsLabel: "Instruções de Uso para este Papel",
+    instructionsDesc: "Estas instruções serão inseridas no prompt do agente para direcioná-lo no uso correto desta ferramenta.",
+    instructionsPlaceholderLinear: "Ex: Use este Linear para ler chamados do time com tag #suporte. Não conclua chamados sem aprovação humana.",
+    instructionsPlaceholderNotion: "Ex: Utilize a página de documentação FAQ do Notion para responder perguntas de clientes sobre faturamento.",
+    instructionsPlaceholderGithub: "Ex: Use este repositório para analisar PRs abertas de correção de bug no core.",
+    saveConfigButton: "Salvar Configuração",
+    noRecommendedTools: "Nenhuma ferramenta recomendada registrada para o tipo de time deste workspace.",
+    providersSelectPlaceholder: "Escolha uma integração...",
+    providerLabel: "Provedor de Integração",
   }
 };

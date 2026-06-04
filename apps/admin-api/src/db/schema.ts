@@ -58,6 +58,7 @@ export const teamTypes = pgTable("team_types", {
   featured: boolean("featured").notNull().default(false),
   mission: text("mission").notNull(),
   waysOfWorking: text("ways_of_working").notNull(),
+  externalTools: jsonb("external_tools").default([]),
 });
 
 // ── Team Type Roles (N:N Composition) ────────────────────────────────────────

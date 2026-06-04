@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
 import { db } from "../db/client";
-import { requests, tasks, comments, conversations, messages, agents, teams } from "../db/schema";
+import { requests, tasks, comments, conversations, messages, agents, teams, workspaces } from "../db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { runRequestContinuation } from "./requestContinuation";
 import { updateRequest, addCommentToRequest } from "../controllers/requestsController";
 import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
-import * as dotenv from "dotenv";
-import * as path from "path";
+import { LLMFactory } from "./langgraph/integrations/llm-factory";
+import { t, resolveWorkspaceLanguage } from "../lib/i18n";
 
 const IntentionSchema = z.object({
   intent: z.enum(["retry", "bypass", "cancel", "chat"]),
@@ -15,21 +15,8 @@ const IntentionSchema = z.object({
   reasoning: z.string().describe("Brief reasoning for the classification."),
 });
 
-let llmInstance: ChatOpenAI | null = null;
-function getLlm() {
-  if (!llmInstance) {
-    dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      console.warn("[comment-evaluation] CRITICAL: OPENAI_API_KEY is missing from environment.");
-    }
-    llmInstance = new ChatOpenAI({ 
-      modelName: "gpt-4o", 
-      temperature: 0,
-      apiKey: apiKey 
-    });
-  }
-  return llmInstance;
+function getLlm(): any {
+  return LLMFactory.createModel("orchestrator");
 }
 
 async function notifyAgentOfTask(task: any, requestIdentifier: string) {
@@ -52,7 +39,7 @@ async function notifyAgentOfTask(task: any, requestIdentifier: string) {
   let messageContent = `A task has been updated/retried for you.
   Task ID: ${task.id}
   Task Title: ${task.title}
-  Related Request: ${requestIdentifier}`;
+  Kivo Request ID (Internal): ${requestIdentifier}`;
 
   messageContent += `\n\n  Please re-read the task using the Kivo MCP, paying special attention to the newly appended instructions under [HUMAN OPERATOR RETRY CORRECTION], and execute it again.`;
 
@@ -144,6 +131,7 @@ Classify the intent into one of these 4 values:
     console.log(`[comment-evaluation] Classified intent: ${result.intent}. Reasoning: ${result.reasoning}`);
 
     const actorId = lastTask.assignedToId || teamId;
+    const lang = await resolveWorkspaceLanguage(teamId);
 
     if (result.intent === "retry") {
       // 1. Update task instructions and reset status to open
@@ -162,15 +150,22 @@ Classify the intent into one of these 4 values:
         taskId: lastTask.id,
         actorId,
         actorType: "agent",
-        content: `Operator requested a retry. Additional instructions applied: ${result.extractedInstructions}`
+        content: t("operatorRetryComment", lang, { instructions: result.extractedInstructions })
       });
 
       // 3. Add acknowledgement comment on Request
-      const replyContent = `I have received your new instructions and will retry executing the step **${lastTask.title}** right away!\n\n**Additional Instructions Applied:**\n${result.extractedInstructions}`;
+      const replyContent = t("retryAgentReply", lang, {
+        title: lastTask.title,
+        instructions: result.extractedInstructions
+      });
       await addCommentToRequest(requestId, teamId, actorId, "agent", replyContent);
 
       // 4. Update request status to in_progress and append state entry
-      const retryStateEntry = `Operator requested a retry on failed task '${lastTask.title}'. Human Comment: "${newCommentContent}". Summarized Instructions Applied: "${result.extractedInstructions}"`;
+      const retryStateEntry = t("retryRequestStateEntry", lang, {
+        title: lastTask.title,
+        comment: newCommentContent,
+        instructions: result.extractedInstructions
+      });
       const updatedState = [...(request.state || []), retryStateEntry];
 
       await db.update(requests).set({
@@ -179,24 +174,40 @@ Classify the intent into one of these 4 values:
         updatedAt: new Date()
       }).where(eq(requests.id, requestId));
 
-      // 5. Notify the agent directly to rerun the task
-      await notifyAgentOfTask(updatedTask, request.identifier);
+      // 5. Notify the agent directly or trigger native LangGraph executor
+      const [team] = await db.select().from(teams).where(eq(teams.id, request.teamId));
+      const workspaceId = team?.workspaceId;
+      const [workspace] = workspaceId 
+        ? await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)) 
+        : [null];
+
+      if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
+        console.log(`[comment-evaluation] Triggering Native LangGraph Executor for retried task ${updatedTask.id}`);
+        import("./langgraph/executor").then(({ runLangchainExecutor }) => {
+          runLangchainExecutor(updatedTask.id).catch(console.error);
+        });
+      } else {
+        await notifyAgentOfTask(updatedTask, request.identifier);
+      }
 
     } else if (result.intent === "bypass") {
       // 1. Update task status to success and add bypass message
       await db.update(tasks).set({
         status: "success",
-        result: "Bypassed by human operator instructions.",
+        result: t("bypassTaskResult", lang),
         failureReason: null,
         updatedAt: new Date()
       }).where(eq(tasks.id, lastTask.id));
 
       // 2. Add acknowledgement comment on Request
-      const replyContent = `Understood. Bypassing the failed step **${lastTask.title}** and proceeding to the next task in the workflow.`;
+      const replyContent = t("bypassAgentReply", lang, { title: lastTask.title });
       await addCommentToRequest(requestId, teamId, actorId, "agent", replyContent);
 
       // 3. Update request status to in_progress and append state entry
-      const bypassStateEntry = `Operator requested a bypass on failed task '${lastTask.title}'. Human Comment: "${newCommentContent}". Task was skipped by operator instructions.`;
+      const bypassStateEntry = t("bypassRequestStateEntry", lang, {
+        title: lastTask.title,
+        comment: newCommentContent
+      });
       const updatedState = [...(request.state || []), bypassStateEntry];
 
       await db.update(requests).set({
@@ -212,7 +223,10 @@ Classify the intent into one of these 4 values:
 
     } else if (result.intent === "cancel") {
       // 1. Cancel request by setting it to failed and append state entry
-      const cancelStateEntry = `Operator requested a cancellation of the request workflow on task '${lastTask.title}'. Human Comment: "${newCommentContent}".`;
+      const cancelStateEntry = t("cancelRequestStateEntry", lang, {
+        title: lastTask.title,
+        comment: newCommentContent
+      });
       const updatedState = [...(request.state || []), cancelStateEntry];
 
       await db.update(requests).set({
@@ -222,18 +236,34 @@ Classify the intent into one of these 4 values:
       }).where(eq(requests.id, requestId));
 
       // 2. Add cancelled comment on Request
-      const replyContent = `Understood. I have cancelled the request workflow as requested.`;
+      const replyContent = t("cancelAgentReply", lang);
       await addCommentToRequest(requestId, teamId, actorId, "agent", replyContent);
 
     } else if (result.intent === "chat") {
-      // Conversational reply from the assigned agent
+      const langName = lang === "pt" ? "Portuguese (Brazil)" : lang === "zh" ? "Chinese (Simplified)" : "English";
+
+      const langBlock = [
+        `=== LANGUAGE REQUIREMENT ===`,
+        `Target Language: ${langName}`,
+        `RULE: Your response MUST be written entirely in ${langName}.`,
+        `The language of the user's message is IRRELEVANT. You respond ONLY in ${langName}.`,
+        `Responding in any other language is a CRITICAL ERROR.`,
+        `=============================`,
+      ].join("\n");
+
+      // Conversational reply from the assigned agent.
+      // Internal reasoning can use any language — only the final response must be in the workspace language.
       const chatPrompt = `You are a Kivo agent (assigned agent for the task: ${lastTask.title}).
+${langBlock}
+
 A human operator commented on your failed task. They said: "${newCommentContent}"
 You classified their intent as "chat" (meaning no retry/bypass/cancel action is required yet).
 
-Please reply to the operator in a helpful, conversational, professional tone in the exact language they used (Portuguese, English, Chinese, or whatever language they are speaking).
+Please reply in a helpful, conversational, professional tone.
 If they just said thank you, say you are welcome. If they asked a question, answer it based on the failure reason: "${lastTask.failureReason}".
-Keep the response concise (2-4 sentences max). Do not mention that you are a classifier.`;
+Keep the response concise (2-4 sentences max). Do not mention that you are a classifier.
+
+[REMINDER: Your response MUST be in ${langName}]`;
 
       const chatResponse = await llm.invoke(chatPrompt);
       const replyContent = chatResponse.content.toString();

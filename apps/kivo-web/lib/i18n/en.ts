@@ -19,6 +19,15 @@ export const en = {
     workspace: "Workspace",
     notifications: "Notifications",
   },
+  notifications: {
+    squadUpdates: "AI squad updates",
+    newCount: "{count} new",
+    markAllRead: "Mark all read",
+    loading: "Loading notifications...",
+    emptyTitle: "No notifications yet",
+    emptySubtitle: "We will alert you when there is news",
+    viewRequest: "View Request",
+  },
   hero: {
     badge: "AI Agent Teams, Managed with Best Practices",
     headline: "Teams excellence\non demand.",
@@ -691,6 +700,22 @@ export const en = {
       apiVal: "Operational",
       controller: "Agent Controller v1.4.2 — Git Hash 0a87fbd",
     }
+  },
+  teamSettings: {
+    externalToolsTitle: "Team's External Tools",
+    externalToolsDesc: "Configure and provide context about the supporting tools that agents should use.",
+    selectProvider: "Select Provider",
+    apiKeyLabel: "API Token / Key",
+    apiKeyPlaceholder: "Paste the token to authenticate...",
+    instructionsLabel: "Instructions for this Role",
+    instructionsDesc: "These instructions will be inserted into the agent's prompt to guide them in using this tool correctly.",
+    instructionsPlaceholderLinear: "e.g. Use this Linear to read team tickets with tag #support. Do not resolve tickets without human sign-off.",
+    instructionsPlaceholderNotion: "e.g. Use the Notion FAQ documentation page to answer customer questions about billing.",
+    instructionsPlaceholderGithub: "e.g. Use this repository to analyze open PRs and check code quality rules.",
+    saveConfigButton: "Save Configuration",
+    noRecommendedTools: "No recommended tools registered for this workspace's team type.",
+    providersSelectPlaceholder: "Choose an integration...",
+    providerLabel: "Integration Provider",
   }
 };
 

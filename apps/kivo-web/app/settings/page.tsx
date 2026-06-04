@@ -1,14 +1,14 @@
 "use client";
 
 import { useTranslation, languages } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
+import { useAuth, API_BASE } from "@/lib/auth";
 import { Settings, Globe, Shield, Terminal, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
   const { t, lang, setLang } = useTranslation();
-  const { user, workspaceId } = useAuth();
+  const { user, token, workspaceId } = useAuth();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:py-12 w-full flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -50,8 +50,22 @@ export default function SettingsPage() {
               return (
                 <button
                   key={l.code}
-                  onClick={() => {
+                  onClick={async () => {
                     setLang(l.code);
+                    if (workspaceId && token) {
+                      try {
+                        await fetch(`${API_BASE}/workspaces/${workspaceId}/language`, {
+                          method: "PUT",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`
+                          },
+                          body: JSON.stringify({ language: l.code })
+                        });
+                      } catch (err) {
+                        console.error("Failed to sync language to workspace settings in DB", err);
+                      }
+                    }
                     toast.success(`Language changed to ${l.label}`);
                   }}
                   className={`flex items-center justify-between p-4 border rounded-xl bg-card hover:bg-accent/40 transition-all text-sm font-semibold ${

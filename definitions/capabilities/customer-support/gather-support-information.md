@@ -8,16 +8,19 @@ default_assigned_role: support-analyst
 ---
 
 # INSTRUCTIONS
-Connect to the team's documentation tool via MCP, perform deep searches related to the ticket, filter duplicate content, and synthesize a comprehensive summary of relevant knowledge base articles, similar past tickets, and lessons learned.
+Deep dive into internal knowledge bases to find technical solutions or past precedents.
 
-1. **Identify Documentation Source:** Verify the tool used by the team to store internal documentation, knowledge base articles, wiki pages, and historical tickets.
-2. **Deep Search:** Connect to this tool using an MCP connection. Perform a deep search using the context of the provided ticket ID.
-3. **Multi-Term Querying:** Search multiple times using different, related keywords and search terms to ensure comprehensive results.
-4. **Content Filtering & De-duplication:** Ignore redundant or duplicate search results. Curate the most relevant information carefully.
-5. **Synthesis & Summary:** Draft a synthesized summary of all compiled resources, including related documentation pages, knowledge base articles, similar past tickets, and lessons learned.
+1. **Search KB:** Use `knowledge_base.search` to find relevant information. 
+   - **CRITICAL:** The search engine is strict and relies heavily on exact title matches. 
+   - Do NOT just search the entire customer request as one long sentence. 
+   - If the first search returns empty, try 2 or 3 more searches using different, shorter keyword variations.
+2. **Filter & Synthesize:** From all the content you could read from the knowledge base, curate only the relevant content, pages, articles, SOPs or previous resulotions.
+3. **Technical Brief:** Prepare a summary of findings that the responder can use to draft the final answer.
 
 # INPUTS
-- Ticket ID.
+- `ticketId`: The identifier for the current case.
+- `customerRequest`: The summary of the user's issue.
 
 # EXPECTED OUTPUTS
-- A curated and synthesized summary of all relevant documentation, similar tickets, articles, and lessons learned related to the ticket topic.
+- `supportSummary`: A technical synthesis of findings, documentation links, and suggested solutions.
+- `documents`: A list of the specific resources consulted.

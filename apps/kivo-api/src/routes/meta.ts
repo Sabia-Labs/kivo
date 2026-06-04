@@ -22,6 +22,7 @@ metaRouter.get("/team-types", async (req: Request, res: Response, next: NextFunc
         featured: teamTypes.featured,
         mission: teamTypes.mission,
         waysOfWorking: teamTypes.waysOfWorking,
+        externalTools: teamTypes.externalTools,
       })
       .from(teamTypes)
       .$dynamic();

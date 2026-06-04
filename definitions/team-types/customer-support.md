@@ -15,6 +15,13 @@ composition:
   - roleId: support-analyst
     quantity: 1
     isLeader: false
+external_tools:
+  - role: "Ticketing"
+    description: "System to read and manage customer support tickets."
+  - role: "Knowledge Base"
+    description: "Knowledge base with procedures (SOPs) and common resolutions."
+  - role: "Team Documentation"
+    description: "Internal team's documentation"
 ---
 
 # MISSION

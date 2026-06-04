@@ -157,22 +157,26 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
       .returning();
 
 
-    try {
-      await ensureNamespace(namespace);
-      await applyCredentialsSecret(namespace, newAgent);
-      await applyKivoAgentCR(namespace, newAgent, workspace.id, team.name);
+    if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
+      console.log(`[team-management] Skipping K8s provisioning for agent ${newAgent.id} due to LangChain feature flag.`);
+    } else {
+      try {
+        await ensureNamespace(namespace);
+        await applyCredentialsSecret(namespace, newAgent);
+        await applyKivoAgentCR(namespace, newAgent, workspace.id, team.name);
 
-      await db
-        .update(agents)
-        .set({ k8sStatus: "provisioning", k8sResourceName: newAgent.id })
-        .where(eq(agents.id, newAgent.id));
+        await db
+          .update(agents)
+          .set({ k8sStatus: "provisioning", k8sResourceName: newAgent.id })
+          .where(eq(agents.id, newAgent.id));
 
-      newAgent.k8sStatus = "provisioning";
-      newAgent.k8sResourceName = newAgent.id;
-    } catch (k8sErr) {
-      console.error("[team-management] K8s provisioning failed:", k8sErr);
-      await db.update(agents).set({ k8sStatus: "failed" }).where(eq(agents.id, newAgent.id));
-      newAgent.k8sStatus = "failed";
+        newAgent.k8sStatus = "provisioning";
+        newAgent.k8sResourceName = newAgent.id;
+      } catch (k8sErr) {
+        console.error("[team-management] K8s provisioning failed:", k8sErr);
+        await db.update(agents).set({ k8sStatus: "failed" }).where(eq(agents.id, newAgent.id));
+        newAgent.k8sStatus = "failed";
+      }
     }
 
     const { gatewayToken: _gt, ...safeAgent } = newAgent as any;

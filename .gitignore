@@ -148,3 +148,11 @@ vite.config.ts.timestamp-*
 # Local developer overrides (copy from tilt-settings.yaml.example)
 tilt-settings.yaml
 .tilt/
+
+# Database files
+*.db
+*.sqlite
+
+# Scratch directories
+scratch/
+*/scratch/

@@ -18,7 +18,7 @@ export async function createTaskAndNotifyAgent(
   const [task] = await db.insert(tasks).values({
     teamId,
     requestId,
-    title: `Execute: ${capabilityName || "Task"} for request ${requestIdentifier}`,
+    title: capabilityName || "Task",
     prompt,
     instructions,
     assignedToId: assignedAgentId,
@@ -46,7 +46,7 @@ export async function createTaskAndNotifyAgent(
   let messageContent = `A NEW task has been created for you:
   Task ID: ${task.id}
   Task Title: ${task.title}
-  Related Request: ${requestIdentifier}`;
+  Kivo Request ID (Internal): ${requestIdentifier}`;
 
   messageContent += `\n\n  Please read the task using the Kivo MCP, paying special attention to its prompt and instructions, and execute what's requested. **ATTENTION** to the Task ID: ${task.id}. Forget eventual previous tasks: To update this task you MUST now use this current ID ${task.id}.`;
 
@@ -62,6 +62,19 @@ export async function createTaskAndNotifyAgent(
     const workspaceId = team?.workspaceId;
     
     if (workspaceId) {
+      const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
+      
+      // Feature Flag Branch: Use LangChain executor natively
+      if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
+        console.log(`[tasksController] Triggering Native LangGraph Executor for task ${task.id}`);
+        // We run it asynchronously so it doesn't block the request lifecycle
+        import("../workflows/langgraph/executor").then(({ runLangchainExecutor }) => {
+          runLangchainExecutor(task.id).catch(console.error);
+        });
+        return;
+      }
+
+      // Legacy OpenClaw Kubernetes branch
       const namespace = workspaceNamespace(workspaceId);
       
       try {

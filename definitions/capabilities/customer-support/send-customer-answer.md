@@ -8,17 +8,16 @@ default_assigned_role: support-responder
 ---
 
 # INSTRUCTIONS
-Connect to the team's external ticket system via MCP, locate the specified customer ticket, write/submit the drafted answer, and update the ticket status.
+Execute the final delivery and update the case status.
 
-1. **Identify External Ticket System:** Verify which tool the team is using as the source for customer tickets (e.g., Zendesk, Intercom, HubSpot, Jira Service Desk, etc.).
-2. **Establish MCP Connection:** Connect to this ticket system using an MCP connection.
-3. **Locate Ticket:** Find the ticket corresponding to the provided Ticket ID.
-4. **Submit Customer Answer:** Write the drafted response to the ticket. Ensure that the answer is posted as a public response so it is sent directly to the customer.
-5. **Update Ticket Status:** Set the ticket status to the appropriate value (e.g. "Pending User Response" or "Resolved" depending on the draft context).
+1. **Send:** Use `ticketing.add_public_reply` to post the approved `responseDraft`.
+2. **Close/Update:** Use `ticketing.update_status` to move the ticket to 'In Progress'.
+
 
 # INPUTS
-- Ticket ID.
-- Drafted response text.
+- `ticketId`: The target ticket.
+- `responseDraft`: The final approved message.
 
 # EXPECTED OUTPUTS
-- A confirmation of the successful submission and the updated status of the ticket in the external system.
+- `isAnswered`: Boolean confirmation of delivery.
+- `finalStatus`: The resulting state of the ticket.

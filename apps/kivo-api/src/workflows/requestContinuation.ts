@@ -9,24 +9,11 @@ import { getCapabilityByIdentifier } from "../controllers/capabilitiesController
 import { createTaskAndNotifyAgent } from "../controllers/tasksController";
 import { getTeamById } from "../controllers/teamsController";
 import { getAgentsByTeam } from "../controllers/agentsController";
-import * as dotenv from "dotenv";
-import * as path from "path";
+import { LLMFactory } from "./langgraph/integrations/llm-factory";
+import { t, resolveWorkspaceLanguage } from "../lib/i18n";
 
-let llmInstance: ChatOpenAI | null = null;
-function getLlm() {
-  if (!llmInstance) {
-    dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      console.warn("[request-continuation] CRITICAL: OPENAI_API_KEY is missing from environment.");
-    }
-    llmInstance = new ChatOpenAI({ 
-      modelName: "gpt-4o", 
-      temperature: 0,
-      apiKey: apiKey 
-    });
-  }
-  return llmInstance;
+function getLlm(): any {
+  return LLMFactory.createModel("orchestrator");
 }
 
 const ContinuationState = Annotation.Root({
@@ -55,64 +42,58 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
 
   // If task failed
   if (taskRecord.status === "failed") {
-    // Count all tasks for this request so far
-    const allTasks = await db.select().from(tasks)
-      .where(eq(tasks.requestId, state.requestId));
+    // Put request status as waiting_user and add a comment showing the failure reason
+    console.log(`[request-continuation] Task failed. Putting request in waiting_user status.`);
+    
+    const failureReason = taskRecord.failureReason || "no reason";
+    const lang = await resolveWorkspaceLanguage(state.teamId);
+    
+    // Update request to waiting_user
+    await updateRequest(state.requestId, { status: "waiting_user" }, state.teamId, "agent");
+    
+    // Add comment showing the failure reason from the assigned agent's perspective
+    const commentContent = t("hitlComment", lang, {
+      title: taskRecord.title,
+      reason: failureReason
+    });
+    await addCommentToRequest(
+      state.requestId, 
+      state.teamId, 
+      taskRecord.assignedToId || state.teamId, 
+      "agent", 
+      commentContent
+    );
 
-    const capabilitiesWorkflow = (requestRecord.capabilitiesWorkflow as string[]) || [];
-
-    // Case 1: If it's the last capability (or only one), mark the request as completed and failed.
-    if (allTasks.length >= capabilitiesWorkflow.length) {
-      console.log(`[request-continuation] Task failed on the last capability. Completing request as failed.`);
-      await completeRequest(state.requestId, "failed", taskRecord.failureReason || "Task failed.");
-
-      return { task: taskRecord, request: requestRecord };
-    } else {
-      // Case 2: Multi-step workflow with more tasks remaining.
-      // - Put request status as waiting_user
-      // - Add a comment showing the failure reason returned by the task
-      console.log(`[request-continuation] Task failed on a multi-step request. Putting request in waiting_user status.`);
-      
-      const failureReason = taskRecord.failureReason || "no reason";
-      
-      // Update request to waiting_user
-      await updateRequest(state.requestId, { status: "waiting_user" }, state.teamId, "agent");
-      
-      // Add comment showing the failure reason from the assigned agent's perspective
-      const commentContent = `I tried to execute the step **${taskRecord.title}** but unfortunately it failed.
-**Reason:** ${failureReason}
-
-How should we proceed?`;
-      await addCommentToRequest(
-        state.requestId, 
-        state.teamId, 
-        taskRecord.assignedToId || state.teamId, 
-        "agent", 
-        commentContent
-      );
-
-      // Create Alert Notification
-      if (requestRecord.requesterUserId) {
-        await db.insert(notifications).values({
-          teamId: state.teamId,
-          recipientId: requestRecord.requesterUserId,
-          recipientType: "human",
-          title: "Step Failed in Request Workflow",
-          content: `Step "${taskRecord.title}" in Request ${requestRecord.identifier} failed: ${failureReason}`,
-          priority: "alert",
-          relatedEntityId: state.requestId,
-          relatedEntityType: "request"
-        });
-      }
-      
-      // Re-fetch updated request
-      const [updatedRequest] = await db.select().from(requests).where(eq(requests.id, state.requestId));
-      return { task: taskRecord, request: updatedRequest };
+    // Create Alert Notification
+    if (requestRecord.requesterUserId) {
+      await db.insert(notifications).values({
+        teamId: state.teamId,
+        recipientId: requestRecord.requesterUserId,
+        recipientType: "human",
+        title: t("stepFailedNotificationTitle", lang),
+        content: t("stepFailedNotificationContent", lang, {
+          title: taskRecord.title,
+          identifier: requestRecord.identifier,
+          reason: failureReason
+        }),
+        priority: "alert",
+        relatedEntityId: state.requestId,
+        relatedEntityType: "request"
+      });
     }
+    
+    // Re-fetch updated request
+    const [updatedRequest] = await db.select().from(requests).where(eq(requests.id, state.requestId));
+    return { task: taskRecord, request: updatedRequest };
   }
 
   // Update request state with the successful task's result
-  const taskResultEntry = `Task '${taskRecord.title}' completed successfully. Result: ${taskRecord.result || "No result provided."}`;
+  const lang = await resolveWorkspaceLanguage(state.teamId);
+  const defaultResult = t("taskCompletedSuccessDefaultResult", lang);
+  const taskResultEntry = t("taskCompletedSuccess", lang, {
+    title: taskRecord.title,
+    result: taskRecord.result || defaultResult
+  });
   const currentRequestState = requestRecord.state || [];
   const updatedState = [...currentRequestState, taskResultEntry];
   
@@ -218,10 +199,17 @@ async function assignAgentNode(state: typeof ContinuationState.State) {
     return { assignedAgentId: state.capability.assignedAgentId };
   }
 
+  const preferredRole = state.capability?.assignedRole || "None";
   const prompt = `Select the best agent to execute this capability based on the team context.
   Capability: ${state.capability?.name} - ${state.capability?.instructions}
+  Preferred Agent Role for this Capability: ${preferredRole}
+
   Team Agents:
   ${state.teamContext}
+
+  CRITICAL SELECTION RULE:
+  If a Preferred Agent Role is specified and is not "None", you MUST look for an agent in the Team Agents list whose Role (roleId) exactly matches this Preferred Agent Role (for example, if Preferred Agent Role is "support-responder", select the agent with Role "support-responder").
+  Only select an agent with a different role if NO agent on the team matches the Preferred Agent Role.
   `;
 
   const structuredLlm = getLlm().withStructuredOutput(agentAssignmentSchema);

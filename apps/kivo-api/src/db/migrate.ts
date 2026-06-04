@@ -1,5 +1,6 @@
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { db } from "./client";
+import { sql } from "drizzle-orm";
 import path from "path";
 
 export async function runMigrations() {
@@ -9,6 +10,11 @@ export async function runMigrations() {
       migrationsFolder: path.join(process.cwd(), "migrations"),
     });
     console.log("✅ Migrations completed successfully.");
+
+    // Ensure language column exists
+    console.log("⏳ Ensuring language column exists on workspaces...");
+    await db.execute(sql`ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS language text NOT NULL DEFAULT 'en'`);
+    console.log("✅ Language column check complete.");
   } catch (error) {
     console.error("❌ Migration failed:", error);
     throw error;

@@ -61,12 +61,13 @@ integrationsRouter.post("/", authMiddleware, async (req: Request, res: Response,
   }
 });
 
-// ── PUT /teams/:id/integrations/:provider ─────────────────────────────────────
+// ── PUT /teams/:id/integrations/:role ─────────────────────────────────────
 
-integrationsRouter.put("/:provider", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
+integrationsRouter.put("/:role", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const teamId = String(req.params.id);
-    const provider = String(req.params.provider);
+    const role = String(req.params.role);
+    const provider = req.body.provider;
 
     // Verify team exists.
     const [team] = await db.select().from(teams).where(eq(teams.id, teamId));
@@ -75,19 +76,30 @@ integrationsRouter.put("/:provider", authMiddleware, async (req: Request, res: R
       return;
     }
 
-    const input = createIntegrationSchema.partial().parse(req.body);
+    // Check if integration is being disabled/removed
+    if (!provider || provider === "") {
+      await db.delete(integrations)
+        .where(and(eq(integrations.teamId, teamId), eq(integrations.role, role)));
+      
+      await syncTeamAgentsToK8s(teamId, team);
+      res.json(success({ role, message: "Integration removed" }));
+      return;
+    }
 
-    // Check if exists
-    const [existing] = await db
-      .select()
-      .from(integrations)
-      .where(and(eq(integrations.teamId, teamId), eq(integrations.provider, provider as any)));
+    const existing = await db.query.integrations.findFirst({
+      where: and(eq(integrations.teamId, teamId), eq(integrations.role, role))
+    });
 
     let integration;
     if (existing) {
       [integration] = await db
         .update(integrations)
-        .set(input)
+        .set({ 
+          provider: provider as any,
+          apiKey: req.body.apiKey, 
+          metadata: req.body.metadata,
+          instructions: req.body.instructions
+        })
         .where(eq(integrations.id, existing.id))
         .returning();
     } else {
@@ -96,8 +108,10 @@ integrationsRouter.put("/:provider", authMiddleware, async (req: Request, res: R
         .values({ 
           teamId, 
           provider: provider as any, 
-          apiKey: input.apiKey,
-          metadata: input.metadata 
+          apiKey: req.body.apiKey,
+          metadata: req.body.metadata,
+          role: role,
+          instructions: req.body.instructions
         })
         .returning();
     }

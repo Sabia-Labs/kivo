@@ -60,7 +60,8 @@ export const notificationPriorityEnum = pgEnum("notification_priority", ["info",
 
 export const capabilityTypeEnum = pgEnum("capability_type", [
   "task_template", 
-  "workflow"
+  "workflow",
+  "human_approval"
 ]);
 
 export const workspaceTierEnum = pgEnum("workspace_tier", ["free_byok", "pro"]);
@@ -102,6 +103,7 @@ export const teamTypes = pgTable("team_types", {
   featured: boolean("featured").notNull().default(false),
   mission: text("mission").notNull(),
   waysOfWorking: text("ways_of_working").notNull(),
+  externalTools: jsonb("external_tools").default([]),
 });
 
 export const teamTypeRoles = pgTable("team_type_roles", {
@@ -134,6 +136,8 @@ export const workspaces = pgTable("workspaces", {
   name: text("name").notNull(),
   k8sNamespace: text("k8s_namespace"),
   tier: workspaceTierEnum("tier"),
+  langchain: boolean("langchain").notNull().default(false),
+  language: text("language").notNull().default("en"),
 });
 
 export const teams = pgTable("teams", {
@@ -184,6 +188,8 @@ export const integrations = pgTable("integrations", {
   provider: integrationProviderEnum("provider").notNull(),
   apiKey: text("api_key"),
   metadata: jsonb("metadata"),
+  role: text("role"),
+  instructions: text("instructions"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

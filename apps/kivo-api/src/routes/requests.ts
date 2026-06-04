@@ -8,9 +8,12 @@ import { logActivity } from "../lib/activity-logger";
 import { assignAgentToRequest } from "../lib/agent-assignment";
 import { buildTeamRequestMessage, buildTeamRequestInstructions, buildTeamRequestFinishedMessage } from "../lib/messages";
 import { completeRequest, handleRequestCompletedState, handleRequestCreatedState, updateRequest } from "../controllers/requestsController";
-import { runFieldInsight } from "../workflows/fieldInsight";
+import { getCapabilitiesByTeam } from "../controllers/capabilitiesController";
+import { fieldInsightWorkflow, runFieldInsightStream } from "../workflows/fieldInsight";
+import { randomUUID } from "crypto";
 import { evaluateHumanComment } from "../workflows/commentEvaluation";
 import { randomBytes } from "crypto";
+import { resolveWorkspaceLanguage } from "../lib/i18n";
 
 export const requestsRouter = Router({ mergeParams: true });
 
@@ -154,34 +157,119 @@ requestsRouter.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+export interface InsightJob {
+  status: "running" | "completed" | "error";
+  progress: string;
+  result?: {
+    leaderThought: string | null;
+    suggestedCapabilityIdentifier: string | null;
+    suggestedTitle: string | null;
+  };
+  error?: string;
+  updatedAt: number;
+}
+
+// In-memory Map of active insight jobs
+const insightJobs = new Map<string, InsightJob>();
+
+// Clean up old jobs periodically to avoid memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [jobId, job] of insightJobs.entries()) {
+    if (now - job.updatedAt > 5 * 60 * 1000) { // 5 minutes
+      insightJobs.delete(jobId);
+    }
+  }
+}, 60000);
+
+function getNodeProgressMessage(nodeName: string, lang: string = "en"): string {
+  const messages: Record<string, Record<string, string>> = {
+    fetchContexts: { en: "Loading team context...", pt: "Carregando contexto da equipe..." },
+    classifyRequest: { en: "Analyzing intent...", pt: "Analisando intenção..." },
+    fetchKivoContext: { en: "Checking Kivo records...", pt: "Consultando registros no Kivo..." },
+    answerSimpleQuestion: { en: "Drafting response...", pt: "Elaborando resposta..." },
+    evaluateSelectedCapability: { en: "Evaluating capability...", pt: "Avaliando capability selecionada..." },
+    matchCapability: { en: "Finding best capability match...", pt: "Procurando a capability ideal..." },
+    evaluateMatchedCapability: { en: "Validating inputs...", pt: "Validando inputs necessários..." },
+  };
+  return messages[nodeName]?.[lang] || messages[nodeName]?.["en"] || "Processing...";
+}
+
 // POST /teams/:teamId/requests/insight
 requestsRouter.post("/insight", authMiddleware, async (req, res) => {
-  try {
-    const teamId = String(req.params.teamId);
-    const { requestDetails, capabilitiesWorkflow, lang } = req.body;
-    const capabilityIdentifier = capabilitiesWorkflow && capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : undefined;
+  const teamId = String(req.params.teamId);
+  const { requestDetails, capabilitiesWorkflow } = req.body;
+  const capabilityIdentifier = capabilitiesWorkflow && capabilitiesWorkflow.length > 0 ? capabilitiesWorkflow[0] : undefined;
 
-    const detailsText = typeof requestDetails === "string" ? requestDetails : "";
-    if (!detailsText.trim() && !capabilityIdentifier) {
-      return res.status(400).json({ error: "requestDetails is required" });
+  const detailsText = typeof requestDetails === "string" ? requestDetails : "";
+  if (!detailsText.trim() && !capabilityIdentifier) {
+    return res.status(400).json({ error: "requestDetails is required" });
+  }
+
+  let operatorName = "Operator";
+  if (req.actor?.type === "human") {
+    const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, req.actor.id)).limit(1);
+    if (user?.name) {
+      operatorName = user.name;
     }
+  }
 
-    let operatorName = "Operator";
-    if (req.actor?.type === "human") {
-      const [user] = await db.select({ name: users.name }).from(users).where(eq(users.id, req.actor.id)).limit(1);
-      if (user?.name) {
-        operatorName = user.name;
+  // Resolve language from workspace settings (not from user input / request body)
+  const lang = await resolveWorkspaceLanguage(teamId);
+
+  const jobId = randomUUID();
+  insightJobs.set(jobId, {
+    status: "running",
+    progress: lang === "pt" ? "Iniciando análise..." : lang === "zh" ? "正在启动分析..." : "Starting analysis...",
+    updatedAt: Date.now()
+  });
+
+  // Run asynchronously in the background
+  runFieldInsightStream(
+    teamId, 
+    detailsText, 
+    capabilityIdentifier, 
+    operatorName, 
+    lang, 
+    (nodeName) => {
+      // Progress callback
+      const job = insightJobs.get(jobId);
+      if (job) {
+        job.progress = getNodeProgressMessage(nodeName, lang);
+        job.updatedAt = Date.now();
+        insightJobs.set(jobId, job);
       }
     }
+  ).then((result) => {
+    insightJobs.set(jobId, {
+      status: "completed",
+      progress: "Done",
+      result,
+      updatedAt: Date.now()
+    });
+  }).catch((err) => {
+    console.error(`[field-insight] Error in job ${jobId}:`, err);
+    insightJobs.set(jobId, {
+      status: "error",
+      progress: "Error",
+      error: err.message || "Failed to generate field insight",
+      updatedAt: Date.now()
+    });
+  });
 
-    const insightResult = await runFieldInsight(teamId, detailsText, capabilityIdentifier, operatorName, lang);
-
-    res.json({ data: insightResult });
-  } catch (err: any) {
-    console.error("[field-insight] Error:", err);
-    res.status(500).json({ error: err.message || "Failed to generate field insight" });
-  }
+  res.status(202).json({ jobId });
 });
+
+// GET /insight/:jobId/status (Polling endpoint)
+requestsRouter.get("/insight/:jobId/status", authMiddleware, async (req, res) => {
+  const jobId = String(req.params.jobId);
+  const job = insightJobs.get(jobId);
+  if (!job) {
+    return res.status(404).json({ error: "Job not found" });
+  }
+  res.json({ data: job });
+});
+
 
 // GET /teams/:teamId/requests/:requestId
 requestsRouter.get("/:requestId", authMiddleware, async (req, res) => {
