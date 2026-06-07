@@ -5,7 +5,6 @@ import { requests, tasks, comments, conversations, messages, agents, teams, work
 import { eq, desc, and } from "drizzle-orm";
 import { runRequestContinuation } from "./requestContinuation";
 import { updateRequest, addCommentToRequest } from "../controllers/requestsController";
-import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { LLMFactory } from "./langgraph/integrations/llm-factory";
 import { t, resolveWorkspaceLanguage } from "../lib/i18n";
 
@@ -17,61 +16,6 @@ const IntentionSchema = z.object({
 
 function getLlm(): any {
   return LLMFactory.createModel("orchestrator");
-}
-
-async function notifyAgentOfTask(task: any, requestIdentifier: string) {
-  const teamId = task.teamId;
-  const assignedAgentId = task.assignedToId;
-
-  if (!assignedAgentId) {
-    console.warn(`[notifyAgentOfTask] Task ${task.id} has no assigned agent.`);
-    return;
-  }
-
-  // 1. Create a conversation or reuse system conversation
-  const [conversation] = await db.insert(conversations).values({
-    agentId: assignedAgentId,
-    counterpartType: "external",
-    counterpartId: "system",
-    counterpartName: "System Orchestrator"
-  }).returning();
-
-  let messageContent = `A task has been updated/retried for you.
-  Task ID: ${task.id}
-  Task Title: ${task.title}
-  Kivo Request ID (Internal): ${requestIdentifier}`;
-
-  messageContent += `\n\n  Please re-read the task using the Kivo MCP, paying special attention to the newly appended instructions under [HUMAN OPERATOR RETRY CORRECTION], and execute it again.`;
-
-  const [userMessage] = await db.insert(messages).values({
-    conversationId: conversation.id,
-    role: "user",
-    content: messageContent
-  }).returning();
-
-  const [agent] = await db.select().from(agents).where(eq(agents.id, assignedAgentId));
-  if (agent) {
-    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-    const workspaceId = team?.workspaceId;
-    
-    if (workspaceId) {
-      const namespace = workspaceNamespace(workspaceId);
-      
-      try {
-        const delivered = await deliverMessageToAgent(namespace, agent.id, {
-          sessionKey: conversation.id,
-          content: messageContent,
-          messageId: userMessage.id,
-        });
-
-        if (delivered) {
-          await db.update(messages).set({ deliveredAt: new Date() }).where(eq(messages.id, userMessage.id));
-        }
-      } catch (err) {
-        console.error("[notifyAgentOfTask] HTTP push failed:", err);
-      }
-    }
-  }
 }
 
 export async function evaluateHumanComment(
@@ -174,21 +118,11 @@ Classify the intent into one of these 4 values:
         updatedAt: new Date()
       }).where(eq(requests.id, requestId));
 
-      // 5. Notify the agent directly or trigger native LangGraph executor
-      const [team] = await db.select().from(teams).where(eq(teams.id, request.teamId));
-      const workspaceId = team?.workspaceId;
-      const [workspace] = workspaceId 
-        ? await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)) 
-        : [null];
-
-      if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
-        console.log(`[comment-evaluation] Triggering Native LangGraph Executor for retried task ${updatedTask.id}`);
-        import("./langgraph/executor").then(({ runLangchainExecutor }) => {
-          runLangchainExecutor(updatedTask.id).catch(console.error);
-        });
-      } else {
-        await notifyAgentOfTask(updatedTask, request.identifier);
-      }
+      // 5. Trigger native LangGraph executor
+      console.log(`[comment-evaluation] Triggering Native LangGraph Executor for retried task ${updatedTask.id}`);
+      import("./langgraph/executor").then(({ runLangchainExecutor }) => {
+        runLangchainExecutor(updatedTask.id).catch(console.error);
+      });
 
     } else if (result.intent === "bypass") {
       // 1. Update task status to success and add bypass message

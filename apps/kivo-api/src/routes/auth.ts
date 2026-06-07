@@ -211,7 +211,7 @@ authRouter.post("/signup/verify", async (req, res, next) => {
           id: randomUUID(),
           userId: user.id, 
           name: input.workspaceName,
-          langchain: process.env.FEATURE_FLAG_LANGCHAIN === "true"
+          langchain: true
         })
         .returning();
 
@@ -304,7 +304,7 @@ authRouter.get("/google/callback", async (req, res) => {
           id: randomUUID(),
           userId: newUser.id, 
           name: email.split('@')[0],
-          langchain: process.env.FEATURE_FLAG_LANGCHAIN === "true"
+          langchain: true
         }).returning();
         
         await tx.update(workspaces)

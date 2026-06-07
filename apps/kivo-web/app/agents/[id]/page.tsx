@@ -47,7 +47,7 @@ interface Agent {
   id: string; name: string; roleId: string;
   icon?: string; metadata?: AgentMetadata;
   teamId?: string;
-  k8sStatus?: string;
+
   availability?: string;
   soul?: string;
   identity?: string;
@@ -57,9 +57,6 @@ interface Agent {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function computeDisplayStatus(a: any): DisplayStatus {
-  const k8s = a.k8sStatus;
-  if (k8s === "failed" || k8s === "terminated") return "offline";
-  if (k8s !== "running") return "provisioning";
   return a.availability || "available";
 }
 

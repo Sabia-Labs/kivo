@@ -7,14 +7,6 @@ import { createTeamSchema, updateTeamSchema } from "../schemas/team.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { replacePlaceholders } from "../lib/messages";
-import {
-  applyCredentialsSecret,
-  applyKivoAgentCR,
-  ensureNamespace,
-  workspaceNamespace,
-  deleteKivoAgentCR,
-  deleteCredentialsSecret,
-} from "../k8s/provisioner";
 import { requestsRouter } from "./requests";
 import { activitiesRouter } from "./activities";
 import { getTeamById } from "../controllers/teamsController";
@@ -174,40 +166,6 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
       return { team, agents: createdAgents };
     });
 
-    // ── K8s provisioning ─────────────────────────────────────────────────────
-    const [workspace] = await db
-      .select({ k8sNamespace: workspaces.k8sNamespace, langchain: workspaces.langchain })
-      .from(workspaces)
-      .where(eq(workspaces.id, workspaceId!));
-
-    const namespace = workspace?.k8sNamespace ?? workspaceNamespace(workspaceId!);
-
-    if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
-      console.log(`[teams] Skipping K8s provisioning for team ${result.team.id} due to LangChain feature flag.`);
-    } else {
-      try {
-        await ensureNamespace(namespace);
-        if (!workspace?.k8sNamespace) {
-          await db.update(workspaces).set({ k8sNamespace: namespace }).where(eq(workspaces.id, workspaceId!));
-        }
-
-        for (const agent of result.agents) {
-          try {
-            await applyCredentialsSecret(namespace, agent);
-            await applyKivoAgentCR(namespace, agent, workspaceId!, result.team.name);
-            await db
-              .update(agents)
-              .set({ k8sStatus: "provisioning", k8sResourceName: agent.id })
-              .where(eq(agents.id, agent.id));
-          } catch (err) {
-            console.error(`[teams] Failed to provision agent ${agent.id}:`, err);
-          }
-        }
-      } catch (err) {
-        console.error(`[teams] K8s provisioning failed for team ${result.team.id}:`, err);
-      }
-    }
-
     res.status(201).json(success(result));
   } catch (err) {
     next(err);
@@ -280,23 +238,11 @@ teamsRouter.delete("/:id", authMiddleware, async (req: Request, res: Response, n
       .from(workspaces)
       .where(eq(workspaces.id, team.workspaceId));
 
-    const namespace = workspace?.k8sNamespace ?? workspaceNamespace(team.workspaceId);
-
     // 3. Fetch all agents belonging to this team
     const teamAgents = await db
       .select()
       .from(agents)
       .where(eq(agents.teamId, teamId));
-
-    // 4. De-provision each agent in Kubernetes (CR and credentials secret)
-    for (const agent of teamAgents) {
-      try {
-        await deleteKivoAgentCR(namespace, agent.id);
-        await deleteCredentialsSecret(namespace, agent.id);
-      } catch (k8sErr) {
-        console.error(`[teams] Failed to delete K8s resources for agent ${agent.id}:`, k8sErr);
-      }
-    }
 
     // 5. Delete the team from PostgreSQL (cascades database tables)
     const [deleted] = await db
@@ -422,7 +368,7 @@ teamsRouter.put("/:id/integrations/:role", authMiddleware, async (req: Request, 
   try {
     const { integrations, agents: agentsTable, workspaces: wsTable, teams: teamsTable } = await import("../db/schema");
     const { and } = await import("drizzle-orm");
-    const { applyCredentialsSecret, rolloutRestartDeployment } = await import("../k8s/provisioner");
+
     const teamId = String(req.params.id);
     const role = String(req.params.role);
     const provider = req.body.provider;
@@ -465,25 +411,12 @@ teamsRouter.put("/:id/integrations/:role", authMiddleware, async (req: Request, 
     }
     
     const teamAgents = await getAgentsByTeam(teamId);
-    const [team] = await db.select().from(teamsTable).where(eq(teamsTable.id, teamId));
-    const [workspace] = team ? await db.select().from(wsTable).where(eq(wsTable.id, team.workspaceId)) : [];
-    
-    if (workspace && workspace.k8sNamespace) {
-      for (const agent of teamAgents) {
-        const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
-        if (provider === "linear") metadata.linearApiKey = req.body.apiKey;
-        else if (provider === "github") metadata.githubToken = req.body.apiKey;
-        
-        await db.update(agentsTable).set({ metadata, updatedAt: new Date() }).where(eq(agentsTable.id, agent.id));
-        if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
-          console.log(`[teams] Skipping K8s rollout for agent ${agent.id} due to LangChain feature flag.`);
-        } else {
-          try {
-            await applyCredentialsSecret(workspace.k8sNamespace, agent);
-            await rolloutRestartDeployment(workspace.k8sNamespace, agent.id);
-          } catch {}
-        }
-      }
+    for (const agent of teamAgents) {
+      const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
+      if (provider === "linear") metadata.linearApiKey = req.body.apiKey;
+      else if (provider === "github") metadata.githubToken = req.body.apiKey;
+      
+      await db.update(agentsTable).set({ metadata, updatedAt: new Date() }).where(eq(agentsTable.id, agent.id));
     }
     res.json(success(result));
   } catch (err) { next(err); }

@@ -1,11 +1,9 @@
-import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db/client";
 import { conversations, messages, agents, workspaces, teams } from "../db/schema";
 import { createConversationSchema, createMessageSchema } from "../schemas/conversation.schema";
 import { success, failure } from "../lib/response";
-import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { authMiddleware } from "../middleware/authMiddleware";
 
 export const conversationsRouter = Router();
@@ -112,52 +110,8 @@ conversationsRouter.post("/:id/messages", authMiddleware, async (req: Request, r
       .set({ updatedAt: new Date() })
       .where(eq(conversations.id, conversationId));
 
-    // ── 2. Resolve Agent and Namespace ────────────────────────────────────────
-    const [agent] = await db
-      .select()
-      .from(agents)
-      .where(eq(agents.id, conversation.agentId));
-
-    if (!agent) {
-      res.status(201).json(success({ userMessage, agentMessage: null }));
-      return;
-    }
-
-    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-    const workspaceId = team?.workspaceId;
-
-    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
-
-    if (!workspace) {
-      res.status(201).json(success({ userMessage, agentMessage: null }));
-      return;
-    }
-
-    const namespace = workspace.k8sNamespace || workspaceNamespace(workspaceId);
-
-    // ── 3. Push to Agent Sidecar ──────────────────────────────────────────────
-    const sessionKey = conversationId;
-    const messageId = userMessage.id;
-
-    const delivered = await deliverMessageToAgent(namespace, agent.id, {
-      sessionKey,
-      content: input.content,
-      messageId,
-    });
-
-    if (delivered) {
-      await db
-        .update(messages)
-        .set({ deliveredAt: new Date() })
-        .where(eq(messages.id, messageId));
-    } else {
-      // If delivery failed, return an error so the UI can show the error state
-      res.status(500).json(failure("Failed to deliver message to agent sidecar."));
-      return;
-    }
-
     // Return the user message immediately. The UI already polls for replies.
-    res.status(201).json(success({ userMessage, agentMessage: null, delivered }));
+    res.status(201).json(success({ userMessage, agentMessage: null }));
   } catch (err) {
     next(err);
   }

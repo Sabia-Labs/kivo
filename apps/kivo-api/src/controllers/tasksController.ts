@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "../db/client";
 import { tasks, requests, conversations, messages, agents, teams, workspaces } from "../db/schema";
-import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { logActivity } from "../lib/activity-logger";
 import { updateRequest } from "./requestsController";
 
@@ -62,34 +61,11 @@ export async function createTaskAndNotifyAgent(
     const workspaceId = team?.workspaceId;
     
     if (workspaceId) {
-      const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
-      
-      // Feature Flag Branch: Use LangChain executor natively
-      if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
-        console.log(`[tasksController] Triggering Native LangGraph Executor for task ${task.id}`);
-        // We run it asynchronously so it doesn't block the request lifecycle
-        import("../workflows/langgraph/executor").then(({ runLangchainExecutor }) => {
-          runLangchainExecutor(task.id).catch(console.error);
-        });
-        return;
-      }
-
-      // Legacy OpenClaw Kubernetes branch
-      const namespace = workspaceNamespace(workspaceId);
-      
-      try {
-        const delivered = await deliverMessageToAgent(namespace, agent.id, {
-          sessionKey: conversation.id,
-          content: messageContent,
-          messageId: userMessage.id,
-        });
-
-        if (delivered) {
-          await db.update(messages).set({ deliveredAt: new Date() }).where(eq(messages.id, userMessage.id));
-        }
-      } catch (err) {
-        console.error("[request-ingestion] HTTP push failed:", err);
-      }
+      console.log(`[tasksController] Triggering Native LangGraph Executor for task ${task.id}`);
+      // We run it asynchronously so it doesn't block the request lifecycle
+      import("../workflows/langgraph/executor").then(({ runLangchainExecutor }) => {
+        runLangchainExecutor(task.id).catch(console.error);
+      });
     }
   }
 }

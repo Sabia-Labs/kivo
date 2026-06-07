@@ -56,9 +56,6 @@ HELM_CHART      = "charts/kivo"
 VALUES_LOCAL   = "charts/kivo/values-local.yaml"
 API_IMAGE        = settings.get("api_image",        "kivo/api")
 KIVO_WEB_IMAGE  = settings.get("kivo_web_image",  "kivo/web")
-AGENT_IMAGE      = settings.get("agent_image",      "kivo/agent:local")
-CONSUMER_IMAGE   = settings.get("consumer_image",   "kivo/consumer:local")
-CONTROLLER_IMAGE = settings.get("controller_image", "kivo/controller")
 TILT_HOST      = settings.get("host", "kivo.localhost")
 
 # ── 1. Install ingress-nginx via Helm (only if not already present) ────────────
@@ -146,145 +143,6 @@ docker_build(
 
 
 
-# ── 5a. Build kivo-agent image ──────────────────────────────────────────────
-docker_build(
-  AGENT_IMAGE,
-  context='apps/agents',
-  dockerfile='apps/agents/Dockerfile',
-)
-
-# 1-replica preloader: forces Tilt to load kivo/agent into k8s.io containerd.
-k8s_yaml(blob("""
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kivo-agent-preloader
-  namespace: kivo
-  labels:
-    app.kubernetes.io/managed-by: tilt
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kivo-agent-preloader
-  template:
-    metadata:
-      labels:
-        app: kivo-agent-preloader
-    spec:
-      containers:
-      - name: agent-preloader
-        image: {image}
-        imagePullPolicy: IfNotPresent
-        command: ["/bin/sh", "-c", "while true; do sleep 3600; done"]
-""".format(image=AGENT_IMAGE)))
-
-k8s_resource('kivo-agent-preloader', pod_readiness='ignore', labels=['images'])
-
-# Sync the tilt-substituted image tag into the ConfigMap the controller reads.
-local_resource(
-  'kivo-agent-configmap-sync',
-  cmd="""
-    IMG=$(kubectl get deployment kivo-agent-preloader -n kivo \\
-      -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
-    if [ -z "$IMG" ]; then echo "==> preloader not ready, skipping"; exit 0; fi
-    kubectl patch configmap kivo-agent-image -n kivo \\
-      -p '{"data":{"image":"'"$IMG"'","pullPolicy":"IfNotPresent"}}'
-    echo "==> kivo-agent-image ConfigMap => $IMG"
-  """,
-  resource_deps=['kivo-agent-preloader'],
-  labels=['images'],
-)
-
-# Initial placeholder ConfigMap — value is overwritten by kivo-agent-configmap-sync.
-k8s_yaml(blob("""
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kivo-agent-image
-  namespace: kivo
-  labels:
-    app.kubernetes.io/managed-by: tilt
-data:
-  image: "{image}"
-  pullPolicy: "IfNotPresent"
-""".format(image=AGENT_IMAGE)))
-
-
-
-# ── 5b. Build kivo-consumer image ────────────────────────────────────────────────
-docker_build(
-  CONSUMER_IMAGE,
-  context='apps/consumer',
-  dockerfile='apps/consumer/Dockerfile',
-  ignore=['node_modules', 'dist'],
-)
-
-# Preloader: forces Tilt to load kivo/consumer:local into k8s.io containerd.
-k8s_yaml(blob("""
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: kivo-consumer-preloader
-  namespace: kivo
-  labels:
-    app.kubernetes.io/managed-by: tilt
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kivo-consumer-preloader
-  template:
-    metadata:
-      labels:
-        app: kivo-consumer-preloader
-    spec:
-      containers:
-      - name: consumer-preloader
-        image: {image}
-        imagePullPolicy: Never
-        command: ["/bin/sh", "-c", "while true; do sleep 3600; done"]
-""".format(image=CONSUMER_IMAGE)))
-
-k8s_resource('kivo-consumer-preloader', pod_readiness='ignore', labels=['images'])
-
-local_resource(
-  'kivo-consumer-configmap-sync',
-  cmd="""
-    IMG=$(kubectl get deployment kivo-consumer-preloader -n kivo \\
-      -o jsonpath='{.spec.template.spec.containers[0].image}' 2>/dev/null || echo "")
-    if [ -z "$IMG" ]; then echo "==> preloader not ready, skipping"; exit 0; fi
-    kubectl patch configmap kivo-consumer-image -n kivo \\
-      -p '{"data":{"image":"'"$IMG"'","pullPolicy":"IfNotPresent"}}'
-    echo "==> kivo-consumer-image ConfigMap => $IMG"
-  """,
-  resource_deps=['kivo-consumer-preloader'],
-  labels=['images'],
-)
-
-# kivo-consumer-image ConfigMap — enables the HTTP Push sidecar.
-k8s_yaml(blob("""
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kivo-consumer-image
-  namespace: kivo
-  labels:
-    app.kubernetes.io/managed-by: tilt
-data:
-  image: "{image}"
-  pullPolicy: "Never"
-""".format(image=CONSUMER_IMAGE)))
-
-
-# ── 5b. Build kivo-controller (Go) ─────────────────────────────────────────
-docker_build(
-  CONTROLLER_IMAGE,
-  context='apps/controller',
-  dockerfile='apps/controller/Dockerfile',
-  ignore=['vendor'],
-)
-
 # ── 5. Deploy the kivo Helm chart ────────────────────────────────────────────
 k8s_yaml(
   helm(
@@ -299,8 +157,6 @@ k8s_yaml(
       'kivoWeb.image.tag=local',
       'kivoWeb.env.SITE_URL=http://' + TILT_HOST,
       'kivoWeb.env.NEXT_PUBLIC_SITE_URL=http://' + TILT_HOST,
-      'controller.image.repository=' + CONTROLLER_IMAGE,
-      'controller.image.tag=local',
       'ingress.host=' + TILT_HOST,
       # Platform AI credentials — read from .env (gitignored)
       'kivoApi.env.OPENAI_API_KEY=' + OPENAI_KEY,
@@ -318,10 +174,6 @@ k8s_yaml(
       'kivoApi.env.ORCHESTRATOR_API_KEY=' + ORCHESTRATOR_API_KEY,
       'kivoApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
       'kivoApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
-      'controller.agentImage=' + AGENT_IMAGE,
-      'controller.consumerImage=' + CONSUMER_IMAGE,
-      'controller.agentImagePullPolicy=IfNotPresent',
-      'controller.consumerImagePullPolicy=IfNotPresent',
     ],
   )
 )
@@ -360,14 +212,6 @@ k8s_resource(
 
 
 
-k8s_resource(
-  'kivo-agent-controller',
-  resource_deps=['kivo-api', 'ensure-namespace'],
-  labels=['app'],
-  extra_pod_selectors=[
-    {'app.kubernetes.io/name': 'kivo-agent-controller'},
-  ],
-)
 
 k8s_resource(
   'ingress-nginx',

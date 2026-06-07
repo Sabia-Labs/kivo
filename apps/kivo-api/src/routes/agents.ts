@@ -1,25 +1,11 @@
 import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { eq, count, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../db/client";
 import { agents, workspaces, teams, users } from "../db/schema";
 import { createAgentSchema, updateAgentSchema } from "../schemas/agent.schema";
 import { success, failure } from "../lib/response";
-import { replacePlaceholders } from "../lib/messages";
 import { authMiddleware } from "../middleware/authMiddleware";
-import {
-  workspaceNamespace,
-  ensureNamespace,
-  applyCredentialsSecret,
-  applyKivoAgentCR,
-  deleteKivoAgentCR,
-  deleteCredentialsSecret,
-  rolloutRestartDeployment,
-  execInAgentPod,
-  getKivoAgentStatus,
-  deliverMessageToAgent,
-  getAgentPodIP,
-} from "../k8s/provisioner";
 
 export const agentsRouter = Router();
 
@@ -46,15 +32,6 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
       return;
     }
 
-    const namespace = workspace.k8sNamespace ?? workspaceNamespace(workspace.id);
-
-    if (!workspace.k8sNamespace) {
-      await db
-        .update(workspaces)
-        .set({ k8sNamespace: namespace })
-        .where(eq(workspaces.id, workspace.id));
-    }
-
     const gatewayToken = randomBytes(32).toString("base64url");
 
     const [agent] = await db
@@ -66,31 +43,8 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
         icon: input.icon,
         gatewayToken,
         metadata: input.metadata || {},
-        k8sStatus: "pending",
       })
       .returning();
-
-    if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
-      console.log(`[agents] Skipping K8s provisioning for agent ${agent.id} due to LangChain feature flag.`);
-    } else {
-      try {
-        await ensureNamespace(namespace);
-        await applyCredentialsSecret(namespace, agent);
-        await applyKivoAgentCR(namespace, agent, workspace.id, team.name);
-
-        await db
-          .update(agents)
-          .set({ k8sStatus: "provisioning", k8sResourceName: agent.id })
-          .where(eq(agents.id, agent.id));
-
-        agent.k8sStatus      = "provisioning";
-        agent.k8sResourceName = agent.id;
-      } catch (k8sErr) {
-        console.error("[agents] K8s provisioning failed:", k8sErr);
-        await db.update(agents).set({ k8sStatus: "failed" }).where(eq(agents.id, agent.id));
-        agent.k8sStatus = "failed";
-      }
-    }
 
     res.status(201).json(success(agent));
   } catch (err) {
@@ -178,20 +132,6 @@ agentsRouter.get("/:id", async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    let liveStatus: unknown = null;
-    if (agent.k8sResourceName) {
-      try {
-        const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-        const [workspace] = team
-          ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId))
-          : [];
-
-        if (workspace?.k8sNamespace) {
-          liveStatus = await getKivoAgentStatus(workspace.k8sNamespace, agent.id);
-        }
-      } catch { }
-    }
-
     const { gatewayToken: _gt, ...safeAgent } = agent as any;
     
     // Sanitize metadata to hide token and add status flags for UI
@@ -200,55 +140,7 @@ agentsRouter.get("/:id", async (req: Request, res: Response, next: NextFunction)
       safeAgent.metadata = { ...safeMeta, hasTelegramToken: Boolean(_tok) };
     }
 
-    res.json(success({ ...safeAgent, k8sLiveStatus: liveStatus }));
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── GET /agents/:id/files/:filename ───────────────────────────────────────────
-/**
- * Busca um arquivo do workspace do agente diretamente do disco dele (via sidecar).
- * Permite que a UI mostre a identidade real e evoluída do agente.
- */
-agentsRouter.get("/:id/files/:filename", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { id, filename } = req.params;
-    const agentId = String(id);
-
-    const [agent] = await db.select().from(agents).where(eq(agents.id, agentId)).limit(1);
-    if (!agent) return res.status(404).json(failure("Agent not found"));
-
-    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId)).limit(1);
-    const workspaceId = team?.workspaceId;
-    if (!workspaceId) return res.status(404).json(failure("Workspace not found"));
-
-    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId)).limit(1);
-    if (!workspace) return res.status(404).json(failure("Workspace not found"));
-
-    const namespace = workspace.k8sNamespace || workspaceNamespace(workspace.id);
-    const podIP = await getAgentPodIP(namespace, agent.id);
-    
-    if (!podIP) {
-      return res.status(503).json(failure("Agent pod not reachable or not running"));
-    }
-
-    const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
-    const url = `http://${podIP}:43124/v1/files/${filename}`;
-
-    const sidecarRes = await fetch(url, {
-      headers: {
-        "x-internal-token": INTERNAL_TOKEN || "",
-      },
-    });
-
-    if (!sidecarRes.ok) {
-      const errorData = await sidecarRes.json().catch(() => ({ error: "sidecar_error" })) as any;
-      return res.status(sidecarRes.status).json(failure(errorData.error || "Failed to fetch file from agent"));
-    }
-
-    const data = await sidecarRes.json();
-    res.json(success(data));
+    res.json(success(safeAgent));
   } catch (err) {
     next(err);
   }
@@ -277,129 +169,7 @@ agentsRouter.put("/:id", async (req: Request, res: Response, next: NextFunction)
       .where(eq(agents.id, String(req.params.id)))
       .returning();
 
-    // If metadata was updated, we need to refresh the credentials secret
-    // and potentially restart the pod.
-    if (input.metadata) {
-      try {
-        const [team] = await db.select().from(teams).where(eq(teams.id, updated.teamId));
-        const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
-        const namespace = workspace?.k8sNamespace || workspaceNamespace(workspace?.id || "");
-        
-        if (namespace) {
-          if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
-            console.log(`[agents] Skipping K8s rollout for agent ${updated.id} due to LangChain feature flag.`);
-          } else {
-            // 1. Upsert credentials Secret with new values from DB and Env fallbacks
-            await applyCredentialsSecret(namespace, updated);
-            
-            // 2. Rolling restart so agent picks up changes
-            await rolloutRestartDeployment(namespace, updated.id);
-            console.log(`[agents] Metadata updated — rollout restart triggered for ${updated.id} in ${namespace}`);
-          }
-        }
-      } catch (k8sErr) {
-        console.error("[agents] K8s Secret/restart after metadata change failed:", k8sErr);
-      }
-    }
-
     res.json(success(updated));
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── POST /agents/:id/telegram/approve-pairing ───────────────────────────────
-agentsRouter.post("/:id/telegram/approve-pairing", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { code } = req.body as { code?: string };
-    if (!code || typeof code !== "string" || !code.trim()) {
-      res.status(400).json(failure("Pairing code is required"));
-      return;
-    }
-
-    const [agent] = await db.select().from(agents).where(eq(agents.id, String(req.params.id)));
-    if (!agent) {
-      res.status(404).json(failure("Agent not found"));
-      return;
-    }
-
-    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-    const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
-
-    if (!workspace?.k8sNamespace) {
-      res.status(400).json(failure("Agent not provisioned in cluster"));
-      return;
-    }
-
-    // Execute the pairing approval inside the live pod
-    try {
-      const output = await execInAgentPod(workspace.k8sNamespace, agent.id, [
-        "openclaw",
-        "pairing",
-        "approve",
-        "telegram",
-        code.trim()
-      ]);
-      console.log(`[agents] Telegram pairing approved for ${agent.id}:`, output);
-
-      // Mark integration as complete in DB
-      const [updated] = await db
-        .update(agents)
-        .set({
-          metadata: {
-            ...((agent.metadata as Record<string, unknown>) ?? {}),
-            telegramStatus: "complete"
-          },
-          updatedAt: new Date()
-        })
-        .where(eq(agents.id, agent.id))
-        .returning();
-
-      res.json(success({ 
-        message: "Telegram pairing approved.", 
-        telegramStatus: "complete", 
-        agent: updated 
-      }));
-    } catch (err: any) {
-      console.error("[agents] Telegram pairing approval failed:", err);
-      res.status(500).json(failure(err.message || "Failed to approve pairing. Is the agent pod running?"));
-    }
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── POST /agents/:id/command ──────────────────────────────────────────────────
-agentsRouter.post("/:id/command", async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { action, payload, sessionKey } = req.body as {
-      action?: string;
-      payload?: Record<string, unknown>;
-      sessionKey?: string;
-    };
-
-    if (!action) return res.status(400).json(failure("action is required"));
-
-    const [agent] = await db.select().from(agents).where(eq(agents.id, String(req.params.id)));
-    if (!agent) return res.status(404).json(failure("Agent not found"));
-
-    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-    const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
-
-    if (!workspace || !workspace.k8sNamespace) {
-      return res.status(400).json(failure("Workspace or namespace not found"));
-    }
-
-    const messageId = randomBytes(16).toString("hex");
-    const effectiveSessionKey = sessionKey ?? `cmd-${messageId}`;
-
-    const delivered = await deliverMessageToAgent(workspace.k8sNamespace, agent.id, {
-      sessionKey: effectiveSessionKey,
-      content: JSON.stringify(payload ?? {}),
-      messageId,
-    });
-
-    res.json(success({ delivered, messageId, agentId: agent.id, sessionKey: effectiveSessionKey }));
   } catch (err) {
     next(err);
   }
@@ -410,22 +180,6 @@ agentsRouter.delete("/:id", async (req: Request, res: Response, next: NextFuncti
   try {
     const [agent] = await db.select().from(agents).where(eq(agents.id, String(req.params.id)));
     if (!agent) return res.status(404).json(failure("Agent not found"));
-
-    const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-    const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
-
-    if (workspace?.k8sNamespace) {
-      if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
-        console.log(`[agents] Skipping K8s deprovisioning for agent ${agent.id} due to LangChain feature flag.`);
-      } else {
-        try {
-          await deleteKivoAgentCR(workspace.k8sNamespace, agent.id);
-          await deleteCredentialsSecret(workspace.k8sNamespace, agent.id);
-        } catch (k8sErr) {
-          console.error("[agents] K8s deprovision error:", k8sErr);
-        }
-      }
-    }
 
     await db.delete(agents).where(eq(agents.id, agent.id));
     res.status(200).json(success({ deleted: true, id: agent.id }));

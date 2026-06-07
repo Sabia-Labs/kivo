@@ -45,24 +45,3 @@ adminWeb:
     repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-web
     tag: "latest"
 
-controller:
-  replicaCount: 1
-  image:
-    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
-    tag: "latest"
-  agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
-  consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
-
-ingress:
-  enabled: true
-  className: nginx
-  # host: kivo-alibaba.nip.io # To be updated
-  annotations:
-    # Alibaba Cloud specific ingress annotations if needed
-    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-spec: "slb.s1.small"
-
-postgresql:
-  embedded: false # Managed via separate Helm release in infra repo
-
-networkPolicy:
-  enabled: true

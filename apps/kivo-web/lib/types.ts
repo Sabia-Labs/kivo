@@ -9,7 +9,6 @@ export interface Agent {
   isLeader?: boolean;
   icon?: string; 
   metadata?: { avatarColor?: string };
-  k8sStatus?: "pending" | "provisioning" | "running" | "failed" | "terminated" | null;
   availability?: "available" | "busy" | "blocked";
 }
 

@@ -15,7 +15,7 @@ interface Agent {
   name: string;
   roleId: string;
   isLeader: boolean;
-  k8sStatus?: string;
+  availability?: string;
   teamId?: string;
   team?: { id: string; name: string };
   icon?: string;
@@ -75,30 +75,14 @@ export default function AgentsPage() {
       .finally(() => setIsLoading(false));
   }, [token, authLoading, router]);
 
-  const getHealthColor = (status?: string, tier?: string | null) => {
+  const getHealthColor = (availability?: string, tier?: string | null) => {
     if (tier === null) return "bg-amber-500 text-amber-500 animate-pulse";
-    switch (status) {
-      case "running":
-        return "bg-emerald-500 text-emerald-500";
-      case "failed":
-      case "terminated":
-        return "bg-destructive text-destructive";
-      default:
-        return "bg-amber-500 text-amber-500";
-    }
+    return "bg-emerald-500 text-emerald-500";
   };
 
-  const getHealthText = (status?: string, tier?: string | null) => {
+  const getHealthText = (availability?: string, tier?: string | null) => {
     if (tier === null) return "Aguardando Plano";
-    switch (status) {
-      case "running":
-        return t.agents.healthOnline;
-      case "failed":
-      case "terminated":
-        return t.agents.healthOffline;
-      default:
-        return t.agents.healthStarting;
-    }
+    return t.agents.healthOnline;
   };
 
   const translateRole = (roleId: string) => {
@@ -218,8 +202,8 @@ export default function AgentsPage() {
                         {agent.name}
                       </h3>
                       <span
-                        className={`size-2 rounded-full shrink-0 ${getHealthColor(agent.k8sStatus, matchedTeam?.workspace?.tier)}`}
-                        title={getHealthText(agent.k8sStatus, matchedTeam?.workspace?.tier)}
+                        className={`size-2 rounded-full shrink-0 ${getHealthColor(agent.availability, matchedTeam?.workspace?.tier)}`}
+                        title={getHealthText(agent.availability, matchedTeam?.workspace?.tier)}
                       />
                     </div>
 
