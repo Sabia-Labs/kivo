@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "../db/client";
-import { tasks, requests, conversations, messages, agents, teams, workspaces } from "../db/schema";
+import { tasks, requests, agents, teams, workspaces } from "../db/schema";
 import { logActivity } from "../lib/activity-logger";
 import { updateRequest } from "./requestsController";
 
@@ -34,26 +34,6 @@ export async function createTaskAndNotifyAgent(
     activityTitle: `Task created: ${task.title}`
   });
 
-  // Send message to agent
-  const [conversation] = await db.insert(conversations).values({
-    agentId: assignedAgentId,
-    counterpartType: "external",
-    counterpartId: "system",
-    counterpartName: "System Orchestrator"
-  }).returning();
-
-  let messageContent = `A NEW task has been created for you:
-  Task ID: ${task.id}
-  Task Title: ${task.title}
-  Kivo Request ID (Internal): ${requestIdentifier}`;
-
-  messageContent += `\n\n  Please read the task using the Kivo MCP, paying special attention to its prompt and instructions, and execute what's requested. **ATTENTION** to the Task ID: ${task.id}. Forget eventual previous tasks: To update this task you MUST now use this current ID ${task.id}.`;
-
-  const [userMessage] = await db.insert(messages).values({
-    conversationId: conversation.id,
-    role: "user",
-    content: messageContent
-  }).returning();
 
   const [agent] = await db.select().from(agents).where(eq(agents.id, assignedAgentId));
   if (agent) {
