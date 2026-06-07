@@ -19,19 +19,11 @@ k() {
   kubectl --context "$CTX" "$@"
 }
 
-if [ "$TYPE" = "admin" ]; then
-  APP_DIR="$ROOT_DIR/apps/admin-api"
-  URL_VAR="DATABASE_URL_ADMIN"
-  SECRET_NAME="kivo-admin-db-credentials"
-  SECRET_KEY="DATABASE_URL_ADMIN"
-  DEFAULT_LOCAL="postgres://kivo:kivo@localhost:5432/kivo_admin"
-else
-  APP_DIR="$ROOT_DIR/apps/kivo-api"
-  URL_VAR="DATABASE_URL"
-  SECRET_NAME="kivo-db-credentials"
-  SECRET_KEY="DATABASE_URL"
-  DEFAULT_LOCAL="postgres://kivo:kivo@localhost:5432/kivo"
-fi
+APP_DIR="$ROOT_DIR/apps/kivo-api"
+URL_VAR="DATABASE_URL"
+SECRET_NAME="kivo-db-credentials"
+SECRET_KEY="DATABASE_URL"
+DEFAULT_LOCAL="postgres://kivo:kivo@localhost:5432/kivo"
 
 if [ "$ENV" = "local" ]; then
   echo "🏠 Running locally..."

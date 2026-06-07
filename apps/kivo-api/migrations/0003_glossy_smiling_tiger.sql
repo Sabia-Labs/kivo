@@ -1,1 +1,0 @@
-ALTER TYPE "public"."capability_type" ADD VALUE 'human_approval';

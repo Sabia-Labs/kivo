@@ -1,1 +1,0 @@
-ALTER TABLE "workspaces" ADD COLUMN "langchain" boolean DEFAULT false NOT NULL;
