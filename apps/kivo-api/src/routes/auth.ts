@@ -9,6 +9,7 @@ import { loginSchema, signupSchema, otpSendSchema } from "../schemas/auth.schema
 import { signToken } from "../lib/jwt";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { success, failure } from "../lib/response";
+import { PLANS } from "../config/plans";
 
 export const authRouter = Router();
 
@@ -205,13 +206,25 @@ authRouter.post("/signup/verify", async (req, res, next) => {
         })
         .returning();
 
+      const acceptLang = req.headers["accept-language"] || "";
+      let lang = input.language || "en";
+      if (!input.language) {
+        if (acceptLang.startsWith("pt")) lang = "pt";
+        else if (acceptLang.startsWith("zh")) lang = "zh";
+      }
+
       const [workspace] = await tx
         .insert(workspaces)
         .values({ 
           id: randomUUID(),
           userId: user.id, 
           name: input.workspaceName,
-          langchain: true
+          langchain: true,
+          tier: "free",
+          language: lang,
+          teamLimit: PLANS.free.teamLimit,
+          agentsPerTeamLimit: PLANS.free.agentsPerTeamLimit,
+          monthlyAutomationLimit: PLANS.free.monthlyAutomationLimit,
         })
         .returning();
 
@@ -300,11 +313,24 @@ authRouter.get("/google/callback", async (req, res) => {
           name: name || email.split('@')[0]
         }).returning();
 
+        const inputLang = req.query.lang as string;
+        const acceptLang = req.headers["accept-language"] || "";
+        let lang = inputLang || "en";
+        if (!inputLang) {
+          if (acceptLang.startsWith("pt")) lang = "pt";
+          else if (acceptLang.startsWith("zh")) lang = "zh";
+        }
+
         const [newWorkspace] = await tx.insert(workspaces).values({ 
           id: randomUUID(),
           userId: newUser.id, 
           name: email.split('@')[0],
-          langchain: true
+          langchain: true,
+          tier: "free",
+          language: lang,
+          teamLimit: PLANS.free.teamLimit,
+          agentsPerTeamLimit: PLANS.free.agentsPerTeamLimit,
+          monthlyAutomationLimit: PLANS.free.monthlyAutomationLimit,
         }).returning();
         
         await tx.update(workspaces)

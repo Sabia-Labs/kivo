@@ -64,6 +64,22 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
     const [user] = await db.select().from(users).where(eq(users.id, req.actor!.id));
     const operatorName = user?.name || "Operator";
 
+    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId as string));
+    if (!workspace) {
+      return res.status(400).json(failure("Workspace not found."));
+    }
+
+    if (workspace.teamLimit !== null) {
+      const existingTeams = await db.select().from(teams).where(eq(teams.workspaceId, workspace.id));
+      if (existingTeams.length >= workspace.teamLimit) {
+        return res.status(400).json(failure(`Team limit reached. Your plan allows up to ${workspace.teamLimit} teams.`));
+      }
+    }
+
+    if (workspace.agentsPerTeamLimit !== null && input.agents && input.agents.length > workspace.agentsPerTeamLimit) {
+      return res.status(400).json(failure(`Agents limit exceeded. Your plan allows up to ${workspace.agentsPerTeamLimit} agents per team.`));
+    }
+
     const result = await db.transaction(async (tx) => {
       // 0. Fetch template defaults if applicable
       let defaultMission = input.mission;

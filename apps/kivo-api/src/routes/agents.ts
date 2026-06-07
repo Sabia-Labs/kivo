@@ -32,6 +32,13 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
       return;
     }
 
+    if (workspace.agentsPerTeamLimit !== null) {
+      const existingAgents = await db.select().from(agents).where(eq(agents.teamId, team.id));
+      if (existingAgents.length >= workspace.agentsPerTeamLimit) {
+        return res.status(400).json(failure(`Agents limit exceeded. Your plan allows up to ${workspace.agentsPerTeamLimit} agents per team.`));
+      }
+    }
+
     const gatewayToken = randomBytes(32).toString("base64url");
 
     const [agent] = await db
