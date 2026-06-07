@@ -1,0 +1,1 @@
+ALTER TABLE "team_types" ADD COLUMN "external_tools" jsonb DEFAULT '[]'::jsonb;

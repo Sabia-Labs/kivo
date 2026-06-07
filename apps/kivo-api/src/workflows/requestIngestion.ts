@@ -12,27 +12,11 @@ import { createCandidateCapability, getCapabilitiesByTeam, getCapabilityByIdenti
 import { createTaskAndNotifyAgent } from "../controllers/tasksController";
 import { getAgentsByTeam } from "../controllers/agentsController";
 import { getTeamById, getOtherTeamsInWorkspace } from "../controllers/teamsController";
-import * as dotenv from "dotenv";
-import * as path from "path";
+import { LLMFactory } from "./langgraph/integrations/llm-factory";
+import { resolveWorkspaceLanguage, t } from "../lib/i18n";
 
-let llmInstance: ChatOpenAI | null = null;
-function getLlm() {
-  if (!llmInstance) {
-    // Ensure the root .env is loaded, which contains OPENAI_API_KEY
-    dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-    
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      console.warn("[request-ingestion] CRITICAL: OPENAI_API_KEY is missing from environment.");
-    }
-
-    llmInstance = new ChatOpenAI({ 
-      modelName: "gpt-4o", 
-      temperature: 0,
-      apiKey: apiKey 
-    });
-  }
-  return llmInstance;
+function getLlm(): any {
+  return LLMFactory.createModel("orchestrator");
 }
 
 const IngestionState = Annotation.Root({
@@ -138,9 +122,27 @@ async function classifyRequestNode(state: typeof IngestionState.State) {
 
 async function genericAnswerNode(state: typeof IngestionState.State) {
   console.log(`[request-ingestion] Node: genericAnswer. Request ID: ${state.requestId}`);
-  const prompt = `The user asked a generic question not related to our platform. Answer it politely.
-  Request Title: ${state.request.title}
-  Request Details: ${state.request.requestDetails || ""}`;
+
+  // Resolve workspace language to enforce configured language in user-facing response
+  const lang = await resolveWorkspaceLanguage(state.teamId);
+  const langName = lang === "pt" ? "Portuguese (Brazil)" : lang === "zh" ? "Chinese (Simplified)" : "English";
+
+  const langBlock = [
+    `=== LANGUAGE REQUIREMENT ===`,
+    `Target Language: ${langName}`,
+    `RULE: Your response MUST be written entirely in ${langName}.`,
+    `The language of the user's message is IRRELEVANT. You respond ONLY in ${langName}.`,
+    `Responding in any other language is a CRITICAL ERROR.`,
+    `=============================`,
+  ].join("\n");
+
+  const prompt = `${langBlock}
+
+The user asked a generic question not related to our platform. Answer it politely in ${langName}.
+Request Title: ${state.request.title}
+Request Details: ${state.request.requestDetails || ""}
+
+[REMINDER: Respond in ${langName} ONLY]`;
   
   const response = await getLlm().invoke(prompt);
   const answer = response.content as string;
@@ -152,7 +154,8 @@ async function genericAnswerNode(state: typeof IngestionState.State) {
 
 async function otherTeamRoutingNode(state: typeof IngestionState.State) {
   console.log(`[request-ingestion] Node: otherTeamRouting. Request ID: ${state.requestId}`);
-  const answer = `This request is better suited for another team: ${state.classification.otherTeamIdentifier}. Please direct your request to them.`;
+  const lang = await resolveWorkspaceLanguage(state.teamId);
+  const answer = t("otherTeamRoutingResponse", lang, { otherTeam: state.classification.otherTeamIdentifier || "unknown" });
   await completeRequest(state.requestId, "success", answer);
   return {};
 }
@@ -303,10 +306,17 @@ async function assignAgentNode(state: typeof IngestionState.State) {
     return { assignedAgentId: state.capability.assignedAgentId };
   }
 
+  const preferredRole = state.capability?.assignedRole || "None";
   const prompt = `Select the best agent to execute this capability based on the team context.
   Capability: ${state.capability?.name} - ${state.capability?.instructions}
+  Preferred Agent Role for this Capability: ${preferredRole}
+
   Team Agents:
   ${state.teamContext}
+
+  CRITICAL SELECTION RULE:
+  If a Preferred Agent Role is specified and is not "None", you MUST look for an agent in the Team Agents list whose Role (roleId) exactly matches this Preferred Agent Role (for example, if Preferred Agent Role is "support-responder", select the agent with Role "support-responder").
+  Only select an agent with a different role if NO agent on the team matches the Preferred Agent Role.
   `;
 
   const structuredLlm = getLlm().withStructuredOutput(agentAssignmentSchema);
@@ -325,7 +335,7 @@ You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
 2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. If simple, provide a brief rationale in the 'plan' field. Summarize your actions and thoughts in the 'workSummary' field. If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. In whatever situation you MUST ALWAYS finish by updating the task 'status' field with 'success' or 'failed'. If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. Do not leave the task open; it must be resolved.`;
 
-  const finalInstructions = `${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
+  const finalInstructions = `[CAPABILITY_TYPE: ${state.capability?.type || "task"}]\n${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 
   await createTaskAndNotifyAgent(
     state.teamId,

@@ -47,7 +47,12 @@ const LABEL_COLORS = ["#1e3a8a", "#064e3b", "#450a0a", "#4a044e", "#0f172a", "#3
 type IntegrationProvider = keyof typeof SVGS;
 
 interface Integration {
-  id?: string; provider: IntegrationProvider; apiKey?: string; metadata?: Record<string, any>;
+  id?: string;
+  provider: IntegrationProvider;
+  apiKey?: string;
+  metadata?: Record<string, any>;
+  role?: string;
+  instructions?: string;
 }
 
 interface Capability {
@@ -209,106 +214,316 @@ function AIInsightsChat({ field, value, onApply, onClose }: { field: string, val
   );
 }
 
-function IntegrationConfig({ providerKey, integration, onSave }: { providerKey: string, integration?: Integration, onSave: (data: Partial<Integration>) => Promise<void> }) {
-  const isConfigured = providerKey === "github" ? !!integration?.metadata?.appId : !!integration?.apiKey;
-  const [isEditing, setIsEditing] = useState(!isConfigured);
-  
+const PROVIDER_ICONS: Record<IntegrationProvider, React.ReactNode> = {
+  linear: SVGS.linear,
+  jira: SVGS.jira,
+  trello: SVGS.trello,
+  freshdesk: SVGS.freshdesk,
+  confluence: SVGS.confluence,
+  notion: SVGS.notion,
+  github: SVGS.github,
+};
+
+interface ExternalToolConfigSectionProps {
+  role: string;
+  integration?: Integration;
+  onSave: (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => Promise<void>;
+}
+
+function ExternalToolConfigSection({
+  role,
+  integration,
+  onSave,
+}: ExternalToolConfigSectionProps) {
+  const { t } = useTranslation();
+  const [provider, setProvider] = useState<IntegrationProvider | "">(integration?.provider || "");
+  const [apiKey, setApiKey] = useState(integration?.apiKey || "");
   const [appId, setAppId] = useState(integration?.metadata?.appId || "");
   const [installationId, setInstallationId] = useState(integration?.metadata?.installationId || "");
-  const [apiKey, setApiKey] = useState(integration?.apiKey || "");
+  const [instructions, setInstructions] = useState(integration?.instructions || "");
   const [isSaving, setIsSaving] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    if (providerKey === "github") {
-      await onSave({ apiKey, metadata: { ...integration?.metadata, appId, installationId } });
-    } else {
-      await onSave({ apiKey });
-    }
-    setIsSaving(false);
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setIsEditing(false);
+  useEffect(() => {
+    setProvider(integration?.provider || "");
+    setApiKey(integration?.apiKey || "");
     setAppId(integration?.metadata?.appId || "");
     setInstallationId(integration?.metadata?.installationId || "");
-    setApiKey(integration?.apiKey || "");
+    setInstructions(integration?.instructions || "");
+  }, [integration]);
+
+  const handleSave = async () => {
+    if (!provider) {
+      toast.error(t.teamSettings?.selectProvider || "Por favor, selecione um provedor.");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const metadata = provider === "github" ? { appId, installationId } : undefined;
+      await onSave({
+        provider,
+        apiKey,
+        metadata,
+        instructions,
+      });
+    } catch (e) {
+      // Error is handled by caller
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  if (providerKey === "github") {
-    if (!isEditing && isConfigured) {
-      return (
-        <div className="flex items-center">
-          <Button variant="link" size="sm" onClick={() => setIsEditing(true)} className="h-auto p-0 text-primary">
-            <Edit2 className="size-3 mr-1" /> Edit GitHub Configuration
-          </Button>
-        </div>
-      );
-    }
+  const activeProviderInfo = ALL_INTEGRATIONS.find(item => item.key === provider);
 
-    return (
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">App ID</label>
-          <Input value={appId} onChange={e => setAppId(e.target.value)} placeholder="123456" autoComplete="off" className="font-mono" />
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Installation ID</label>
-          <Input value={installationId} onChange={e => setInstallationId(e.target.value)} placeholder="78901234" autoComplete="off" className="font-mono" />
-        </div>
-        <div className="space-y-1.5 sm:col-span-2">
-          <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Private Key (PEM)</label>
-          <textarea value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="-----BEGIN RSA PRIVATE KEY-----..." className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]" autoComplete="off" />
-        </div>
-        <div className="sm:col-span-2 flex justify-start gap-2 mt-2">
-          <Button onClick={handleSave} disabled={isSaving} size="sm">
-            {isSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-            Save Configuration
-          </Button>
-          {isConfigured && (
-            <Button variant="ghost" onClick={handleCancel} size="sm">
-              Cancel
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // Filter integration list
+  const filteredIntegrations = ALL_INTEGRATIONS.filter(item =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  if (!isEditing && isConfigured) {
-    return (
-      <div className="flex items-center">
-        <Button variant="link" size="sm" onClick={() => { setApiKey(""); setIsEditing(true); }} className="h-auto p-0 text-primary">
-          <Edit2 className="size-3 mr-1" /> Change Key
-        </Button>
-      </div>
-    );
-  }
+  // Group by category
+  const categories = Array.from(new Set(filteredIntegrations.map(item => item.category)));
 
   return (
-    <div className="space-y-3 max-w-md">
-      <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">API Token / Key</label>
-      <div className="flex gap-2 items-start">
-        <Input 
-          type="text" 
-          placeholder="Enter token to authenticate..." 
-          value={apiKey} 
-          onChange={e => setApiKey(e.target.value)} 
-          autoComplete="off"
-          data-1p-ignore
-          className="flex-1 font-mono"
-        />
-        <Button onClick={handleSave} disabled={isSaving || !apiKey} size="default" className="shrink-0">
-          {isSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
-          Save
-        </Button>
-        {isConfigured && (
-          <Button variant="ghost" onClick={handleCancel} size="default" className="shrink-0">
-            Cancel
-          </Button>
+    <div className="space-y-5 animate-in fade-in duration-200">
+      {/* Provider Selector Control */}
+      <div className="space-y-2">
+        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground block">
+          {t.teamSettings?.providerLabel || "Provedor de Integração"}
+        </label>
+        
+        {provider ? (
+          <div className="flex items-center justify-between p-3.5 rounded-xl border border-primary/20 bg-primary/5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-lg bg-card border text-foreground shadow-sm shrink-0">
+                {PROVIDER_ICONS[provider]}
+              </span>
+              <div>
+                <span className="font-semibold text-sm block">{activeProviderInfo?.label}</span>
+                <span className="text-[10px] text-muted-foreground uppercase font-medium tracking-wide">
+                  {activeProviderInfo?.category}
+                </span>
+              </div>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsModalOpen(true)}
+              className="text-xs h-8"
+            >
+              {t.agentPage?.model?.change || "Alterar"}
+            </Button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center justify-center gap-2 w-full p-4 rounded-xl border border-dashed border-border/80 hover:border-primary/50 hover:bg-muted/30 text-sm font-medium transition-all text-muted-foreground hover:text-primary animate-pulse"
+          >
+            <Plus className="size-4" />
+            <span>{t.teamSettings?.providersSelectPlaceholder || "Escolha uma integração..."}</span>
+          </button>
         )}
       </div>
+
+      {/* Integration Selection Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl animate-in zoom-in-95 duration-200 flex flex-col max-h-[80vh]">
+            {/* Header */}
+            <div className="flex items-start justify-between border-b pb-4 mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-foreground">
+                  {t.teamSettings?.selectProvider || "Selecionar Provedor"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t.teamSettings?.externalToolsDesc || "Configure e dê contexto sobre as ferramentas de apoio que os agentes devem usar."}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSearchQuery("");
+                }}
+                className="text-muted-foreground hover:text-foreground rounded-lg p-1 hover:bg-muted transition-colors"
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+
+            {/* Search Bar */}
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-3 size-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={t.teamsPage?.fileSystem?.searchPlaceholder || "Buscar..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-10 w-full"
+                autoFocus
+              />
+            </div>
+
+            {/* Grid of integrations categorized */}
+            <div className="flex-1 overflow-y-auto space-y-5 pr-1 py-1">
+              {categories.length === 0 ? (
+                <div className="text-center py-8 text-sm text-muted-foreground">
+                  Nenhuma integração encontrada.
+                </div>
+              ) : (
+                categories.map(category => {
+                  const items = filteredIntegrations.filter(item => item.category === category);
+                  return (
+                    <div key={category} className="space-y-2">
+                      <h4 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
+                        {category}
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {items.map(item => {
+                          const isSelected = provider === item.key;
+                          return (
+                            <button
+                              key={item.key}
+                              type="button"
+                              onClick={() => {
+                                setProvider(item.key);
+                                setIsModalOpen(false);
+                                setSearchQuery("");
+                              }}
+                              className={cn(
+                                "flex items-center gap-3 p-3 rounded-xl border text-sm font-medium transition-all text-left w-full",
+                                isSelected
+                                  ? "bg-primary/5 border-primary text-primary shadow-sm"
+                                  : "bg-background border-border hover:bg-muted/50 text-foreground"
+                              )}
+                            >
+                              <span className="flex size-8 items-center justify-center rounded-lg bg-card border text-foreground shadow-sm shrink-0">
+                                {PROVIDER_ICONS[item.key]}
+                              </span>
+                              <span className="font-semibold">{item.label}</span>
+                              {isSelected && <Check className="size-4 ml-auto text-primary" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t pt-4 mt-4 flex justify-end">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSearchQuery("");
+                }}
+              >
+                {t.teamsPage?.cancel || "Cancelar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Provider-specific inputs */}
+      {provider && (
+        <div className="space-y-4 pt-2">
+          {provider === "github" ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  App ID
+                </label>
+                <Input
+                  value={appId}
+                  onChange={(e) => setAppId(e.target.value)}
+                  placeholder="Ex: 123456"
+                  autoComplete="off"
+                  className="font-mono text-sm"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Installation ID
+                </label>
+                <Input
+                  value={installationId}
+                  onChange={(e) => setInstallationId(e.target.value)}
+                  placeholder="Ex: 78901234"
+                  autoComplete="off"
+                  className="font-mono text-sm"
+                />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Private Key (.pem)
+                </label>
+                <textarea
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="-----BEGIN RSA PRIVATE KEY-----..."
+                  className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[100px]"
+                  autoComplete="off"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {t.teamSettings?.apiKeyLabel || "Chave de API / Token"}
+              </label>
+              <Input
+                type="password"
+                placeholder={t.teamSettings?.apiKeyPlaceholder || "Cole o token de autenticação aqui..."}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                autoComplete="off"
+                data-1p-ignore
+                className="font-mono text-sm"
+              />
+            </div>
+          )}
+
+          {/* Context / Instructions */}
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t.teamSettings?.instructionsLabel || "Instruções de Uso para este Papel"}
+            </label>
+            <textarea
+              className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]"
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder={
+                provider === "linear"
+                  ? t.teamSettings?.instructionsPlaceholderLinear
+                  : provider === "notion"
+                  ? t.teamSettings?.instructionsPlaceholderNotion
+                  : provider === "github"
+                  ? t.teamSettings?.instructionsPlaceholderGithub
+                  : "Ex: Use esta integração para ler e atualizar as informações necessárias de forma segura."
+              }
+            />
+            <p className="text-[10px] text-muted-foreground">
+              {t.teamSettings?.instructionsDesc || "Estas instruções serão inseridas no prompt do agente para direcioná-lo no uso correto desta ferramenta."}
+            </p>
+          </div>
+
+          {/* Action button */}
+          <div className="pt-2 flex justify-start">
+            <Button onClick={handleSave} disabled={isSaving} className="shadow-sm">
+              {isSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+              {t.teamSettings?.saveConfigButton || "Salvar Configuração"}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -336,6 +551,8 @@ export default function TeamSettingsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"general" | "workflow" | "integrations" | "danger">("general");
+
+  const [team, setTeam] = useState<any>(null);
 
   // General Settings
   const [teamName, setTeamName] = useState("");
@@ -380,6 +597,7 @@ export default function TeamSettingsPage() {
 
       if (teamRes.ok) {
         const d = await teamRes.json();
+        setTeam(d.data);
         setTeamName(d.data.name || "");
         setIcon(d.data.icon || "🚀");
         if (d.data.metadata?.iconColor) setIconColor(d.data.metadata.iconColor);
@@ -394,7 +612,11 @@ export default function TeamSettingsPage() {
         const ints = (await intRes.json()).data || [];
         setIntegrations(ints);
         const en: Record<string, boolean> = {};
-        ints.forEach((i: Integration) => { en[i.provider] = true; });
+        ints.forEach((i: any) => { 
+          if (i.role) {
+            en[i.role] = true; 
+          }
+        });
         setEnabledIntegrations(en);
       }
     } catch (err) { toast.error("Failed to load settings data."); } 
@@ -442,29 +664,35 @@ export default function TeamSettingsPage() {
     } catch (e) { toast.error("Failed to save capability"); }
   };
 
-  const saveIntegration = async (provider: IntegrationProvider, data: Partial<Integration>) => {
+  const saveIntegration = async (role: string, data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => {
     if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/teams/${teamId}/integrations/${provider}`, {
+      const res = await fetch(`${API_BASE}/teams/${teamId}/integrations/${encodeURIComponent(role)}`, {
         method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(data)
       });
       if (res.ok) {
-        const updated = await res.json();
+        const responseData = await res.json();
+        
+        if (data.provider === "" || !data.provider) {
+          setIntegrations(prev => prev.filter(i => i.role !== role));
+          toast.success("Integration removed successfully.");
+          return;
+        }
+
+        const updated = responseData.data;
         setIntegrations(prev => {
-          const exists = prev.find(i => i.provider === provider);
-          if (exists) return prev.map(i => i.provider === provider ? updated.data : i);
-          return [...prev, updated.data];
+          const exists = prev.find(i => i.role === role);
+          if (exists) return prev.map(i => i.role === role ? updated : i);
+          return [...prev, updated];
         });
-        toast.success("Integration saved", {
-          description: "The integration has been configured and the agents are being notified so they can use the integration accordingly. It should be ready in a minute."
-        });
+        toast.success("Integration saved successfully.");
       }
     } catch (e) { toast.error(`Failed to save integration`); }
   };
 
-  const toggleIntegrationState = (provider: string, on: boolean) => {
-    setEnabledIntegrations(p => ({ ...p, [provider]: on }));
+  const toggleIntegrationState = (role: string, on: boolean) => {
+    setEnabledIntegrations(p => ({ ...p, [role]: on }));
   };
 
   const handleDeleteTeam = async () => {
@@ -714,65 +942,76 @@ export default function TeamSettingsPage() {
           )}
 
           {/* INTEGRATIONS */}
-          {activeTab === "integrations" && (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="rounded-xl border border-border bg-card shadow-sm p-6">
-                <div><h2 className="text-lg font-semibold">Integrations</h2><p className="text-sm text-muted-foreground">Connect external services to give this team more context and tools.</p></div>
-                
-                {["Project Management", "Documentation", "Customer Support", "Version Control"].map(category => {
-                  const categoryIntegrations = ALL_INTEGRATIONS.filter(i => i.category === category);
-                  if (categoryIntegrations.length === 0) return null;
-                  return (
-                    <div key={category} className="mt-8">
-                      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-4">{category}</h3>
-                      <div className="space-y-4">
-                        {categoryIntegrations.map(provider => {
-                          const integration = integrations.find(i => i.provider === provider.key);
-                          const isConfigured = !!integration?.apiKey || (provider.key === 'github' && !!integration?.metadata?.appId);
-                          const isToggledOn = enabledIntegrations[provider.key] || isConfigured;
-                          
-                          return (
-                            <div key={provider.key} className={cn("border rounded-xl p-5 transition-colors", isToggledOn ? "bg-card" : "bg-muted/10")}>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  <div className="flex size-10 items-center justify-center rounded-lg bg-background border shadow-sm text-foreground">{provider.icon}</div>
-                                  <div>
-                                    <h3 className="font-semibold">{provider.label}</h3>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                  {isConfigured && <span className="text-xs font-medium text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-1 rounded-full flex items-center gap-1"><Check className="size-3"/> Configured</span>}
-                                  <label className="flex items-center cursor-pointer">
-                                    <div className="relative">
-                                      <input type="checkbox" className="sr-only" checked={isToggledOn} onChange={(e) => toggleIntegrationState(provider.key, e.target.checked)} />
-                                      <div className={cn("block w-10 h-6 rounded-full transition-colors", isToggledOn ? "bg-primary" : "bg-muted-foreground/30")}></div>
-                                      <div className={cn("dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform", isToggledOn && "transform translate-x-4")}></div>
-                                    </div>
-                                  </label>
-                                </div>
-                              </div>
+          {activeTab === "integrations" && (() => {
+            const recommendedTools = team?.teamType?.externalTools || [];
+            return (
+              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="rounded-xl border border-border bg-card shadow-sm p-6 space-y-6">
+                  <div>
+                    <h2 className="text-lg font-semibold">{t.teamSettings?.externalToolsTitle || "Ferramentas Externas do Time"}</h2>
+                    <p className="text-sm text-muted-foreground">{t.teamSettings?.externalToolsDesc || "Configure e dê contexto sobre as ferramentas de apoio que os agentes devem usar."}</p>
+                  </div>
 
-                              {isToggledOn && (
-                                <div className="mt-5 pt-5 border-t animate-in slide-in-from-top-2 duration-200">
-                                  <IntegrationConfig 
-                                    providerKey={provider.key} 
-                                    integration={integration} 
-                                    onSave={async (data) => {
-                                      await saveIntegration(provider.key, data);
+                  {recommendedTools.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground border rounded-xl border-dashed">
+                      {t.teamSettings?.noRecommendedTools || "Nenhuma ferramenta recomendada registrada para o tipo de time deste workspace."}
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {recommendedTools.map((tool: { role: string, description: string }) => {
+                        const integration = integrations.find(i => i.role === tool.role);
+                        const isToggledOn = enabledIntegrations[tool.role] || !!integration?.provider;
+
+                        return (
+                          <div key={tool.role} className={cn("border rounded-2xl p-6 transition-colors space-y-5", isToggledOn ? "bg-card shadow-sm border-primary/20" : "bg-muted/10 border-border/50")}>
+                            <div className="flex items-start justify-between">
+                              <div className="space-y-1">
+                                <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+                                  <Briefcase className="size-4.5 text-primary/80" />
+                                  {tool.role}
+                                </h3>
+                                <p className="text-xs text-muted-foreground max-w-xl">{tool.description}</p>
+                              </div>
+                              <label className="flex items-center cursor-pointer pt-1">
+                                <div className="relative">
+                                  <input 
+                                    type="checkbox" 
+                                    className="sr-only" 
+                                    checked={isToggledOn} 
+                                    onChange={async (e) => {
+                                      const checked = e.target.checked;
+                                      toggleIntegrationState(tool.role, checked);
+                                      if (!checked && integration?.provider) {
+                                        await saveIntegration(tool.role, { provider: "" });
+                                      }
                                     }} 
                                   />
+                                  <div className={cn("block w-10 h-6 rounded-full transition-colors", isToggledOn ? "bg-primary" : "bg-muted-foreground/30")}></div>
+                                  <div className={cn("dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform", isToggledOn && "transform translate-x-4")}></div>
                                 </div>
-                              )}
+                              </label>
                             </div>
-                          );
-                        })}
-                      </div>
+
+                            {isToggledOn && (
+                              <div className="pt-4 border-t border-border/40">
+                                <ExternalToolConfigSection
+                                  role={tool.role}
+                                  integration={integration}
+                                  onSave={async (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => {
+                                    await saveIntegration(tool.role, data);
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* DANGER ZONE */}
           {activeTab === "danger" && (

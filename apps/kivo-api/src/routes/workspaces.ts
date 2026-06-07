@@ -12,6 +12,12 @@ export const workspacesRouter = Router();
 async function triggerWorkspaceProvisioning(workspaceId: string) {
   const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
   if (!workspace) return;
+  
+  if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
+    console.log(`[workspaces] Skipping K8s provisioning for workspace ${workspaceId} due to LangChain feature flag.`);
+    return;
+  }
+
   const namespace = workspace.k8sNamespace ?? workspaceNamespace(workspaceId);
 
   await ensureNamespace(namespace).catch(console.error);
@@ -184,6 +190,26 @@ workspacesRouter.post("/:id/redeem-voucher", authMiddleware, requireWorkspaceOwn
     await triggerWorkspaceProvisioning(workspaceId);
 
     res.json(success({ message: "Voucher redeemed successfully", tier: "pro" }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── PUT /workspaces/:id/language ──────────────────────────────────────────────
+workspacesRouter.put("/:id/language", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { language } = req.body;
+    if (!language || !["en", "pt", "zh"].includes(language)) {
+      return res.status(400).json(failure("Invalid language selection"));
+    }
+
+    const [updated] = await db
+      .update(workspaces)
+      .set({ language })
+      .where(eq(workspaces.id, String(req.params.id)))
+      .returning();
+
+    res.json(success(updated));
   } catch (err) {
     next(err);
   }

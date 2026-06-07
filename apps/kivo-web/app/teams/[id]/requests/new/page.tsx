@@ -56,8 +56,10 @@ export default function NewRequestPage() {
   // UI State
 
   const [isLeaderThinking, setIsLeaderThinking] = useState(false);
+  const [insightProgress, setInsightProgress] = useState<string | null>(null);
   const [leaderThought, setLeaderThought] = useState<string | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -118,8 +120,19 @@ export default function NewRequestPage() {
     });
   }, [authLoading, token, teamId, capabilityIdParam, requestIdParam]);
 
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  };
+
   // Real Field Insight Logic
   const fetchFieldInsight = async (details: string, caps: string[]) => {
+    stopPolling();
+    setIsLeaderThinking(true);
+    setInsightProgress(lang === "pt" ? "Iniciando análise..." : "Starting analysis...");
+
     try {
       const res = await fetch(`${API_BASE}/teams/${teamId}/requests/insight`, {
         method: "POST",
@@ -131,29 +144,69 @@ export default function NewRequestPage() {
           requestDetails: details,
           capabilitiesWorkflow: caps,
           lang: lang,
-        }),
+        })
       });
+
       if (!res.ok) {
         setLeaderThought(t.teamsPage.failedInsight);
+        setIsLeaderThinking(false);
+        setInsightProgress(null);
         return;
       }
-      const json = await res.json();
-      setLeaderThought(json.data.leaderThought);
 
-      if (json.data.suggestedTitle && !hasUserEditedTitle) {
-        setTitle(json.data.suggestedTitle);
-      }
+      const { jobId } = await res.json();
 
-      if (json.data.suggestedCapabilityIdentifier) {
-        setSuggestedCapability(json.data.suggestedCapabilityIdentifier);
-      } else {
-        setSuggestedCapability(null);
-      }
-    } catch (err) {
+      pollingIntervalRef.current = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`${API_BASE}/teams/${teamId}/requests/insight/${jobId}/status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+
+          if (!statusRes.ok) {
+            stopPolling();
+            setLeaderThought(t.teamsPage.failedInsight);
+            setIsLeaderThinking(false);
+            setInsightProgress(null);
+            return;
+          }
+
+          const { data: job } = await statusRes.json();
+          setInsightProgress(job.progress);
+
+          if (job.status === "completed") {
+            stopPolling();
+            setLeaderThought(job.result.leaderThought);
+
+            if (job.result.suggestedTitle && !hasUserEditedTitle) {
+              setTitle(job.result.suggestedTitle);
+            }
+
+            if (job.result.suggestedCapabilityIdentifier) {
+              setSuggestedCapability(job.result.suggestedCapabilityIdentifier);
+            } else {
+              setSuggestedCapability(null);
+            }
+            setIsLeaderThinking(false);
+            setInsightProgress(null);
+          } else if (job.status === "error") {
+            stopPolling();
+            console.error("[field-insight] Error polling:", job.error);
+            setLeaderThought(t.teamsPage.failedInsight);
+            setIsLeaderThinking(false);
+            setInsightProgress(null);
+          }
+        } catch (err) {
+          stopPolling();
+          setLeaderThought(t.teamsPage.failedInsight);
+          setIsLeaderThinking(false);
+          setInsightProgress(null);
+        }
+      }, 1000);
+    } catch (err: any) {
       console.error(err);
-      setLeaderThought("I'm having trouble analyzing this right now, but feel free to submit!");
-    } finally {
+      setLeaderThought(t.teamsPage.failedInsight);
       setIsLeaderThinking(false);
+      setInsightProgress(null);
     }
   };
 
@@ -172,35 +225,27 @@ export default function NewRequestPage() {
 
   const handleDetailsChange = (value: string) => {
     setRequestDetails(value);
+  };
+  
+  // Unified Debounced Field Insight
+  useEffect(() => {
+    if (authLoading) return;
     
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    const cleanValue = value.trim();
+    const cleanValue = requestDetails.trim();
     if (!cleanValue && capabilitiesWorkflow.length === 0) {
       setLeaderThought(null);
       setIsLeaderThinking(false);
       return;
     }
     
-    typingTimeoutRef.current = setTimeout(() => {
-      setIsLeaderThinking(true);
+    setIsLeaderThinking(true);
+    
+    const to = setTimeout(() => {
       fetchFieldInsight(cleanValue, capabilitiesWorkflow);
     }, 1500);
-  };
-  
-  // Also trigger thinking when capabilities change
-  useEffect(() => {
-    if (!authLoading && capabilitiesWorkflow.length > 0) {
-      setLeaderThought(null);
-      setIsLeaderThinking(true);
-      const to = setTimeout(() => {
-        fetchFieldInsight(requestDetails.trim(), capabilitiesWorkflow);
-      }, 1500);
-      return () => clearTimeout(to);
-    }
-  }, [capabilitiesWorkflow, authLoading]);
+    
+    return () => clearTimeout(to);
+  }, [requestDetails, capabilitiesWorkflow, authLoading]);
 
   const handleSubmit = async (status: "draft" | "open") => {
     const hasCap = capabilitiesWorkflow.length > 0 || !!suggestedCapability;
@@ -254,7 +299,7 @@ export default function NewRequestPage() {
   const leadAgent = agents.find(a => a.isLeader);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
+    <div className="flex-1 mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
       <Link href={`/teams/${teamId}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground mb-6">
         <ArrowLeft className="size-3.5" />
         {t.teamsPage.backToTeam}
@@ -296,34 +341,41 @@ export default function NewRequestPage() {
         </div>
 
         {/* AI Thoughts Area */}
-        <div className="min-h-[60px] flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/10">
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-primary/5 border border-primary/10">
           <div className="flex size-10 items-center justify-center rounded-full bg-background border shadow-sm text-lg shrink-0 mt-0.5">
             {leadAgent?.icon || "👑"}
           </div>
           <div className="flex-1 min-w-0">
             <span className="text-xs font-semibold text-primary mb-1 block">{leadAgent?.name || t.teamsPage.statusLabels.open}</span>
-            {isLeaderThinking ? (
-              <div className="flex items-center gap-1.5 text-sm text-muted-foreground italic h-6">
-                <span className="flex gap-0.5">
-                  <span className="animate-bounce delay-75">.</span>
-                  <span className="animate-bounce delay-150">.</span>
-                  <span className="animate-bounce delay-300">.</span>
-                </span>
-                {t.teamsPage.analyzingRequest}
-              </div>
-            ) : leaderThought ? (
-              <div className="space-y-4 animate-in fade-in slide-in-from-left-2">
-                <Markdown content={leaderThought} />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground italic h-6 flex items-center">{t.teamsPage.waitingInput}</p>
-            )}
+            <div className="min-h-[1.5rem]">
+              {isLeaderThinking ? (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground italic">
+                  <span className="flex gap-0.5">
+                    <span className="animate-bounce delay-75">.</span>
+                    <span className="animate-bounce delay-150">.</span>
+                    <span className="animate-bounce delay-300">.</span>
+                  </span>
+                  {insightProgress || t.teamsPage.analyzingRequest}
+                </div>
+              ) : leaderThought ? (
+                <div className="space-y-4 animate-in fade-in slide-in-from-left-2">
+                  <Markdown content={leaderThought} />
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic flex items-center">{t.teamsPage.waitingInput}</p>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Title and Capability Fields */}
-        {(title || requestDetails.trim().length > 0 || capabilitiesWorkflow.length > 0) && (
-          <div className="space-y-4 pt-4 border-t animate-in fade-in">
+        {/* Title Field — always rendered but only visible once the user starts typing */}
+        <div
+          className="overflow-hidden transition-all duration-300 ease-in-out"
+          style={{
+            display: (title || requestDetails.trim().length > 0 || capabilitiesWorkflow.length > 0) ? "block" : "none",
+          }}
+        >
+          <div className="space-y-4 pt-4 border-t">
             <div className="space-y-2">
               <Label htmlFor="title" className="text-sm font-medium">{t.teamsPage.requestTitle}</Label>
               <Input
@@ -337,7 +389,7 @@ export default function NewRequestPage() {
               />
             </div>
           </div>
-        )}
+        </div>
 
 
 

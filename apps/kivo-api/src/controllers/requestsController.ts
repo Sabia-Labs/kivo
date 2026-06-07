@@ -6,6 +6,7 @@ import { buildTeamRequestFinishedMessage } from "../lib/messages";
 import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { logActivity } from "../lib/activity-logger";
 import { runRequestIngestion } from "../workflows/requestIngestion";
+import { t, resolveWorkspaceLanguage } from "../lib/i18n";
 
 export async function handleRequestCreatedState(requestRecord: any) {
   try {
@@ -26,12 +27,18 @@ export async function handleRequestCreatedState(requestRecord: any) {
 export async function handleRequestCompletedState(requestRecord: any) {
   // 1. If human requester, insert a notification
   if (requestRecord.requesterUserId) {
+    const lang = await resolveWorkspaceLanguage(requestRecord.teamId);
     await db.insert(notifications).values({
       teamId: requestRecord.teamId,
       recipientId: requestRecord.requesterUserId,
       recipientType: "human",
-      title: requestRecord.status === "failed" ? "Request Failed" : "Request Completed",
-      content: `Request ${requestRecord.identifier} has been completed with status: ${requestRecord.status}.`,
+      title: requestRecord.status === "failed" 
+        ? t("requestFailed", lang) 
+        : t("requestCompleted", lang),
+      content: t("requestCompletedContent", lang, {
+        identifier: requestRecord.identifier,
+        status: requestRecord.status
+      }),
       priority: requestRecord.status === "failed" ? "alert" : requestRecord.priority > 2 ? "high" : "normal",
       relatedEntityId: requestRecord.id,
       relatedEntityType: "request"

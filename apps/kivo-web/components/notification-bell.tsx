@@ -178,7 +178,7 @@ export function NotificationBell({
                 {t.nav.notifications}
               </p>
               <p className="text-[10px] text-muted-foreground truncate leading-tight mt-1">
-                AI squad updates
+                {t.notifications?.squadUpdates || "AI squad updates"}
               </p>
             </div>
           )}
@@ -206,7 +206,7 @@ export function NotificationBell({
               </span>
               {unreadCount > 0 && (
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                  {unreadCount} new
+                  {t.notifications?.newCount?.replace("{count}", String(unreadCount)) || `${unreadCount} new`}
                 </span>
               )}
             </div>
@@ -218,7 +218,7 @@ export function NotificationBell({
                 }}
                 className="text-xs font-semibold text-primary hover:text-primary/80 transition-colors hover:underline"
               >
-                Mark all read
+                {t.notifications?.markAllRead || "Mark all read"}
               </button>
             )}
           </div>
@@ -228,13 +228,13 @@ export function NotificationBell({
             {loading ? (
               <div className="p-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
                 <div className="size-3.5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                Loading notifications...
+                {t.notifications?.loading || "Loading notifications..."}
               </div>
             ) : notifications.length === 0 ? (
               <div className="py-12 px-4 text-center text-sm text-muted-foreground flex flex-col items-center justify-center gap-2">
                 <Bell className="size-8 opacity-25 text-muted-foreground" />
-                <span className="font-medium text-foreground/80">No notifications yet</span>
-                <span className="text-xs opacity-70">We will alert you when there is news</span>
+                <span className="font-medium text-foreground/80">{t.notifications?.emptyTitle || "No notifications yet"}</span>
+                <span className="text-xs opacity-70">{t.notifications?.emptySubtitle || "We will alert you when there is news"}</span>
               </div>
             ) : (
               notifications.map((n) => (
@@ -289,7 +289,7 @@ export function NotificationBell({
 
                     {n.relatedEntityType === "request" && n.relatedEntityId && (
                       <div className="pt-1.5 flex items-center gap-1 text-[11px] font-bold text-primary group-hover:text-primary/95 transition-colors">
-                        <span>View Request</span>
+                        <span>{t.notifications?.viewRequest || "View Request"}</span>
                         <svg
                           className="size-3 transition-transform group-hover:translate-x-0.5"
                           fill="none"

@@ -8,4 +8,5 @@ tasks_workflow:
   - create-user-story
   - implement-work-item
   - code-review
+  - approve-delivery
 ---

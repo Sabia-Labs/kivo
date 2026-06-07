@@ -70,22 +70,26 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
       })
       .returning();
 
-    try {
-      await ensureNamespace(namespace);
-      await applyCredentialsSecret(namespace, agent);
-      await applyKivoAgentCR(namespace, agent, workspace.id, team.name);
+    if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
+      console.log(`[agents] Skipping K8s provisioning for agent ${agent.id} due to LangChain feature flag.`);
+    } else {
+      try {
+        await ensureNamespace(namespace);
+        await applyCredentialsSecret(namespace, agent);
+        await applyKivoAgentCR(namespace, agent, workspace.id, team.name);
 
-      await db
-        .update(agents)
-        .set({ k8sStatus: "provisioning", k8sResourceName: agent.id })
-        .where(eq(agents.id, agent.id));
+        await db
+          .update(agents)
+          .set({ k8sStatus: "provisioning", k8sResourceName: agent.id })
+          .where(eq(agents.id, agent.id));
 
-      agent.k8sStatus      = "provisioning";
-      agent.k8sResourceName = agent.id;
-    } catch (k8sErr) {
-      console.error("[agents] K8s provisioning failed:", k8sErr);
-      await db.update(agents).set({ k8sStatus: "failed" }).where(eq(agents.id, agent.id));
-      agent.k8sStatus = "failed";
+        agent.k8sStatus      = "provisioning";
+        agent.k8sResourceName = agent.id;
+      } catch (k8sErr) {
+        console.error("[agents] K8s provisioning failed:", k8sErr);
+        await db.update(agents).set({ k8sStatus: "failed" }).where(eq(agents.id, agent.id));
+        agent.k8sStatus = "failed";
+      }
     }
 
     res.status(201).json(success(agent));
@@ -282,12 +286,16 @@ agentsRouter.put("/:id", async (req: Request, res: Response, next: NextFunction)
         const namespace = workspace?.k8sNamespace || workspaceNamespace(workspace?.id || "");
         
         if (namespace) {
-          // 1. Upsert credentials Secret with new values from DB and Env fallbacks
-          await applyCredentialsSecret(namespace, updated);
-          
-          // 2. Rolling restart so agent picks up changes
-          await rolloutRestartDeployment(namespace, updated.id);
-          console.log(`[agents] Metadata updated — rollout restart triggered for ${updated.id} in ${namespace}`);
+          if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace?.langchain) {
+            console.log(`[agents] Skipping K8s rollout for agent ${updated.id} due to LangChain feature flag.`);
+          } else {
+            // 1. Upsert credentials Secret with new values from DB and Env fallbacks
+            await applyCredentialsSecret(namespace, updated);
+            
+            // 2. Rolling restart so agent picks up changes
+            await rolloutRestartDeployment(namespace, updated.id);
+            console.log(`[agents] Metadata updated — rollout restart triggered for ${updated.id} in ${namespace}`);
+          }
         }
       } catch (k8sErr) {
         console.error("[agents] K8s Secret/restart after metadata change failed:", k8sErr);
@@ -407,11 +415,15 @@ agentsRouter.delete("/:id", async (req: Request, res: Response, next: NextFuncti
     const [workspace] = team ? await db.select().from(workspaces).where(eq(workspaces.id, team.workspaceId)) : [];
 
     if (workspace?.k8sNamespace) {
-      try {
-        await deleteKivoAgentCR(workspace.k8sNamespace, agent.id);
-        await deleteCredentialsSecret(workspace.k8sNamespace, agent.id);
-      } catch (k8sErr) {
-        console.error("[agents] K8s deprovision error:", k8sErr);
+      if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
+        console.log(`[agents] Skipping K8s deprovisioning for agent ${agent.id} due to LangChain feature flag.`);
+      } else {
+        try {
+          await deleteKivoAgentCR(workspace.k8sNamespace, agent.id);
+          await deleteCredentialsSecret(workspace.k8sNamespace, agent.id);
+        } catch (k8sErr) {
+          console.error("[agents] K8s deprovision error:", k8sErr);
+        }
       }
     }
 

@@ -481,6 +481,80 @@ export default function TeamDetailPage() {
                       </button>
                     </div>
                   )}
+
+                  {alert.relatedEntityType === "task" && alert.relatedEntityId && (
+                    <div className="mt-3 flex flex-col gap-2">
+                      <input 
+                        type="text" 
+                        placeholder="Add a comment..."
+                        className="w-full text-sm bg-background border border-border/50 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary"
+                        id={`comment-${alert.id}`}
+                      />
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={async () => {
+                            const comment = (document.getElementById(`comment-${alert.id}`) as HTMLInputElement)?.value || "";
+                            try {
+                              const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+                              // Update task status to success and append comment to result
+                              const res = await fetch(`${API_BASE}/tasks/${alert.relatedEntityId}`, {
+                                method: "PUT",
+                                headers,
+                                body: JSON.stringify({ 
+                                  status: "success", 
+                                  result: `Approved by human. Comment: ${comment}` 
+                                }),
+                              });
+                              if (!res.ok) throw new Error("Failed to approve task");
+                              
+                              await fetch(`${API_BASE}/notifications/${alert.id}/read`, {
+                                method: "PATCH",
+                                headers,
+                              });
+                              
+                              setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
+                              toast.success("Task approved successfully");
+                            } catch {
+                              toast.error("Failed to approve task");
+                            }
+                          }}
+                          className="text-xs font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-3 py-1 rounded-md transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const comment = (document.getElementById(`comment-${alert.id}`) as HTMLInputElement)?.value || "";
+                            try {
+                              const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+                              const res = await fetch(`${API_BASE}/tasks/${alert.relatedEntityId}`, {
+                                method: "PUT",
+                                headers,
+                                body: JSON.stringify({ 
+                                  status: "failed", 
+                                  failureReason: `Rejected by human. Comment: ${comment}` 
+                                }),
+                              });
+                              if (!res.ok) throw new Error("Failed to reject task");
+                              
+                              await fetch(`${API_BASE}/notifications/${alert.id}/read`, {
+                                method: "PATCH",
+                                headers,
+                              });
+                              
+                              setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
+                              toast.success("Task rejected");
+                            } catch {
+                              toast.error("Failed to reject task");
+                            }
+                          }}
+                          className="text-xs font-semibold bg-red-500/10 text-red-600 hover:bg-red-500/20 px-3 py-1 rounded-md transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button

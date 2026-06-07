@@ -103,6 +103,7 @@ export async function seed() {
       featured: data.featured,
       mission,
       waysOfWorking,
+      externalTools: data.external_tools || [],
     }).onConflictDoUpdate({
       target: teamTypes.id,
       set: {
@@ -113,6 +114,7 @@ export async function seed() {
         featured: data.featured,
         mission,
         waysOfWorking,
+        externalTools: data.external_tools || [],
       }
     });
 

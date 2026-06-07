@@ -56,6 +56,7 @@ internalRouter.post(
             userId,
             name: workspaceName || "Default Workspace",
             k8sNamespace: process.env.KIVO_SHARED_NAMESPACE || `kivo-ws-${workspaceId.substring(0, 8)}`,
+            langchain: process.env.FEATURE_FLAG_LANGCHAIN === "true",
           })
           .onConflictDoNothing();
       });
