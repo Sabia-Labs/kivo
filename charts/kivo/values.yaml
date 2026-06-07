@@ -5,7 +5,6 @@ nameOverride: ""
 fullnameOverride: ""
 
 namespace: kivo
-adminNamespace: kivo-admin
 
 # ── Kivo API (Application Plane) ───────────────────────────────────────────
 kivoApi:
@@ -75,60 +74,7 @@ kivoApi:
     periodSeconds: 10
     failureThreshold: 3
 
-# ── Admin API ─────────────────────────────────────────────────────────────────
-adminApi:
-  enabled: true
-  replicaCount: 1
 
-  image:
-    repository: kivo/admin-api
-    tag: "latest"
-    pullPolicy: IfNotPresent
-
-  # Port the Express server listens on
-  port: 4001
-
-  service:
-    type: ClusterIP
-    port: 4001
-
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: "500m"
-      memory: 512Mi
-
-  # Environment variables injected from a Kubernetes Secret.
-  existingSecret: ""
-
-  env:
-    NODE_ENV: production
-    ADMIN_PORT: "4001"
-    HOST: "0.0.0.0"
-
-  runMigrations: false
-
-  livenessProbe:
-    exec:
-      command:
-        - sh
-        - -c
-        - curl -sf http://127.0.0.1:4001/health
-    initialDelaySeconds: 15
-    periodSeconds: 20
-    failureThreshold: 3
-
-  readinessProbe:
-    exec:
-      command:
-        - sh
-        - -c
-        - curl -sf http://127.0.0.1:4001/health
-    initialDelaySeconds: 5
-    periodSeconds: 10
-    failureThreshold: 3
 
 # ── Kivo Web (Client Portal) ────────────────────────────────────────────────
 kivoWeb:
@@ -173,47 +119,7 @@ kivoWeb:
     initialDelaySeconds: 10
     periodSeconds: 10
 
-# ── Admin Web (Marketing/Admin Portal) ───────────────────────────────────────
-adminWeb:
-  enabled: true
-  replicaCount: 1
 
-  image:
-    repository: kivo/admin-web
-    tag: "latest"
-    pullPolicy: IfNotPresent
-
-  port: 3001
-
-  service:
-    type: ClusterIP
-    port: 3001
-
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: "500m"
-      memory: 512Mi
-
-  env:
-    NODE_ENV: production
-    PORT: "3001"
-
-  livenessProbe:
-    httpGet:
-      path: /
-      port: 3001
-    initialDelaySeconds: 20
-    periodSeconds: 30
-
-  readinessProbe:
-    httpGet:
-      path: /
-      port: 3001
-    initialDelaySeconds: 10
-    periodSeconds: 10
 
 # ── Ingress ───────────────────────────────────────────────────────────────────
 ingress:

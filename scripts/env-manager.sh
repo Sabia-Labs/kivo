@@ -79,11 +79,7 @@ case $ACTION in
     echo "🔥 Imploding primary namespace: $NS"
     k delete ns "$NS" --ignore-not-found
     
-    # 5. Clean up admin namespace if it exists (for local legacy/unified cleanup)
-    if [ "$NS" = "kivo" ]; then
-      echo "🔥 Cleaning up admin namespace (kivo-admin)..."
-      k delete ns kivo-admin --ignore-not-found
-    fi
+
     
     echo "✨ $ENV is now clean."
     ;;

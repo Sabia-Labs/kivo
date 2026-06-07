@@ -4,12 +4,4 @@ metadata:
   name: {{ .Values.namespace }}
   labels:
     {{- include "kivo.labels" . | nindent 4 }}
-{{- if ne .Values.namespace .Values.adminNamespace }}
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: {{ .Values.adminNamespace }}
-  labels:
-    {{- include "kivo.labels" . | nindent 4 }}
-{{- end }}
+

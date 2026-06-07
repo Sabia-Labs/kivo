@@ -1,5 +1,5 @@
 {
-  "id": "f2d889e8-21ad-4a78-b304-e6872cf607a1",
+  "id": "8d52f2c5-e027-45d6-8d66-1ff9f48672dd",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -361,6 +361,80 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.capabilities": {
+      "name": "capabilities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "capability_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "instructions": {
+          "name": "instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inputs_description": {
+          "name": "inputs_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expected_outputs_description": {
+          "name": "expected_outputs_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tasks_workflow": {
+          "name": "tasks_workflow",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loop_over": {
+          "name": "loop_over",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loop_item": {
+          "name": "loop_item",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "run_workflow": {
+          "name": "run_workflow",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.comments": {
       "name": "comments",
       "schema": "",
@@ -578,6 +652,18 @@
         "metadata": {
           "name": "metadata",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instructions": {
+          "name": "instructions",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -1241,6 +1327,24 @@
           "primaryKey": false,
           "notNull": false
         },
+        "loop_over": {
+          "name": "loop_over",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "loop_item": {
+          "name": "loop_item",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "run_workflow": {
+          "name": "run_workflow",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1296,6 +1400,92 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.team_type_capabilities": {
+      "name": "team_type_capabilities",
+      "schema": "",
+      "columns": {
+        "team_type_id": {
+          "name": "team_type_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "capability_id": {
+          "name": "capability_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_favorite": {
+          "name": "is_favorite",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "default_assigned_role": {
+          "name": "default_assigned_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "team_type_capabilities_team_type_id_team_types_id_fk": {
+          "name": "team_type_capabilities_team_type_id_team_types_id_fk",
+          "tableFrom": "team_type_capabilities",
+          "tableTo": "team_types",
+          "columnsFrom": [
+            "team_type_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_type_capabilities_capability_id_capabilities_id_fk": {
+          "name": "team_type_capabilities_capability_id_capabilities_id_fk",
+          "tableFrom": "team_type_capabilities",
+          "tableTo": "capabilities",
+          "columnsFrom": [
+            "capability_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "team_type_capabilities_default_assigned_role_agent_roles_id_fk": {
+          "name": "team_type_capabilities_default_assigned_role_agent_roles_id_fk",
+          "tableFrom": "team_type_capabilities",
+          "tableTo": "agent_roles",
+          "columnsFrom": [
+            "default_assigned_role"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "team_type_capabilities_team_type_id_capability_id_pk": {
+          "name": "team_type_capabilities_team_type_id_capability_id_pk",
+          "columns": [
+            "team_type_id",
+            "capability_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1426,6 +1616,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "external_tools": {
+          "name": "external_tools",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'[]'::jsonb"
         }
       },
       "indexes": {},
@@ -1570,6 +1767,19 @@
           "primaryKey": false,
           "notNull": true
         },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_admin": {
+          "name": "is_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -1587,6 +1797,208 @@
           "nullsNotDistinct": false,
           "columns": [
             "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verification_codes": {
+      "name": "verification_codes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vouchers": {
+      "name": "vouchers",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "voucher_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'available'"
+        },
+        "redeemed_by_workspace_id": {
+          "name": "redeemed_by_workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "redeemed_at": {
+          "name": "redeemed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "vouchers_redeemed_by_workspace_id_workspaces_id_fk": {
+          "name": "vouchers_redeemed_by_workspace_id_workspaces_id_fk",
+          "tableFrom": "vouchers",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "redeemed_by_workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "vouchers_code_unique": {
+          "name": "vouchers_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.workspace_llm_keys": {
+      "name": "workspace_llm_keys",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "llm_provider",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "api_key": {
+          "name": "api_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "workspace_llm_keys_workspace_id_workspaces_id_fk": {
+          "name": "workspace_llm_keys_workspace_id_workspaces_id_fk",
+          "tableFrom": "workspace_llm_keys",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "workspace_llm_keys_workspace_id_provider_unique": {
+          "name": "workspace_llm_keys_workspace_id_provider_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "workspace_id",
+            "provider"
           ]
         }
       },
@@ -1621,6 +2033,27 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "tier": {
+          "name": "tier",
+          "type": "workspace_tier",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "langchain": {
+          "name": "langchain",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
         }
       },
       "indexes": {},
@@ -1680,7 +2113,9 @@
       "schema": "public",
       "values": [
         "task_template",
-        "workflow"
+        "workflow",
+        "human_approval",
+        "foreach"
       ]
     },
     "public.change_type": {
@@ -1712,6 +2147,16 @@
         "trello",
         "github",
         "notion"
+      ]
+    },
+    "public.llm_provider": {
+      "name": "llm_provider",
+      "schema": "public",
+      "values": [
+        "openai",
+        "gemini",
+        "anthropic",
+        "deepseek"
       ]
     },
     "public.message_role": {
@@ -1752,6 +2197,22 @@
         "in_progress",
         "success",
         "failed"
+      ]
+    },
+    "public.voucher_status": {
+      "name": "voucher_status",
+      "schema": "public",
+      "values": [
+        "available",
+        "redeemed"
+      ]
+    },
+    "public.workspace_tier": {
+      "name": "workspace_tier",
+      "schema": "public",
+      "values": [
+        "free_byok",
+        "pro"
       ]
     }
   },

@@ -2,7 +2,6 @@
 # Used by: tilt up, helm install ... -f values-local.yaml
 
 namespace: kivo
-adminNamespace: kivo
 
 # Tells Helm templates to skip resources that Tilt manages directly
 # (e.g. RabbitmqCluster CR, applied after Operator CRD is installed).
@@ -42,28 +41,7 @@ kivoApi:
   # Disable migration init container until --migrate-only flag is implemented
   runMigrations: false
 
-adminApi:
-  enabled: false
-  replicaCount: 0
-  image:
-    repository: kivo/admin-api
-    tag: local
-    pullPolicy: Never
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: "200m"
-      memory: 256Mi
-  env:
-    NODE_ENV: development
-    ADMIN_PORT: "4001"
-    JWT_SECRET: "kivo-local-dev-secret-change-in-prod"
-    ADMIN_WEB_URL: "http://localhost:3001"
-    GOOGLE_REDIRECT_URI: "http://localhost:4001/auth/google/callback"
-    KIVO_API_INTERNAL_URL: "http://kivo-api:4000"
-  runMigrations: false
+
 
 kivoWeb:
   replicaCount: 1
@@ -87,27 +65,6 @@ kivoWeb:
     NEXT_PUBLIC_API_URL: "/api"
     SITE_URL: "http://kivo.localhost"
     NEXT_PUBLIC_SITE_URL: "http://kivo.localhost"
-
-adminWeb:
-  enabled: false
-  replicaCount: 0
-  image:
-    repository: kivo/admin-web
-    tag: local
-    pullPolicy: Never
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: "200m"
-      memory: 256Mi
-  env:
-    NODE_ENV: development
-    PORT: "3001"
-    API_INTERNAL_URL: "http://kivo-api:4000"
-    NEXT_PUBLIC_API_URL: "/admin-api"
-    KIVO_WEB_URL: "http://kivo.localhost"
 
 
 ingress:

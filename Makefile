@@ -48,9 +48,7 @@ drizzle-kivo: ## 🗄️ Open Drizzle Studio for Kivo DB (ENV=local|staging|hetz
 	@chmod +x scripts/*.sh
 	@scripts/drizzle-manager.sh kivo $(ENV) $(CTX) $(NAMESPACE)
 
-drizzle-admin: ## 🗄️ Open Drizzle Studio for Admin DB (ENV=local|staging|hetzner)
-	@chmod +x scripts/*.sh
-	@scripts/drizzle-manager.sh admin $(ENV) $(CTX) $(NAMESPACE)
+
 
 # ── UTILS ─────────────────────────────────────────────────────────────────────
 

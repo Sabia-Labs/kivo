@@ -27,10 +27,7 @@ if ! k get secret kivo-db-credentials -n "$NS" >/dev/null 2>&1; then
   echo "   -> Creating default DB credentials..."
   DB_PWD="kivo_local_only"
   DB_URL="postgres://kivo:$DB_PWD@kivo-postgresql:5432/kivo"
-  DB_URL_ADMIN="postgres://kivo:$DB_PWD@kivo-postgresql:5432/kivo_admin"
-  
   k create secret generic kivo-db-credentials -n "$NS" --from-literal=DATABASE_URL="$DB_URL"
-  k create secret generic kivo-admin-db-credentials -n "$NS" --from-literal=DATABASE_URL_ADMIN="$DB_URL_ADMIN"
 fi
 
 # 2. GitHub Container Registry Secret (Image Pull)

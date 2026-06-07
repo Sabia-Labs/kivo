@@ -52,13 +52,10 @@ GOOGLE_CLIENT_SECRET    = _env.get("GOOGLE_CLIENT_SECRET", "")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 NAMESPACE       = "kivo"
-ADMIN_NAMESPACE = "kivo-admin"
 HELM_CHART      = "charts/kivo"
 VALUES_LOCAL   = "charts/kivo/values-local.yaml"
 API_IMAGE        = settings.get("api_image",        "kivo/api")
-ADMIN_API_IMAGE  = settings.get("admin_api_image",  "kivo/admin-api")
 KIVO_WEB_IMAGE  = settings.get("kivo_web_image",  "kivo/web")
-ADMIN_WEB_IMAGE  = settings.get("admin_web_image",  "kivo/admin-web")
 AGENT_IMAGE      = settings.get("agent_image",      "kivo/agent:local")
 CONSUMER_IMAGE   = settings.get("consumer_image",   "kivo/consumer:local")
 CONTROLLER_IMAGE = settings.get("controller_image", "kivo/controller")
@@ -92,7 +89,7 @@ helm_resource(
 
 local_resource(
   'ensure-namespace',
-  cmd='kubectl create namespace kivo --dry-run=client -o yaml | kubectl apply -f - && kubectl create namespace kivo-admin --dry-run=client -o yaml | kubectl apply -f -',
+  cmd='kubectl create namespace kivo --dry-run=client -o yaml | kubectl apply -f -',
   labels=['setup'],
 )
 
@@ -108,20 +105,7 @@ local_resource(
   labels=['setup'],
 )
 
-# local_resource(
-#   'admin-db-migrate',
-#   cmd='kubectl exec -i -n kivo kivo-postgresql-0 -- psql -U kivo -d postgres -c "CREATE DATABASE kivo_admin;" 2>/dev/null || true && cat apps/admin-api/migrations/[0-9]*.sql | kubectl exec -i -n kivo kivo-postgresql-0 -- psql -U kivo -d kivo_admin -v ON_ERROR_STOP=0 2>&1 | grep -vE "already exists|^$" | grep -E "^(ERROR|FATAL)" || echo "✓ Admin DB migrations applied"',
-#   resource_deps=['kivo-postgresql'],
-#   deps=['apps/admin-api/migrations'],
-#   labels=['setup'],
-# )
 
-# local_resource(
-#   'admin-db-seed',
-#   cmd='cd apps/admin-api && npm run db:seed',
-#   resource_deps=['admin-db-migrate'],
-#   labels=['setup'],
-# )
 
 local_resource(
   'app-db-seed',
@@ -146,17 +130,7 @@ docker_build(
   # which cannot write to /app/src. Tilt does a fast Docker layer-cache rebuild instead.
 )
 
-# docker_build(
-#   ADMIN_API_IMAGE,
-#   context='.',
-#   dockerfile='apps/admin-api/Dockerfile',
-#   ignore=[
-#     '**/node_modules',
-#     '**/dist',
-#     '**/.env',
-#     '**/.next',
-#   ],
-# )
+
 
 # ── 4a. Build Kivo Web image ─────────────────────────────────────────────────
 docker_build(
@@ -170,17 +144,7 @@ docker_build(
   ignore=['node_modules', '.next', '*.md'],
 )
 
-# ── 4b. Build Admin Web image ─────────────────────────────────────────────────
-# docker_build(
-#   ADMIN_WEB_IMAGE,
-#   context='apps/admin-web',
-#   dockerfile='apps/kivo-web/Dockerfile', # Reuse same generic Dockerfile
-#   build_args={
-#     'NEXT_PUBLIC_API_URL': 'http://localhost:4000',
-#     'API_INTERNAL_URL': 'http://kivo-api:4000',
-#   },
-#   ignore=['node_modules', '.next', '*.md'],
-# )
+
 
 # ── 5a. Build kivo-agent image ──────────────────────────────────────────────
 docker_build(
@@ -331,14 +295,10 @@ k8s_yaml(
     set=[
       'kivoApi.image.repository=' + API_IMAGE,
       'kivoApi.image.tag=local',
-      'adminApi.image.repository=' + ADMIN_API_IMAGE,
-      'adminApi.image.tag=local',
       'kivoWeb.image.repository=' + KIVO_WEB_IMAGE,
       'kivoWeb.image.tag=local',
       'kivoWeb.env.SITE_URL=http://' + TILT_HOST,
       'kivoWeb.env.NEXT_PUBLIC_SITE_URL=http://' + TILT_HOST,
-      'adminWeb.image.repository=' + ADMIN_WEB_IMAGE,
-      'adminWeb.image.tag=local',
       'controller.image.repository=' + CONTROLLER_IMAGE,
       'controller.image.tag=local',
       'ingress.host=' + TILT_HOST,
@@ -356,14 +316,8 @@ k8s_yaml(
       'kivoApi.env.ORCHESTRATOR_PROVIDER=' + ORCHESTRATOR_PROVIDER,
       'kivoApi.env.ORCHESTRATOR_MODEL=' + ORCHESTRATOR_MODEL,
       'kivoApi.env.ORCHESTRATOR_API_KEY=' + ORCHESTRATOR_API_KEY,
-      'kivoApi.env.ADMIN_API_INTERNAL_URL=http://kivo-admin-api:4001',
-      'kivoApi.env.INTERNAL_SERVICE_TOKEN=kivo-local-dev-token',
-      'adminApi.env.KIVO_API_INTERNAL_URL=http://kivo-api:4000',
-      'adminApi.env.INTERNAL_SERVICE_TOKEN=kivo-local-dev-token',
       'kivoApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
       'kivoApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
-      'adminApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
-      'adminApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
       'controller.agentImage=' + AGENT_IMAGE,
       'controller.consumerImage=' + CONSUMER_IMAGE,
       'controller.agentImagePullPolicy=IfNotPresent',
@@ -391,18 +345,7 @@ k8s_resource(
   ],
 )
 
-# k8s_resource(
-#   'kivo-admin-api',
-#   resource_deps=['kivo-postgresql', 'admin-db-migrate', 'ensure-namespace'],
-#   labels=['app'],
-#   port_forwards=['4001:4001'],
-#   extra_pod_selectors=[
-#     {'app.kubernetes.io/name': 'kivo-admin-api'},
-#   ],
-#   links=[
-#     link('http://localhost:4001/health', 'Admin API Health'),
-#   ],
-# )
+
 
 # Web depends on the API
 k8s_resource(
@@ -415,18 +358,7 @@ k8s_resource(
   ],
 )
 
-# k8s_resource(
-#   'kivo-admin-web',
-#   resource_deps=['kivo-admin-api'],
-#   labels=['app'],
-#   port_forwards=['3001:3001'],
-#   extra_pod_selectors=[
-#     {'app.kubernetes.io/name': 'kivo-admin-web'},
-#   ],
-#   links=[
-#     link('http://localhost:3001', 'Admin/Marketing Portal'),
-#   ],
-# )
+
 
 k8s_resource(
   'kivo-agent-controller',

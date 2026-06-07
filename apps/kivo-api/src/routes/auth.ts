@@ -210,7 +210,8 @@ authRouter.post("/signup/verify", async (req, res, next) => {
         .values({ 
           id: randomUUID(),
           userId: user.id, 
-          name: input.workspaceName 
+          name: input.workspaceName,
+          langchain: process.env.FEATURE_FLAG_LANGCHAIN === "true"
         })
         .returning();
 
@@ -302,7 +303,8 @@ authRouter.get("/google/callback", async (req, res) => {
         const [newWorkspace] = await tx.insert(workspaces).values({ 
           id: randomUUID(),
           userId: newUser.id, 
-          name: email.split('@')[0] 
+          name: email.split('@')[0],
+          langchain: process.env.FEATURE_FLAG_LANGCHAIN === "true"
         }).returning();
         
         await tx.update(workspaces)

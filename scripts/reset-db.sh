@@ -29,11 +29,8 @@ DB_PWD=$(k get secret kivo-db-credentials -n "$NS" -o jsonpath='{.data.DATABASE_
 
 # 2. Drop and Recreate Databases
 echo "🧹 Dropping and recreating databases inside pod $POSTGRES_POD..."
-k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -d "$DB_USER" -c "DROP DATABASE IF EXISTS kivo_admin WITH (FORCE);" || true
-k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -d "$DB_USER" -c "CREATE DATABASE kivo_admin;"
-
-k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -d kivo_admin -c "DROP DATABASE IF EXISTS kivo WITH (FORCE);" || true
-k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -d kivo_admin -c "CREATE DATABASE kivo;"
+k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS kivo WITH (FORCE);" || true
+k exec -n "$NS" "$POSTGRES_POD" -- env PGPASSWORD="$DB_PWD" psql -U "$DB_USER" -d postgres -c "CREATE DATABASE kivo;"
 
 # 3. Port-forward for migrations
 echo "🔌 Starting temporary port-forward..."
@@ -58,16 +55,11 @@ fi
 # 4. Run Migrations & Seed
 DB_BASE="postgres://$DB_USER:$DB_PWD@localhost:$LOCAL_PORT"
 export DATABASE_URL="$DB_BASE/kivo"
-export DATABASE_URL_ADMIN="$DB_BASE/kivo_admin"
 
 echo "🏗 Running migrations and SEED..."
 (cd "$ROOT_DIR/apps/kivo-api" && pnpm db:migrate && pnpm db:seed)
-(cd "$ROOT_DIR/apps/admin-api" && npm run db:migrate && npm run db:seed)
 
-# 5. Update Secret for Admin API (Internal DB URL)
-echo "🛠 Updating internal credentials..."
-NEW_URL_ADMIN=$(echo -n "postgres://$DB_USER:$DB_PWD@$POSTGRES_SVC:5432/kivo_admin" | base64)
-k patch secret kivo-admin-db-credentials -n "$NS" -p "{\"data\":{\"DATABASE_URL_ADMIN\":\"$NEW_URL_ADMIN\"}}" || echo "⚠️ kivo-admin-db-credentials secret not found, skipping patching (expected in local env)."
+
 
 # Cleanup
 kill $PF_PID || true
