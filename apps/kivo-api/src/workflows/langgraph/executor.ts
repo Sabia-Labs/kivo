@@ -7,6 +7,7 @@ import { ConnectorFactory } from "./integrations/factory";
 import { getToolsForAdapters } from "./integrations/tools";
 import { LLMFactory } from "./integrations/llm-factory";
 import { runRequestContinuation } from "../../workflows/requestContinuation";
+import { runRequestIngestion } from "../../workflows/requestIngestion";
 import { t, resolveWorkspaceLanguage } from "../../lib/i18n";
 
 // ==========================================
@@ -176,9 +177,9 @@ function parseFrontmatter(markdown: string): { frontmatter: Record<string, strin
 function extractExpectedOutputs(taskTemplate: string): Record<string, string> {
   const schema: Record<string, string> = {};
   
-  // Match either with or without the EXPECTED OUTPUTS header
   const matchBlock = taskTemplate.match(/EXPECTED OUTPUTS\s*([\s\S]*?)(?=\r?\n#|##|$)/);
-  const textToParse = matchBlock ? matchBlock[1] : taskTemplate;
+  if (!matchBlock) return schema;
+  const textToParse = matchBlock[1];
   
   const lines = textToParse.split("\n");
   for (const line of lines) {
@@ -253,6 +254,15 @@ export async function runLangchainExecutor(taskId: string) {
     });
 
     // We halt execution. The UI will resume by updating the task directly.
+    return;
+  }
+
+  // ── Foreach Loop ────────────────────────────────────────────────────────────
+  const isForeach = taskRecord.instructions?.includes("[CAPABILITY_TYPE: foreach]");
+
+  if (isForeach) {
+    console.log(`[langgraph-executor] Detected foreach task ${taskId}. Running loop...`);
+    await runForeachLoop(taskId, taskRecord, requestRecord, team.id);
     return;
   }
 
@@ -334,6 +344,17 @@ export async function runLangchainExecutor(taskId: string) {
   const capabilityId = requestRecord.capabilitiesWorkflow && taskIndex !== -1
     ? (requestRecord.capabilitiesWorkflow as string[])[taskIndex]
     : null;
+
+  if (capabilityId) {
+    const { teamCapabilities } = await import("../../db/schema");
+    const [cap] = await db.select().from(teamCapabilities).where(and(
+      eq(teamCapabilities.teamId, team.id),
+      eq(teamCapabilities.identifier, capabilityId)
+    ));
+    if (cap) {
+      (taskRecord as any).capability = cap;
+    }
+  }
 
   // Load previous successful tasks to rebuild resolvedEntities state variables
   const previousTasks = await db.select().from(tasks)
@@ -571,6 +592,82 @@ ${Object.keys(prep.expectedOutputSchema || {}).join(", ")}`;
       selectedActionNames.has(t.name)
     );
     
+    // ==========================================
+    // PROACTIVE PRE-TOOL EXECUTION (FOR SMALL LLMs)
+    // ==========================================
+    const isFirstTurn = activeMessages.length === 2; // System + Human
+    const preTools = prep.selectedActions?.filter((t: any) => t.runPhase === "pre") || [];
+
+    if (isFirstTurn && preTools.length > 0) {
+      console.log(`\n\x1b[1;34m▶ [Proactive Execution] Running pre-tools before LLM invocation...\x1b[0m`);
+      const mockToolCalls: any[] = [];
+      const toolMessages: BaseMessage[] = [];
+
+      for (const pt of preTools) {
+        const langChainToolName = pt.name.replace(/\./g, "_");
+        const targetTool = tools.find(t => t.name === langChainToolName);
+        if (!targetTool) {
+          const lang = await resolveWorkspaceLanguage(state.taskRecord?.teamId);
+          throw new Error(t("integrationMissing", lang, { tool: langChainToolName }));
+        }
+
+        const resolvedArgs: Record<string, any> = {};
+        if (pt.input) {
+          for (const [k, v] of Object.entries(pt.input)) {
+            if (typeof v === "string" && v.startsWith("$")) {
+              const stateKey = v.slice(1);
+              if (state.resolvedEntities[stateKey] !== undefined && state.resolvedEntities[stateKey] !== null) {
+                resolvedArgs[k] = state.resolvedEntities[stateKey];
+              }
+            } else {
+              resolvedArgs[k] = v;
+            }
+          }
+        }
+
+        const toolCallId = `call_${Math.random().toString(36).substring(2, 9)}`;
+        mockToolCalls.push({
+          name: langChainToolName,
+          args: resolvedArgs,
+          id: toolCallId
+        });
+
+        console.log(`\x1b[1;34m  [Proactive Tool] Running ${langChainToolName}...\x1b[0m`);
+        console.log(`\x1b[90m    Args: ${JSON.stringify(resolvedArgs)}\x1b[0m`);
+
+        try {
+          const output = await targetTool.invoke(resolvedArgs);
+          const outStr = typeof output === "string" ? output : JSON.stringify(output);
+          console.log(`\x1b[90m    Out: ${outStr.length > 200 ? outStr.substring(0, 200) + "..." : outStr}\x1b[0m`);
+
+          toolMessages.push(
+            new ToolMessage({
+              name: langChainToolName,
+              content: outStr,
+              tool_call_id: toolCallId
+            })
+          );
+        } catch (err: any) {
+          console.log(`\x1b[31m  [Proactive Tool Error] ${err.message}\x1b[0m`);
+          toolMessages.push(
+            new ToolMessage({
+              name: langChainToolName,
+              content: `Error: ${err.message}`,
+              tool_call_id: toolCallId
+            })
+          );
+        }
+      }
+
+      if (mockToolCalls.length > 0) {
+        const mockAssistantMessage = new AIMessage({
+          content: "",
+          tool_calls: mockToolCalls
+        });
+        activeMessages.push(mockAssistantMessage, ...toolMessages);
+      }
+    }
+
     let result;
     if (tools.length > 0) {
       if (typeof (llm as any).bindTools !== "function") {
@@ -595,139 +692,8 @@ ${Object.keys(prep.expectedOutputSchema || {}).join(", ")}`;
       return update;
     }
 
-    // Pre-LLM resilient tool fallback
-    const isFirstTurn = activeMessages.length === 2; // System + Human
-    const preTools = prep.selectedActions?.filter((t: any) => t.runPhase === "pre") || [];
-
-    if (!hasToolCalls && isFirstTurn && preTools.length > 0) {
-      console.log(`\x1b[33m  [Executor Resilient Fallback] LLM failed to emit tool calls. Executing Pre-LLM tools...\x1b[0m`);
-      
-      const mockToolCalls: any[] = [];
-      const toolMessages: BaseMessage[] = [];
-
-      for (const pt of preTools) {
-        const langChainToolName = pt.name.replace(/\./g, "_");
-        const targetTool = tools.find(t => t.name === langChainToolName);
-        if (!targetTool) {
-          const lang = await resolveWorkspaceLanguage(state.taskRecord?.teamId);
-          throw new Error(t("integrationMissing", lang, { tool: langChainToolName }));
-        }
-
-        // Resolve arguments dynamically
-        const resolvedArgs: Record<string, any> = {};
-        if (pt.input) {
-          for (const [k, v] of Object.entries(pt.input)) {
-            if (typeof v === "string" && v.startsWith("$")) {
-              const stateKey = v.slice(1);
-              if (state.resolvedEntities[stateKey] !== undefined && state.resolvedEntities[stateKey] !== null) {
-                resolvedArgs[k] = state.resolvedEntities[stateKey];
-              }
-            } else {
-              resolvedArgs[k] = v;
-            }
-          }
-        }
-
-        const toolCallId = `call_${Math.random().toString(36).substring(2, 9)}`;
-        mockToolCalls.push({
-          name: langChainToolName,
-          args: resolvedArgs,
-          id: toolCallId
-        });
-
-        console.log(`\x1b[1;34m  [Resilient Force] Running ${langChainToolName}...\x1b[0m`);
-        console.log(`\x1b[90m    Args: ${JSON.stringify(resolvedArgs)}\x1b[0m`);
-
-        try {
-          const output = await targetTool.invoke(resolvedArgs);
-          const outStr = typeof output === "string" ? output : JSON.stringify(output);
-          console.log(`\x1b[90m    Out: ${outStr.length > 200 ? outStr.substring(0, 200) + "..." : outStr}\x1b[0m`);
-
-          toolMessages.push(
-            new ToolMessage({
-              name: langChainToolName,
-              content: outStr,
-              tool_call_id: toolCallId
-            })
-          );
-        } catch (err: any) {
-          console.log(`\x1b[31m  [Resilient Force Error] ${err.message}\x1b[0m`);
-          toolMessages.push(
-            new ToolMessage({
-              name: langChainToolName,
-              content: `Error: ${err.message}`,
-              tool_call_id: toolCallId
-            })
-          );
-        }
-      }
-
-      if (mockToolCalls.length > 0) {
-        const mockAssistantMessage = new AIMessage({
-          content: "",
-          tool_calls: mockToolCalls
-        });
-
-        const fallbackMessages = [...activeMessages, mockAssistantMessage, ...toolMessages];
-        
-        console.log(`\x1b[35m  [Executor Resilient Fallback] Querying Brain with clean data extraction model...\x1b[0m`);
-
-        const extractionSystem = `You are a precise technical data extraction assistant.
-Analyze the tool outputs below and extract the requested fields.
-CRITICAL RULES:
-1. If the TOOL OUTPUTS do not contain sufficient information to fill a field, you MUST set its value to "No relevant information found" or an empty array.
-2. Do NOT invent, hallucinate, or guess any information under any circumstances.
-3. You MUST respond with a single valid JSON object.
-4. Do NOT output any conversational text or markdown codeblocks outside of the JSON.`;
-
-        const toolOutputsText = toolMessages.map(m => `Tool [${m.name}] Output:\n${m.content}`).join("\n\n");
-        const requestedSchemaText = JSON.stringify(prep.expectedOutputSchema || {}, null, 2);
-
-        const extractionUser = `TOOL OUTPUTS:
-${toolOutputsText}
-
-REQUESTED SCHEMA (Extract these keys):
-${requestedSchemaText}
-
-Return a valid JSON object matching this schema.`;
-
-        let parsedOutput: Record<string, any> = {};
-        try {
-          parsedOutput = await queryLLM(extractionSystem, extractionUser, true);
-        } catch (e: any) {
-          console.log(`\x1b[33m  [Extraction Fallback] JSON extraction failed: ${e.message}. Attempting text block parsing...\x1b[0m`);
-          const textRes = await queryLLM(extractionSystem, extractionUser, false);
-          try {
-            const match = textRes.match(/\{[\s\S]*\}/);
-            if (match) {
-              parsedOutput = JSON.parse(match[0]);
-            }
-          } catch {
-            // ignore
-          }
-        }
-
-        // Format parsedOutput as YAML frontmatter
-        let output = "---\n";
-        for (const [k, v] of Object.entries(parsedOutput)) {
-          if (typeof v === "object") {
-            output += `${k}: ${JSON.stringify(v)}\n`;
-          } else {
-            output += `${k}: ${v}\n`;
-          }
-        }
-        output += "---\nData extracted via resilient parser.";
-
-        logSection("Executor Output (Resilient)", { frontmatter: parsedOutput, bodyLength: 0 });
-
-        const update = {
-          taskOutputs: { ...state.taskOutputs, [cid || tid]: output },
-          messages: [...fallbackMessages, new AIMessage(output)]
-        };
-        logState("EXIT (FALLBACK_RESILIENT)", update);
-        return update;
-      }
-    }
+    // The legacy Pre-LLM resilient fallback block was removed here.
+    // Proactive execution now handles tool calling before the LLM even sees the prompt.
 
     // Post-LLM resilient tool fallback
     const postTools = prep.selectedActions?.filter((t: any) => t.runPhase === "post") || [];
@@ -900,15 +866,63 @@ Return a valid JSON object matching this schema.`;
     });
 
     if (missingKeys.length > 0) {
-      console.warn(`\x1b[31m[UPDATE] Validation failed. Missing keys: ${missingKeys.join(", ")}\x1b[0m`);
+      console.warn(`\x1b[33m[UPDATE] Validation failed. Missing keys: ${missingKeys.join(", ")}. Triggering Smart Extraction Fallback...\x1b[0m`);
       
-      await db.update(tasks).set({
-        status: "failed",
-        failureReason: `Task completed but validation failed. Missing expected keys: ${missingKeys.join(", ")}`,
-        updatedAt: new Date()
-      }).where(eq(tasks.id, tid));
+      const extractionSystem = `You are a precise data extraction assistant.
+Extract the expected variables from the raw execution output and tool execution logs.
+Expected Schema Keys: ${JSON.stringify(prep.expectedOutputSchema, null, 2)}
+Output ONLY a valid JSON object matching this schema.`;
 
-      return {};
+      const userPrompt = `RAW OUTPUT:
+${taskOutput}
+
+CONVERSATION HISTORY (Tool Outputs):
+${JSON.stringify(state.messages.slice(-5).map((m: any) => ({ type: m._getType(), content: m.content })), null, 2)}`;
+
+      try {
+        const extractedJson = await queryLLM(extractionSystem, userPrompt, true);
+        
+        // Re-validate against extractedJson
+        const stillMissing: string[] = [];
+        expectedKeys.forEach(k => {
+          let val = extractedJson[k];
+          const isInvalid = (v: any) => {
+            if (v === undefined || v === null) return true;
+            const s = String(v).trim().toLowerCase();
+            return s === "" || s === "null" || s === "none" || s === "undefined";
+          };
+          if (isInvalid(val)) {
+            stillMissing.push(k);
+          } else {
+            tempResolved[k] = val;
+          }
+        });
+
+        if (stillMissing.length > 0) {
+          throw new Error(`Smart extraction still missed keys: ${stillMissing.join(", ")}`);
+        }
+
+        // Successfully recovered! Overwrite taskOutput with the perfectly formatted YAML
+        const recoveredYaml = ["---"];
+        for (const [k, v] of Object.entries(extractedJson)) {
+          recoveredYaml.push(`${k}: ${typeof v === "string" ? JSON.stringify(v) : v}`);
+        }
+        recoveredYaml.push("---");
+        recoveredYaml.push(content); // Append original text body
+        
+        // Update taskOutput in state so it cascades
+        state.taskOutputs[cid || tid] = recoveredYaml.join("\n");
+        console.log(`\x1b[32m[UPDATE] Smart Extraction successful!\x1b[0m`);
+      } catch (err: any) {
+        console.warn(`\x1b[31m[UPDATE] Smart Extraction Failed: ${err.message}\x1b[0m`);
+        await db.update(tasks).set({
+          status: "failed",
+          failureReason: `Task completed but validation failed. Missing expected keys: ${missingKeys.join(", ")}. Fallback error: ${err.message}`,
+          updatedAt: new Date()
+        }).where(eq(tasks.id, tid));
+
+        return {};
+      }
     }
 
     console.log(`\x1b[32m[UPDATE] Validation succeeded! Expected outputs resolved: ${expectedKeys.join(", ")}\x1b[0m`);
@@ -1050,9 +1064,221 @@ function buildGenericActions(instructions: string, tools: any[]): any[] {
   return selectedActions;
 }
 
+
 function extractRequiredInputs(instructions: string): string[] {
   const inputsSection = instructions.match(/#(?: REQUIRED)? INPUTS\s*([\s\S]*?)(?:#|$)/i);
   if (!inputsSection) return [];
   const matches = [...inputsSection[1].matchAll(/-\s*`([^`]+)`/g)].map(m => m[1]);
   return matches;
+}
+
+// ==========================================
+// FOREACH LOOP HELPERS
+// ==========================================
+
+/**
+ * Polls a request until it reaches a terminal status (success, failed, waiting_user).
+ * Uses exponential back-off up to FOREACH_POLL_TIMEOUT_MS (default 10 min).
+ */
+async function waitForRequestCompletion(
+  requestId: string,
+  timeoutMs: number = 10 * 60 * 1000
+): Promise<{ status: string; response: string | null }> {
+  const TERMINAL = new Set(["success", "failed", "waiting_user"]);
+  const started = Date.now();
+  let delay = 2000;
+
+  while (Date.now() - started < timeoutMs) {
+    const [req] = await db.select().from(requests).where(eq(requests.id, requestId));
+    if (!req) throw new Error(`[foreach] Child request ${requestId} disappeared.`);
+    if (TERMINAL.has(req.status)) {
+      return { status: req.status, response: req.response };
+    }
+    await new Promise(resolve => setTimeout(resolve, delay));
+    delay = Math.min(delay * 1.5, 15_000); // cap at 15s
+  }
+
+  throw new Error(`[foreach] Timed out waiting for child request ${requestId} after ${timeoutMs}ms.`);
+}
+
+/**
+ * Parses a value that may be a JSON array, a comma/newline-separated string, or already an array.
+ */
+function parseAsList(value: any): any[] {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== "string") return [];
+  const trimmed = value.trim();
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed.replace(/'/g, '"'));
+      if (Array.isArray(parsed)) return parsed;
+    } catch { /* fall through */ }
+  }
+  return trimmed
+    .replace(/^\[|\]$/g, "")
+    .split(/,|\n/)
+    .map(s => s.trim().replace(/^['"]|['"]$/g, "").replace(/^-\s*/, "").trim())
+    .filter(Boolean);
+}
+
+/**
+ * Executes the foreach loop for a task of type `foreach`.
+ * - Reads the list from resolvedEntities (built from previous task results).
+ * - For each item, creates a child request and runs the sub-workflow sequentially.
+ * - Aggregates loopResults and marks the foreach task as success.
+ */
+async function runForeachLoop(
+  taskId: string,
+  taskRecord: any,
+  requestRecord: any,
+  teamId: string
+): Promise<void> {
+  const { teamCapabilities } = await import("../../db/schema");
+
+  // ── 1. Find the capability record to get loop metadata ──────────────────────
+  const allTasksForRequest = await db.select().from(tasks)
+    .where(eq(tasks.requestId, taskRecord.requestId!))
+    .orderBy(asc(tasks.createdAt));
+
+  const taskIndex = allTasksForRequest.findIndex(t => t.id === taskId);
+  const capabilityId = requestRecord.capabilitiesWorkflow && taskIndex !== -1
+    ? (requestRecord.capabilitiesWorkflow as string[])[taskIndex]
+    : null;
+
+  let loopOver: string | null = null;
+  let loopItem: string | null = null;
+  let runWorkflow: string | null = null;
+
+  if (capabilityId) {
+    const { and: andOp } = await import("drizzle-orm");
+    const [cap] = await db.select().from(teamCapabilities).where(
+      andOp(eq(teamCapabilities.teamId, teamId), eq(teamCapabilities.identifier, capabilityId))
+    );
+    if (cap) {
+      loopOver = cap.loopOver;
+      loopItem = cap.loopItem;
+      runWorkflow = cap.runWorkflow;
+    }
+  }
+
+  if (!runWorkflow && requestRecord.capabilitiesWorkflow) {
+    const capabilitiesWorkflow = (requestRecord.capabilitiesWorkflow as string[]) || [];
+    let foreachBefore = 0;
+    for (let i = 0; i < taskIndex; i++) {
+      if (allTasksForRequest[i].instructions?.includes("[CAPABILITY_TYPE: foreach]")) {
+        foreachBefore++;
+      }
+    }
+    const currentWorkflowIndex = taskIndex + foreachBefore;
+    runWorkflow = capabilitiesWorkflow[currentWorkflowIndex + 1] || null;
+  }
+
+  if (!loopOver || !loopItem || !runWorkflow) {
+    const lang = await resolveWorkspaceLanguage(teamId);
+    const reason = `[foreach] Capability "${capabilityId}" is missing loop_over, loop_item, or run_workflow configuration.`;
+    console.error(reason);
+    await db.update(tasks).set({
+      status: "failed",
+      failureReason: reason,
+      updatedAt: new Date()
+    }).where(eq(tasks.id, taskId));
+    runRequestContinuation(taskId, requestRecord.id, teamId).catch(console.error);
+    return;
+  }
+
+  // ── 2. Rebuild resolvedEntities from previous task outputs ──────────────────
+  const previousTasks = await db.select().from(tasks).where(
+    and(eq(tasks.requestId, taskRecord.requestId!), ne(tasks.id, taskId), eq(tasks.status, "success"))
+  );
+
+  const resolvedEntities: Record<string, any> = {};
+  for (const pt of previousTasks) {
+    if (pt.result) {
+      const { frontmatter: fm, content } = parseFrontmatter(pt.result);
+      Object.entries(fm).forEach(([k, v]) => { resolvedEntities[k] = v; });
+      if (pt.title?.includes("Answer Customer") && content.trim()) {
+        resolvedEntities["responseDraft"] = content.trim();
+      }
+    }
+  }
+
+  // ── 3. Get the list to iterate over ─────────────────────────────────────────
+  const rawList = resolvedEntities[loopOver];
+  const items = parseAsList(rawList);
+
+  if (items.length === 0) {
+    console.warn(`[foreach] List "${loopOver}" is empty or not found in resolved state. Completing with empty results.`);
+  } else {
+    console.log(`[foreach] Looping over ${items.length} items from "${loopOver}" using workflow "${runWorkflow}"`);
+  }
+
+  // ── 4. Sequential loop ───────────────────────────────────────────────────────
+  const loopResults: Array<{ item: any; success: boolean; result: string | null; requestId?: string }> = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    console.log(`\n[foreach] Loop ${i + 1}/${items.length}: ${loopItem}=${item}`);
+
+    try {
+      // Build request details carrying parent state + this iteration's item
+      const childDetails = JSON.stringify({ ...resolvedEntities, [loopItem]: item });
+
+      // Create the child request pointing to the sub-workflow
+      const { requests: requestsTable } = await import("../../db/schema");
+      const { getNextRequestNumber, getTeamIdentifierPrefix } = await import("../../controllers/requestsController");
+      const nextNumber = await getNextRequestNumber(teamId);
+      const prefix = await getTeamIdentifierPrefix(teamId);
+      const [childRequest] = await db.insert(requestsTable).values({
+        teamId,
+        number: nextNumber,
+        identifier: `${prefix}-${nextNumber}`,
+        title: `[Loop] ${taskRecord.title} — ${loopItem}: ${item}`,
+        requestDetails: childDetails,
+        capabilitiesWorkflow: [runWorkflow] as any,
+        parentRequestId: requestRecord.id,
+        requesterUserId: requestRecord.requesterUserId,
+        status: "open",
+      }).returning();
+
+
+      console.log(`[foreach]   → Child request created: ${childRequest.id} (${childRequest.identifier})`);
+
+      // Kick off ingestion for the child request (this will expand the workflow and create the first task)
+      await runRequestIngestion(childRequest.id, teamId);
+
+      // Poll until the child request reaches a terminal state
+      const childResult = await waitForRequestCompletion(childRequest.id);
+      console.log(`[foreach]   → Child ${childRequest.id} finished with status: ${childResult.status}`);
+
+      loopResults.push({
+        item,
+        success: childResult.status === "success",
+        result: childResult.response,
+        requestId: childRequest.id
+      });
+    } catch (err: any) {
+      console.error(`[foreach] Error processing item ${item}:`, err.message);
+      loopResults.push({ item, success: false, result: err.message });
+    }
+  }
+
+  // ── 5. Persist result and trigger continuation ───────────────────────────────
+  const successCount = loopResults.filter(r => r.success).length;
+  const summaryText = `Processed ${items.length} items. Success: ${successCount}, Failed: ${items.length - successCount}.`;
+
+  const resultYaml = `---\nloopResults: ${JSON.stringify(loopResults)}\nloopTotal: ${items.length}\nloopSucceeded: ${successCount}\n---\n${summaryText}`;
+
+  await db.update(tasks).set({
+    status: "success",
+    plan: summaryText,
+    taskList: loopResults.map((r, i) => `- [${r.success ? 'x' : ' '}] ${i + 1}. ${loopItem}=${r.item}`).join("\n"),
+    workSummary: summaryText,
+    result: resultYaml,
+    updatedAt: new Date()
+  }).where(eq(tasks.id, taskId));
+
+  console.log(`[foreach] Loop complete. ${summaryText} Triggering continuation...`);
+  runRequestContinuation(taskId, requestRecord.id, teamId).catch(err => {
+    console.error(`[foreach] Failed to run request continuation:`, err);
+  });
 }

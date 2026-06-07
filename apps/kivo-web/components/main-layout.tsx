@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/lib/auth";
 import { Navbar } from "@/components/navbar";
+import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { PlanSelectionBanner } from "@/components/plan-selection-banner";
 import { Loader2 } from "lucide-react";
@@ -22,7 +23,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (user) {
+  const pathname = usePathname();
+  const publicRoutes = ["/", "/login", "/signup", "/redirect-login", "/redirect-app", "/auth/google/callback", "/auth/callback"];
+  const isPublicRoute = publicRoutes.includes(pathname);
+
+  if (user && !isPublicRoute) {
     return (
       <div className="flex min-h-screen bg-background">
         {/* Left Sidebar Menu */}

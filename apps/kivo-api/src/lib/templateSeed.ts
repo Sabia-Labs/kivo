@@ -1,80 +1,219 @@
+import "dotenv/config";
+import fs from "fs";
+import path from "path";
+import matter from "gray-matter";
 import { db } from "../db/client";
-import { agentRoles, teamTypes, teamTypeRoles } from "../db/schema";
+import { agentRoles, teamTypes, teamTypeRoles, capabilities, teamTypeCapabilities } from "../db/schema";
 import { eq } from "drizzle-orm";
 
-const ADMIN_API_URL = process.env.ADMIN_API_INTERNAL_URL || "http://kivo-admin-api:4001";
-const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
-
 export async function runTemplateSeed() {
-  if (!INTERNAL_TOKEN) {
-    console.error("❌ [template-seed] INTERNAL_SERVICE_TOKEN not set. Sync skipped! Meta configuration (Team Types) will be missing.");
-    return;
+  console.log("🌱 Starting Template Seed (Local Filesystem)...");
+
+  // Em dev local (tsx), __dirname = src/lib
+  let definitionsPath = path.resolve(__dirname, "../../../../definitions");
+  if (!fs.existsSync(definitionsPath)) {
+    // No Docker (esbuild bundle em dist/index.js), __dirname = dist
+    definitionsPath = path.resolve(__dirname, "../definitions");
+    if (!fs.existsSync(definitionsPath)) {
+      console.warn(`❌ [template-seed] Definitions directory not found at ${definitionsPath}. Skipping seed.`);
+      return;
+    }
   }
+  const DEFINITIONS_DIR = definitionsPath;
 
-  console.log(`🌱 Starting Template Seed (Sync from ${ADMIN_API_URL})...`);
+  try {
+    // 1. Load Shared Blocks
+    const sharedDir = path.join(DEFINITIONS_DIR, "shared");
+    const agentsBase = fs.readFileSync(path.join(sharedDir, "AGENTS.md"), "utf-8");
+    const heartbeatBase = fs.readFileSync(path.join(sharedDir, "HEARTBEAT.md"), "utf-8");
+    const memoryBase = fs.readFileSync(path.join(sharedDir, "MEMORY.md"), "utf-8");
+    const toolsBase = fs.readFileSync(path.join(sharedDir, "TOOLS.md"), "utf-8");
+    const userBase = fs.readFileSync(path.join(sharedDir, "USER.md"), "utf-8");
 
-  let retries = 5;
-  let success = false;
+    // 2. Sync Agent Roles
+    const rolesDir = path.join(DEFINITIONS_DIR, "agent-roles");
+    const roleFiles = fs.readdirSync(rolesDir).filter(f => f.endsWith(".md"));
 
-  while (retries > 0 && !success) {
-    try {
-      // 1. Sync Agent Roles
-      console.log("   -> Syncing Agent Roles...");
-      const rolesRes = await fetch(`${ADMIN_API_URL}/internal/v1/templates/agent-roles/sync`, {
-        headers: { "x-internal-token": INTERNAL_TOKEN }
+    console.log(`🔍 Found ${roleFiles.length} agent roles.`);
+
+    for (const file of roleFiles) {
+      const filePath = path.join(rolesDir, file);
+      const content = fs.readFileSync(filePath, "utf-8");
+      const { data, content: body } = matter(content);
+
+      // Split body by H1 sections
+      const sections = body.split(/^# /m).filter(s => s.trim());
+      const soul = sections.find(s => s.startsWith("SOUL"))?.replace(/^SOUL\n/, "").trim() || "";
+      const identity = sections.find(s => s.startsWith("IDENTITY"))?.replace(/^IDENTITY\n/, "").trim() || "";
+      const operatingInstructions = sections.find(s => s.startsWith("OPERATING INSTRUCTIONS"))?.replace(/^OPERATING INSTRUCTIONS\n/, "").trim() || "";
+
+      console.log(`   -> Syncing Role: ${data.id}`);
+
+      await db.insert(agentRoles).values({
+        id: data.id,
+        nameI18nKey: data.name_i18n_key,
+        descriptionI18nKey: data.description_i18n_key,
+        suggestedNameI18nKey: data.suggested_name_i18n_key,
+        emoji: data.emoji,
+        emojiBgColor: data.emoji_bg_color,
+        soul,
+        identity,
+        operatingInstructions,
+        userContext: userBase,
+        memory: memoryBase,
+        toolsNotes: toolsBase,
+        heartbeat: heartbeatBase,
+        agentsBase: agentsBase,
+      }).onConflictDoUpdate({
+        target: agentRoles.id,
+        set: {
+          nameI18nKey: data.name_i18n_key,
+          descriptionI18nKey: data.description_i18n_key,
+          suggestedNameI18nKey: data.suggested_name_i18n_key,
+          emoji: data.emoji,
+          emojiBgColor: data.emoji_bg_color,
+          soul,
+          identity,
+          operatingInstructions,
+          userContext: userBase,
+          memory: memoryBase,
+          toolsNotes: toolsBase,
+          heartbeat: heartbeatBase,
+          agentsBase: agentsBase,
+        }
       });
-      
-      if (!rolesRes.ok) throw new Error(`Failed to fetch roles: ${rolesRes.statusText}`);
-      const rolesData = await rolesRes.json() as { data: any[] };
-      const roles = rolesData.data;
+    }
 
-      for (const role of roles) {
-        await db.insert(agentRoles).values(role).onConflictDoUpdate({
-          target: agentRoles.id,
-          set: role
-        });
-      }
+    // 3. Sync Team Types
+    const teamTypesDir = path.join(DEFINITIONS_DIR, "team-types");
+    const teamFiles = fs.readdirSync(teamTypesDir).filter(f => f.endsWith(".md"));
 
-      // 2. Sync Team Types
-      console.log("   -> Syncing Team Types...");
-      const teamsRes = await fetch(`${ADMIN_API_URL}/internal/v1/templates/team-types/sync`, {
-        headers: { "x-internal-token": INTERNAL_TOKEN }
+    console.log(`🔍 Found ${teamFiles.length} team types.`);
+
+    for (const file of teamFiles) {
+      const filePath = path.join(teamTypesDir, file);
+      const content = fs.readFileSync(filePath, "utf-8");
+      const { data, content: body } = matter(content);
+
+      const sections = body.split(/^# /m).filter(s => s.trim());
+      const mission = sections.find(s => s.startsWith("MISSION"))?.replace(/^MISSION\n/, "").trim() || "";
+      const waysOfWorking = sections.find(s => s.startsWith("WAYS OF WORKING"))?.replace(/^WAYS OF WORKING\n/, "").trim() || "";
+
+      console.log(`   -> Syncing Team Type: ${data.id}`);
+
+      await db.insert(teamTypes).values({
+        id: data.id,
+        nameI18nKey: data.name_i18n_key,
+        descriptionI18nKey: data.description_i18n_key,
+        emoji: data.emoji,
+        color: data.color,
+        featured: data.featured,
+        mission,
+        waysOfWorking,
+        externalTools: data.external_tools || [],
+      }).onConflictDoUpdate({
+        target: teamTypes.id,
+        set: {
+          nameI18nKey: data.name_i18n_key,
+          descriptionI18nKey: data.description_i18n_key,
+          emoji: data.emoji,
+          color: data.color,
+          featured: data.featured,
+          mission,
+          waysOfWorking,
+          externalTools: data.external_tools || [],
+        }
       });
 
-      if (!teamsRes.ok) throw new Error(`Failed to fetch team types: ${teamsRes.statusText}`);
-      const teamsData = await teamsRes.json() as { data: any[] };
-      const teamTypesList = teamsData.data;
+      // 4. Sync Team Type Roles (Composition)
+      await db.delete(teamTypeRoles).where(eq(teamTypeRoles.teamTypeId, data.id));
 
-      for (const type of teamTypesList) {
-        const { roles, ...teamTypeData } = type;
-
-        await db.insert(teamTypes).values(teamTypeData).onConflictDoUpdate({
-          target: teamTypes.id,
-          set: teamTypeData
-        });
-
-        // 3. Sync Team Type Roles (Composition)
-        await db.delete(teamTypeRoles).where(eq(teamTypeRoles.teamTypeId, type.id));
-        if (roles && Array.isArray(roles)) {
-          for (const roleLink of roles) {
-            await db.insert(teamTypeRoles).values({
-              teamTypeId: type.id,
-              agentRoleId: roleLink.roleId,
-              quantity: roleLink.quantity,
-              isLeader: roleLink.isLeader,
-            });
-          }
+      if (data.composition && Array.isArray(data.composition)) {
+        for (const comp of data.composition) {
+          await db.insert(teamTypeRoles).values({
+            teamTypeId: data.id,
+            agentRoleId: comp.roleId,
+            quantity: comp.quantity || 1,
+            isLeader: comp.isLeader || false,
+          }).onConflictDoNothing();
         }
       }
+    }
 
-      console.log("✅ Template Seed complete!");
-      success = true;
-    } catch (err) {
-      retries--;
-      console.error(`❌ Template Seed attempt failed (${retries} retries left):`, err instanceof Error ? err.message : err);
-      if (retries > 0) {
-        await new Promise(res => setTimeout(res, 5000)); // Wait 5s before retry
+    // 5. Sync Capabilities (Recursive)
+    const capabilitiesRootDir = path.join(DEFINITIONS_DIR, "capabilities");
+    
+    function getFilesRecursively(dir: string): string[] {
+      let results: string[] = [];
+      const list = fs.readdirSync(dir);
+      list.forEach(file => {
+        file = path.resolve(dir, file);
+        const stat = fs.statSync(file);
+        if (stat && stat.isDirectory()) {
+          results = results.concat(getFilesRecursively(file));
+        } else if (file.endsWith(".md")) {
+          results.push(file);
+        }
+      });
+      return results;
+    }
+
+    const capabilityFiles = getFilesRecursively(capabilitiesRootDir);
+    console.log(`🔍 Found ${capabilityFiles.length} capabilities.`);
+
+    // Clear all team_type_capabilities first to avoid stale links
+    await db.delete(teamTypeCapabilities);
+
+    for (const filePath of capabilityFiles) {
+      const content = fs.readFileSync(filePath, "utf-8");
+      const { data, content: body } = matter(content);
+
+      const sections = body.split(/^# /m).filter(s => s.trim());
+      const instructions = sections.find(s => s.startsWith("INSTRUCTIONS"))?.replace(/^INSTRUCTIONS\n/, "").trim() || "";
+      const inputsDescription = sections.find(s => s.startsWith("INPUTS"))?.replace(/^INPUTS\n/, "").trim() || "";
+      const expectedOutputsDescription = sections.find(s => s.startsWith("EXPECTED OUTPUTS"))?.replace(/^EXPECTED OUTPUTS\n/, "").trim() || "";
+
+      console.log(`   -> Syncing Capability: ${data.id}`);
+
+      await db.insert(capabilities).values({
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        instructions,
+        inputsDescription,
+        expectedOutputsDescription,
+        tasksWorkflow: data.tasks_workflow || [],
+        loopOver: data.loop_over || null,
+        loopItem: data.loop_item || null,
+        runWorkflow: data.run_workflow || null,
+      }).onConflictDoUpdate({
+        target: capabilities.id,
+        set: {
+          name: data.name,
+          type: data.type,
+          instructions,
+          inputsDescription,
+          expectedOutputsDescription,
+          tasksWorkflow: data.tasks_workflow || [],
+          loopOver: data.loop_over || null,
+          loopItem: data.loop_item || null,
+          runWorkflow: data.run_workflow || null,
+        }
+      });
+
+      // Create link to Team Type
+      if (data.team_type) {
+        await db.insert(teamTypeCapabilities).values({
+          teamTypeId: data.team_type,
+          capabilityId: data.id,
+          isFavorite: data.featured || false,
+          defaultAssignedRole: data.default_assigned_role,
+        }).onConflictDoNothing();
       }
     }
+
+    console.log("✅ Seed complete!");
+  } catch (err) {
+    console.error(`❌ Template Seed failed:`, err instanceof Error ? err.message : err);
   }
 }

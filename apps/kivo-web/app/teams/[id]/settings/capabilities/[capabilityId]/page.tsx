@@ -1,23 +1,35 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Loader2, Save, Star } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth, API_BASE } from "@/lib/auth";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { CapabilityForm, Capability } from "../CapabilityForm";
 import { WorkflowBuilder } from "../WorkflowBuilder";
 
 export default function CapabilityPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[calc(100vh-4rem)] items-center justify-center"><Loader2 className="size-8 animate-spin text-primary" /></div>}>
+      <CapabilityPageContent />
+    </Suspense>
+  );
+}
+
+function CapabilityPageContent() {
   const { token, isLoading: authLoading } = useAuth();
+  const { t } = useTranslation();
   const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const teamId = String(params.id);
   const capabilityId = String(params.capabilityId);
   const isNew = capabilityId === "new";
+  const defaultType = (searchParams.get("type") as "task_template" | "workflow" | "human_approval") || "task_template";
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -25,7 +37,7 @@ export default function CapabilityPage() {
   const [allCapabilities, setAllCapabilities] = useState<Capability[]>([]);
   const [capability, setCapability] = useState<Capability>({
     id: "new", name: "", identifier: "", instructions: "", inputsDescription: "", 
-    expectedOutputsDescription: "", tasksWorkflow: null, type: "task_template", isEnabled: true, scheduleConfig: null, 
+    expectedOutputsDescription: "", tasksWorkflow: null, type: defaultType, isEnabled: true, scheduleConfig: null, 
     assignedAgentId: null, assignedRole: null, isFavorite: false
   });
 
@@ -57,7 +69,7 @@ export default function CapabilityPage() {
             setCapability((await singleRes.json()).data);
           } else {
             toast.error("Capability not found.");
-            router.push(`/teams/${teamId}/settings`);
+            router.push("/capabilities");
           }
         }
       }
@@ -104,7 +116,7 @@ export default function CapabilityPage() {
       });
       if (res.ok) {
         toast.success(`Capability ${isNew ? 'created' : 'updated'}`);
-        router.push(`/teams/${teamId}/settings`);
+        router.push("/capabilities");
       } else {
         toast.error("Failed to save capability");
       }
@@ -120,8 +132,8 @@ export default function CapabilityPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col gap-4">
-        <Link href={`/teams/${teamId}/settings`} className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-fit">
-          <ArrowLeft className="size-3.5" /> Back to Settings
+        <Link href="/capabilities" className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors w-fit">
+          <ArrowLeft className="size-3.5" /> {t.teamsPage.backToCapabilities}
         </Link>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -141,11 +153,13 @@ export default function CapabilityPage() {
                 <p className="text-muted-foreground text-sm">
                   {capability.type === 'workflow' ? (
                     "A workflow capability sequences other capabilities to achieve a larger goal."
+                  ) : capability.type === 'human_approval' ? (
+                    "A human approval capability halts execution to wait for confirmation or manual actions by a human."
                   ) : (
                     "A capability is a template for task execution. It defines exactly what an agent needs to do."
                   )}
                 </p>
-                {capability.type === 'task_template' && (
+                {(capability.type === 'task_template' || capability.type === 'human_approval') && (
                   <p className="text-muted-foreground text-sm">
                     Detailing the inputs, execution instructions, and expected result (definition of done) is crucial for consistent and successful autonomous execution.
                   </p>
@@ -166,7 +180,7 @@ export default function CapabilityPage() {
             capability={capability} 
             setCapability={setCapability} 
             allCapabilities={allCapabilities} 
-            onOpenNewCapabilityModal={() => toast.error("Please create new task templates in the main settings screen to add them here.")} // Editing workflow doesn't allow new inline capability creation for now, unless we want to embed the modal. We'll add the modal logic to the wizard first.
+            onOpenNewCapabilityModal={() => toast.error("Please create new task templates in the main settings screen to add them here.")}
           />
         ) : (
           <CapabilityForm 

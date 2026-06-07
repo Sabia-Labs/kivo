@@ -199,6 +199,31 @@ function RequestRow({ req, teamId, level = 0 }: { req: any, teamId: string, leve
   );
 }
 
+function translateActivityTitle(title: string | undefined, t: any): string {
+  if (!title) return "";
+  const normalized = title.trim();
+  switch (normalized) {
+    case "Task created":
+      return t.teamsPage.activityLabels.taskCreated;
+    case "Request updated":
+      return t.teamsPage.activityLabels.requestUpdated;
+    case "Request opened":
+      return t.teamsPage.activityLabels.requestOpened;
+    case "Request reassigned and retried":
+      return t.teamsPage.activityLabels.requestReassignedAndRetried;
+    case "Request in progress":
+      return t.teamsPage.activityLabels.requestInProgress;
+    case "Created new request":
+      return t.teamsPage.activityLabels.createdNewRequest;
+    case "Task updated":
+      return t.teamsPage.activityLabels.taskUpdated;
+    case "Task deleted":
+      return t.teamsPage.activityLabels.taskDeleted;
+    default:
+      return title;
+  }
+}
+
 export default function TeamDetailPage() {
   const { token, user, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
@@ -486,7 +511,7 @@ export default function TeamDetailPage() {
                     <div className="mt-3 flex flex-col gap-2">
                       <input 
                         type="text" 
-                        placeholder="Add a comment..."
+                        placeholder={t.teamsPage.addCommentPlaceholder}
                         className="w-full text-sm bg-background border border-border/50 rounded-md px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary"
                         id={`comment-${alert.id}`}
                       />
@@ -513,14 +538,14 @@ export default function TeamDetailPage() {
                               });
                               
                               setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
-                              toast.success("Task approved successfully");
+                              toast.success(t.teamsPage.taskApproved);
                             } catch {
-                              toast.error("Failed to approve task");
+                              toast.error(t.teamsPage.failedApproveTask);
                             }
                           }}
                           className="text-xs font-semibold bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 px-3 py-1 rounded-md transition-colors"
                         >
-                          Approve
+                          {t.teamsPage.approve}
                         </button>
                         <button
                           onClick={async () => {
@@ -543,14 +568,14 @@ export default function TeamDetailPage() {
                               });
                               
                               setTeamAlerts(prev => prev.filter(a => a.id !== alert.id));
-                              toast.success("Task rejected");
+                              toast.success(t.teamsPage.taskRejected);
                             } catch {
-                              toast.error("Failed to reject task");
+                              toast.error(t.teamsPage.failedRejectTask);
                             }
                           }}
                           className="text-xs font-semibold bg-red-500/10 text-red-600 hover:bg-red-500/20 px-3 py-1 rounded-md transition-colors"
                         >
-                          Reject
+                          {t.teamsPage.reject}
                         </button>
                       </div>
                     </div>
@@ -834,7 +859,7 @@ export default function TeamDetailPage() {
                   const reqSuffix = reqIdentifier ? ` (${reqIdentifier})` : "";
 
                   const hasActor = isHuman || !!agent;
-                  const actionText = act.activityTitle || `${t.teamsPage.updated} ${act.payload?.title || act.entityId?.substring(0, 8) || "an item"}`;
+                  const actionText = translateActivityTitle(act.activityTitle, t) || `${t.teamsPage.updated} ${act.payload?.title || act.entityId?.substring(0, 8) || t.teamsPage.anItem}`;
 
                   return (
                     <div key={act.id} className="flex gap-3 items-start">

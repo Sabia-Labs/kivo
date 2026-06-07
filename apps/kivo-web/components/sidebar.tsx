@@ -73,7 +73,7 @@ export function Sidebar() {
   const handleLogout = () => {
     logout();
     setUserDropdownOpen(false);
-    window.location.href = "/redirect-login";
+    router.push("/");
   };
 
   const menuItems = [

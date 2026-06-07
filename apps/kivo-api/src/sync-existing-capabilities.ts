@@ -57,6 +57,10 @@ async function sync() {
           type: tc.capability.type,
           isFavorite: tc.isFavorite,
           assignedRole: tc.defaultAssignedRole,
+          // foreach fields
+          loopOver: tc.capability.loopOver ?? null,
+          loopItem: tc.capability.loopItem ?? null,
+          runWorkflow: tc.capability.runWorkflow ?? null,
         };
 
         // Upsert by deleting existing and inserting

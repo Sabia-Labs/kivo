@@ -41,7 +41,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kivo-admin-web
+                name: kivo-web
                 port:
                   name: http
     - host: www.{{ .Values.ingress.host }}
@@ -51,22 +51,11 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kivo-admin-web
+                name: kivo-web
                 port:
                   name: http
     # Auth Portal
     - host: auth.{{ .Values.ingress.host }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: kivo-admin-web
-                port:
-                  name: http
-    # App Portal (Clients)
-    - host: kivo.{{ .Values.ingress.host }}
       http:
         paths:
           - path: /

@@ -5,9 +5,11 @@ import { useAuth, API_BASE } from "@/lib/auth";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n";
 
 export function PlanSelectionBanner() {
   const { token } = useAuth();
+  const { t } = useTranslation();
   const pathname = usePathname();
   const [tier, setTier] = useState<string | null>("loading");
   
@@ -44,10 +46,10 @@ export function PlanSelectionBanner() {
     <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center justify-center gap-3 shrink-0">
       <AlertCircle className="size-5 text-amber-500" />
       <p className="text-sm text-amber-500 font-medium">
-        Seus agentes estão inativos. Escolha um plano para ativar a inteligência artificial.
+        {t.planBanner.inactiveMessage}
       </p>
       <Link href="/pricing" className="text-sm font-bold bg-amber-500 text-black px-3 py-1.5 rounded-md hover:bg-amber-500/90 transition-colors shadow-sm">
-        Escolher Plano
+        {t.planBanner.choosePlan}
       </Link>
     </div>
   );

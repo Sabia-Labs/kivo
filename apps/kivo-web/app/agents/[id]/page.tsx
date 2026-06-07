@@ -120,13 +120,14 @@ interface ComingSoonChannelProps {
 }
 
 function ComingSoonChannel({ name, icon }: ComingSoonChannelProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between py-3 opacity-60">
       <div className="flex items-center gap-3">
         {icon}
         <div>
           <p className="text-sm font-medium text-foreground">{name}</p>
-          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Coming Soon</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{t.agentPage.comingSoon}</span>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -146,8 +147,6 @@ function ComingSoonChannel({ name, icon }: ComingSoonChannelProps) {
 
 // ── TelegramChannel ───────────────────────────────────────────────────────────
 
-const BOTFATHER_GUIDE = 'Open Telegram, search for @BotFather and send /newbot. Choose a display name and a username ending in "bot". BotFather will reply with a token — paste it below.';
-
 function TelegramChannel({
   agentId,
   hasTelegramToken,
@@ -161,6 +160,7 @@ function TelegramChannel({
   onTokenSaved: (token: string) => Promise<void>;
   onPairingApproved: (code: string) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(telegramStatus !== "not_configured");
   const [token, setToken] = useState("");
   const [pairingCode, setPairingCode] = useState("");
@@ -200,17 +200,17 @@ function TelegramChannel({
   const StatusBadge = () => {
     if (telegramStatus === "complete") return (
       <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
-        <Wifi className="size-3" /> Online
+        <Wifi className="size-3" /> {t.agents.healthOnline}
       </span>
     );
     if (telegramStatus === "pending_pairing") return (
       <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-amber-500">
-        <span className="size-1.5 animate-pulse rounded-full bg-amber-500" /> Awaiting Pairing
+        <span className="size-1.5 animate-pulse rounded-full bg-amber-500" /> {t.agentPage.telegramChannel.awaitingCodeTitle}
       </span>
     );
     return (
       <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <WifiOff className="size-3" /> Not configured
+        <WifiOff className="size-3" /> {t.agents.telegram.notConfigured}
       </span>
     );
   };
@@ -223,7 +223,7 @@ function TelegramChannel({
             <path d="M20.665 3.717l-17.73 6.837c-1.21.486-1.203 1.161-.222 1.462l4.552 1.42 10.532-6.645c.498-.303.953-.14.579.192l-8.533 7.701h-.002l.002.001-.314 4.692c.46 0 .663-.193.926-.446l2.222-2.164 4.606 3.407c.847.466 1.458.225 1.671-.785l2.93-13.791c.301-1.208-.43-1.759-1.165-1.442z" />
           </svg>
           <div>
-            <p className="text-sm font-medium text-foreground">Telegram</p>
+            <p className="text-sm font-medium text-foreground">{t.agents.telegram.sectionTitle}</p>
             <StatusBadge />
           </div>
         </div>
@@ -254,23 +254,23 @@ function TelegramChannel({
           {(telegramStatus === "not_configured" || telegramStatus === "complete") && (
             <>
               {telegramStatus === "not_configured" && (
-                <p className="mb-4 text-xs text-muted-foreground">{BOTFATHER_GUIDE}</p>
+                <p className="mb-4 text-xs text-muted-foreground">{t.agentPage.telegramChannel.botFatherGuide}</p>
               )}
               {hasTelegramToken && telegramStatus === "complete" ? (
                 <details className="group">
                   <summary className="cursor-pointer text-xs text-muted-foreground/60 hover:text-muted-foreground select-none list-none flex items-center gap-1">
                     <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
-                    Update Bot Token
+                    {t.agentPage.telegramChannel.updateTokenTitle}
                   </summary>
                   <div className="mt-3 flex flex-col gap-1.5">
                     <p className="text-xs text-muted-foreground">
-                      A token is already saved. Paste a new one below to replace it. This will restart the agent.
+                      {t.agentPage.telegramChannel.updateTokenDesc}
                     </p>
                     <div className="flex gap-2">
                       <Input
                         value={token}
                         onChange={(e) => setToken(e.target.value)}
-                        placeholder="Paste new token to update…"
+                        placeholder={t.agentPage.telegramChannel.pasteNewPlaceholder}
                         className="flex-1 font-mono text-xs"
                         autoComplete="off"
                       />
@@ -281,8 +281,8 @@ function TelegramChannel({
                         className="shrink-0 gap-1.5"
                       >
                         {savingToken
-                          ? <><Loader2 className="size-3.5 animate-spin" />Saving…</>
-                          : <><Send className="size-3.5" />Update</>
+                          ? <><Loader2 className="size-3.5 animate-spin" />{t.agentPage.telegramChannel.saving}</>
+                          : <><Send className="size-3.5" />{t.agentPage.telegramChannel.updateBtn}</>
                         }
                       </Button>
                     </div>
@@ -292,13 +292,13 @@ function TelegramChannel({
                 <div className="flex flex-col gap-1.5">
                   <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                     <KeyRound className="size-3.5 text-muted-foreground" />
-                    Bot Token
+                    {t.agentPage.telegramChannel.botTokenLabel}
                   </label>
                   <div className="flex gap-2">
                     <Input
                       value={token}
                       onChange={(e) => setToken(e.target.value)}
-                      placeholder="Paste your bot token here…"
+                      placeholder={t.agentPage.telegramChannel.botTokenPlaceholder}
                       className="flex-1 font-mono text-xs"
                       autoComplete="off"
                     />
@@ -309,8 +309,8 @@ function TelegramChannel({
                       className="shrink-0 gap-1.5"
                     >
                       {savingToken
-                        ? <><Loader2 className="size-3.5 animate-spin" />Saving…</>
-                        : <><Send className="size-3.5" />Save & Connect</>
+                        ? <><Loader2 className="size-3.5 animate-spin" />{t.agentPage.telegramChannel.saving}</>
+                        : <><Send className="size-3.5" />{t.agentPage.telegramChannel.saveConnectBtn}</>
                       }
                     </Button>
                   </div>
@@ -326,10 +326,9 @@ function TelegramChannel({
                   <span className="size-2 animate-pulse rounded-full bg-amber-500" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">Awaiting Pairing Code</p>
+                  <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">{t.agentPage.telegramChannel.awaitingCodeTitle}</p>
                   <p className="mt-0.5 text-xs text-amber-600/80 dark:text-amber-300/70">
-                    Your agent is restarting with the new Telegram token. As soon as it&apos;s ready,
-                    send any message to the bot on Telegram — it will reply with a pairing code.
+                    {t.agentPage.telegramChannel.awaitingCodeDesc}
                   </p>
                 </div>
               </div>
@@ -337,25 +336,25 @@ function TelegramChannel({
               <ol className="flex flex-col gap-2">
                 <li className="flex gap-3">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">1</span>
-                  <p className="text-xs text-muted-foreground pt-0.5">Open Telegram and send any message to your bot</p>
+                  <p className="text-xs text-muted-foreground pt-0.5">{t.agentPage.telegramChannel.step1}</p>
                 </li>
                 <li className="flex gap-3">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">2</span>
-                  <p className="text-xs text-muted-foreground pt-0.5">The bot will reply with a one-time pairing code.</p>
+                  <p className="text-xs text-muted-foreground pt-0.5">{t.agentPage.telegramChannel.step2}</p>
                 </li>
                 <li className="flex gap-3">
                   <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">3</span>
-                  <p className="text-xs text-muted-foreground pt-0.5">Paste the code below and click <strong>Approve</strong>.</p>
+                  <p className="text-xs text-muted-foreground pt-0.5">{t.agentPage.telegramChannel.step3}</p>
                 </li>
               </ol>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-foreground">Pairing Code</label>
+                <label className="text-sm font-medium text-foreground">{t.agentPage.telegramChannel.pairingCodeLabel}</label>
                 <div className="flex gap-2">
                   <Input
                     value={pairingCode}
                     onChange={(e) => setPairingCode(e.target.value)}
-                    placeholder="Paste the code your bot sent you…"
+                    placeholder={t.agentPage.telegramChannel.pairingCodePlaceholder}
                     className="flex-1 font-mono text-sm tracking-widest"
                     autoComplete="off"
                     autoFocus
@@ -367,8 +366,8 @@ function TelegramChannel({
                     className="shrink-0 gap-1.5"
                   >
                     {approvingPairing
-                      ? <><Loader2 className="size-3.5 animate-spin" />Approving…</>
-                      : <><Check className="size-3.5" />Approve</>
+                      ? <><Loader2 className="size-3.5 animate-spin" />{t.agentPage.telegramChannel.approving}</>
+                      : <><Check className="size-3.5" />{t.agentPage.telegramChannel.approveBtn}</>
                     }
                   </Button>
                 </div>
@@ -377,14 +376,14 @@ function TelegramChannel({
               <details className="group">
                 <summary className="cursor-pointer text-xs text-muted-foreground/60 hover:text-muted-foreground select-none list-none flex items-center gap-1">
                   <ChevronDown className="size-3 transition-transform group-open:rotate-180" />
-                  Wrong token? Change it
+                  {t.agentPage.telegramChannel.wrongTokenTitle}
                 </summary>
                 <div className="mt-3 flex flex-col gap-1.5">
                   <div className="flex gap-2">
                     <Input
                       value={token}
                       onChange={(e) => setToken(e.target.value)}
-                      placeholder="Paste new bot token to replace…"
+                      placeholder={t.agentPage.telegramChannel.wrongTokenPlaceholder}
                       className="flex-1 font-mono text-xs"
                       autoComplete="off"
                     />
@@ -396,7 +395,7 @@ function TelegramChannel({
                       className="shrink-0 gap-1.5"
                     >
                       {savingToken ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
-                      Update
+                      {t.agentPage.telegramChannel.updateBtn}
                     </Button>
                   </div>
                 </div>
@@ -436,9 +435,9 @@ export default function AgentPage() {
   const [brainContent, setBrainContent] = useState("");
 
   const fieldTitleMap: Record<BrainField, string> = {
-    soul: "Soul",
-    identity: "Identity",
-    agentsInstructions: "Process",
+    soul: t.agentPage.brainFields.soul,
+    identity: t.agentPage.brainFields.identity,
+    agentsInstructions: t.agentPage.brainFields.process,
   };
   const [isFetchingLive, setIsFetchingLive] = useState(false);
 
@@ -585,8 +584,11 @@ export default function AgentPage() {
   const roleLabel = (t.agents.roleLabels as any)[normalizedRoleKey] || (agent.roleId || "agent").replace(/[_-]/g, " ");
   
   const statusLabels: Record<DisplayStatus, string> = {
-    available: "Available", busy: "Processing", blocked: "Blocked",
-    provisioning: "Provisioning", offline: "Offline"
+    available: t.agentPage.statusLabels.available,
+    busy: t.agentPage.statusLabels.busy,
+    blocked: t.agentPage.statusLabels.blocked,
+    provisioning: t.agentPage.statusLabels.provisioning,
+    offline: t.agentPage.statusLabels.offline,
   };
 
   const hasTelegramToken = Boolean(agent.metadata?.hasTelegramToken);
@@ -679,12 +681,12 @@ export default function AgentPage() {
           <div className="border-b px-5 py-3.5 flex items-center justify-between bg-muted/20">
             <div className="flex items-center gap-2">
               <Bot className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold">Agent Chat</h3>
+              <h3 className="text-sm font-semibold">{t.agentPage.chatTitle}</h3>
             </div>
             <div className="flex gap-2">
-              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setNewChatTrigger(p => p + 1)}>New Chat</Button>
+              <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={() => setNewChatTrigger(p => p + 1)}>{t.agentPage.newChat}</Button>
               <Button variant="ghost" size="sm" className="h-8 text-xs" asChild>
-                <Link href={`/agents/${agentId}/history`}>History</Link>
+                <Link href={`/agents/${agentId}/history`}>{t.agentPage.historyBtn}</Link>
               </Button>
             </div>
           </div>
@@ -699,12 +701,12 @@ export default function AgentPage() {
         {/* Communication Channels */}
         <section className="rounded-xl border bg-card overflow-hidden">
            <div className="border-b px-5 py-3.5 bg-muted/20">
-            <h3 className="text-sm font-semibold">Communication Channels</h3>
+            <h3 className="text-sm font-semibold">{t.agentPage.channelsTitle}</h3>
           </div>
           <div className="p-5">
             <div className="mb-4">
               <p className="text-xs text-muted-foreground">
-                Connect your agent to messaging platforms so users can interact with it directly.
+                {t.agentPage.channelsDesc}
               </p>
             </div>
             <div className="divide-y divide-border/60">
@@ -748,25 +750,25 @@ export default function AgentPage() {
         <section className="rounded-xl border bg-card overflow-hidden">
           <div className="border-b px-5 py-3.5 bg-muted/20 flex items-center gap-2">
             <Brain className="size-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold">Brain & Memory</h3>
+            <h3 className="text-sm font-semibold">{t.agentPage.brainMemoryTitle}</h3>
           </div>
           <div className="p-5">
             <p className="text-sm text-muted-foreground mb-4">
-              Configure the core personality, identity, and operational rules for this agent.
+              {t.agentPage.brainMemoryDesc}
             </p>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "soul" && "ring-2 ring-primary")} onClick={() => openBrainEditor("soul")}>
-                <span className="font-semibold mb-1">SOUL</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Live view of the agent's personality, values and boundaries.</span>
+                <span className="font-semibold mb-1">{t.agentPage.brainFields.soul}</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.soulDesc}</span>
               </Button>
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "identity" && "ring-2 ring-primary")} onClick={() => openBrainEditor("identity")}>
-                <span className="font-semibold mb-1">IDENTITY</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Live view of name, role, mission and voice definitions.</span>
+                <span className="font-semibold mb-1">{t.agentPage.brainFields.identity}</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.identityDesc}</span>
               </Button>
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "agentsInstructions" && "ring-2 ring-primary")} onClick={() => openBrainEditor("agentsInstructions")}>
-                <span className="font-semibold mb-1">PROCESS</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">Live view of operational rules and behavior instructions.</span>
+                <span className="font-semibold mb-1">{t.agentPage.brainFields.process}</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.processDesc}</span>
               </Button>
             </div>
 
@@ -774,8 +776,8 @@ export default function AgentPage() {
               <div className="mt-5 border rounded-xl p-4 bg-muted/10 animate-in fade-in slide-in-from-top-2">
                  <div className="flex justify-between items-center mb-3">
                     <div className="flex items-center gap-2">
-                      <h4 className="font-semibold text-sm tracking-wide uppercase">{fieldTitleMap[editingBrainField]} Content</h4>
-                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">READ-ONLY</span>
+                      <h4 className="font-semibold text-sm tracking-wide uppercase">{fieldTitleMap[editingBrainField]} {t.agentPage.editor.titleSuffix}</h4>
+                      <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-mono">{t.agentPage.editor.readOnly}</span>
                     </div>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => setEditingBrainField(null)}><X className="size-4" /></Button>
                  </div>
@@ -783,7 +785,7 @@ export default function AgentPage() {
                  {isFetchingLive ? (
                    <div className="flex flex-col items-center justify-center min-h-[250px] bg-background border rounded-md gap-3">
                      <Loader2 className="size-8 animate-spin text-primary/40" />
-                     <p className="text-xs text-muted-foreground animate-pulse">Reading from agent disk...</p>
+                     <p className="text-xs text-muted-foreground animate-pulse">{t.agentPage.editor.readingLive}</p>
                    </div>
                  ) : (
                    <div className="w-full min-h-[250px] p-6 bg-background border rounded-md overflow-auto">

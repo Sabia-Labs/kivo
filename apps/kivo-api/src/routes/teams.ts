@@ -131,35 +131,42 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
         await tx.insert(agents).values(agentInputs).returning();
       }
 
-      // 3. Seed Capabilities (On-demand from Admin API)
-      if (input.templateId && INTERNAL_TOKEN) {
+      // 3. Seed Capabilities (Directly from local database)
+      if (input.templateId) {
         try {
-          const capRes = await fetch(`${ADMIN_API_URL}/internal/v1/templates/capabilities/sync?teamTypeId=${input.templateId}`, {
-            headers: { "x-internal-token": INTERNAL_TOKEN }
-          });
+          const { teamTypeCapabilities, capabilities } = await import("../db/schema");
+          const { eq } = await import("drizzle-orm");
           
-          if (capRes.ok) {
-            const capData = await capRes.json() as { data: any[] };
-            const templateCaps = capData.data;
-            if (templateCaps.length > 0) {
-              await tx.insert(teamCapabilities).values(
-                templateCaps.map((tc: any) => ({
-                  teamId: team.id,
-                  name: tc.capability.name,
-                  identifier: tc.capability.id,
-                  instructions: tc.capability.instructions,
-                  inputsDescription: tc.capability.inputsDescription,
-                  expectedOutputsDescription: tc.capability.expectedOutputsDescription,
-                  tasksWorkflow: tc.capability.tasksWorkflow,
-                  type: tc.capability.type,
-                  isFavorite: tc.isFavorite,
-                  assignedRole: tc.defaultAssignedRole,
-                }))
-              );
-            }
+          const templateCaps = await tx.select({
+            capability: capabilities,
+            isFavorite: teamTypeCapabilities.isFavorite,
+            defaultAssignedRole: teamTypeCapabilities.defaultAssignedRole
+          })
+          .from(teamTypeCapabilities)
+          .innerJoin(capabilities, eq(capabilities.id, teamTypeCapabilities.capabilityId))
+          .where(eq(teamTypeCapabilities.teamTypeId, input.templateId));
+
+          if (templateCaps.length > 0) {
+            await tx.insert(teamCapabilities).values(
+              templateCaps.map((tc) => ({
+                teamId: team.id,
+                name: tc.capability.name,
+                identifier: tc.capability.id,
+                instructions: tc.capability.instructions,
+                inputsDescription: tc.capability.inputsDescription,
+                expectedOutputsDescription: tc.capability.expectedOutputsDescription,
+                tasksWorkflow: tc.capability.tasksWorkflow,
+                type: tc.capability.type,
+                isFavorite: tc.isFavorite,
+                assignedRole: tc.defaultAssignedRole,
+                loopOver: tc.capability.loopOver ?? null,
+                loopItem: tc.capability.loopItem ?? null,
+                runWorkflow: tc.capability.runWorkflow ?? null,
+              }))
+            );
           }
         } catch (capErr) {
-          console.error(`[teams] Failed to fetch capabilities from Admin API:`, capErr);
+          console.error(`[teams] Failed to seed capabilities from template:`, capErr);
         }
       }
 
@@ -348,7 +355,11 @@ teamsRouter.post("/:id/capabilities", authMiddleware, async (req: Request, res: 
       isFavorite: Boolean(req.body.isFavorite ?? false),
       scheduleConfig: req.body.scheduleConfig || null,
       tasksWorkflow,
-      type
+      type,
+      // foreach fields
+      loopOver: req.body.loopOver ? String(req.body.loopOver) : null,
+      loopItem: req.body.loopItem ? String(req.body.loopItem) : null,
+      runWorkflow: req.body.runWorkflow ? String(req.body.runWorkflow) : null,
     }).returning();
     
     res.status(201).json(success(created));
@@ -384,6 +395,10 @@ teamsRouter.put("/:id/capabilities/:capId", authMiddleware, async (req: Request,
     if (req.body.assignedRole !== undefined) {
       updateData.assignedRole = req.body.assignedRole !== null ? String(req.body.assignedRole) : null;
     }
+    // foreach fields
+    if (req.body.loopOver !== undefined) updateData.loopOver = req.body.loopOver !== null ? String(req.body.loopOver) : null;
+    if (req.body.loopItem !== undefined) updateData.loopItem = req.body.loopItem !== null ? String(req.body.loopItem) : null;
+    if (req.body.runWorkflow !== undefined) updateData.runWorkflow = req.body.runWorkflow !== null ? String(req.body.runWorkflow) : null;
     
     const [updated] = await db.update(teamCapabilities)
       .set({ ...updateData, updatedAt: new Date() })

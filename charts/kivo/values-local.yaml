@@ -35,13 +35,16 @@ kivoApi:
     RABBITMQ_ADMIN_PASSWORD: "kivo_rabbit_local"
     RABBITMQ_AMQP_HOST: "kivo-rabbit.infra-messaging.svc.cluster.local"
     RABBITMQ_AMQP_PORT: "5672"
+    ADMIN_WEB_URL: "http://kivo.localhost"
+    GOOGLE_REDIRECT_URI: "http://localhost:4000/auth/google/callback"
   # No existingSecret in local — DATABASE_URL is built from embedded PostgreSQL
   existingSecret: ""
   # Disable migration init container until --migrate-only flag is implemented
   runMigrations: false
 
 adminApi:
-  replicaCount: 1
+  enabled: false
+  replicaCount: 0
   image:
     repository: kivo/admin-api
     tag: local
@@ -86,7 +89,8 @@ kivoWeb:
     NEXT_PUBLIC_SITE_URL: "http://kivo.localhost"
 
 adminWeb:
-  replicaCount: 1
+  enabled: false
+  replicaCount: 0
   image:
     repository: kivo/admin-web
     tag: local
@@ -101,9 +105,9 @@ adminWeb:
   env:
     NODE_ENV: development
     PORT: "3001"
-    API_INTERNAL_URL: "http://kivo-admin-api:4001"
+    API_INTERNAL_URL: "http://kivo-api:4000"
     NEXT_PUBLIC_API_URL: "/admin-api"
-    KIVO_WEB_URL: "http://kivo.kivo.localhost"
+    KIVO_WEB_URL: "http://kivo.localhost"
 
 
 ingress:

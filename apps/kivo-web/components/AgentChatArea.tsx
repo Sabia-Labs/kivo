@@ -8,6 +8,7 @@ import { API_BASE } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Markdown } from "@/components/Markdown";
+import { useTranslation } from "@/lib/i18n";
 
 export function AgentChatArea({ 
   agentId, 
@@ -18,6 +19,7 @@ export function AgentChatArea({
   token, 
   newChatTrigger 
 }: any) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -153,7 +155,7 @@ export function AgentChatArea({
         ) : messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-2 select-none opacity-50">
             <Bot className="size-8 text-muted-foreground" />
-            <p className="text-xs">Start a conversation...</p>
+            <p className="text-xs">{t.agentPage.chat.emptyTitle}...</p>
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -193,7 +195,7 @@ export function AgentChatArea({
 
       <div className="p-3 border-t bg-muted/10 shrink-0">
         <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-center gap-2">
-          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Send a message..." className="bg-background shadow-sm h-10" disabled={sending} />
+          <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder={t.agentPage.chat.placeholder} className="bg-background shadow-sm h-10" disabled={sending} />
           <Button type="submit" size="icon" disabled={!input.trim() || sending} className="h-10 w-10 shrink-0">
             {sending ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
           </Button>

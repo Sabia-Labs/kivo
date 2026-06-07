@@ -487,7 +487,7 @@ Return ONLY a JSON object:
 
 
   // Deterministic action overrides for small model resilience
-  if (taskId === "triage-pending-tickets") {
+  if (taskId === "retrieve-open-tickets" || taskId === "retrieve-opened-tickets") {
     payload.selectedTools = [
       { name: "ticketing.search_issues", runPhase: "pre", reason: "Retrieve pending backlog tickets", input: { projectId: "$projectId", states: ["Backlog"] } }
     ];

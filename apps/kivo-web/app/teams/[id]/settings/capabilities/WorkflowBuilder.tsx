@@ -1,11 +1,32 @@
 import { useState, useRef } from "react";
-import { Plus, X, ArrowDown, Save, Loader2 } from "lucide-react";
+import { Plus, X, ArrowDown, Save, Loader2, Repeat, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Capability } from "./CapabilityForm";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 
 import { SmartCapabilitySelect } from "@/components/smart-capability-select";
+
+/** Badge label and color for each node type */
+function NodeTypeBadge({ type }: { type: Capability["type"] }) {
+  if (type === "human_approval") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+        👤 Human Approval
+      </span>
+    );
+  }
+  if (type === "foreach") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+        <Repeat className="size-3" /> Foreach Loop
+      </span>
+    );
+  }
+  return null;
+}
 
 export function WorkflowBuilder({
   capability,
@@ -18,6 +39,8 @@ export function WorkflowBuilder({
   allCapabilities: Capability[];
   onOpenNewCapabilityModal: (index: number) => void;
 }) {
+  const params = useParams();
+  const teamId = String(params.id);
   const tasks = capability.tasksWorkflow || [];
   
   // A node is open if it is the next empty slot in the sequence
@@ -81,14 +104,46 @@ export function WorkflowBuilder({
         <div className="flex flex-col items-center mt-8 py-4 bg-muted/20 rounded-lg border-dashed border-2 border-muted">
           {tasks.map((taskId, index) => {
             const cap = allCapabilities.find(c => c.identifier === taskId);
+            const isForeachNode = cap?.type === "foreach";
+            const isHumanApprovalNode = cap?.type === "human_approval";
+
+            // Check if this step is nested inside a preceding foreach loop
+            const prevTaskId = index > 0 ? tasks[index - 1] : null;
+            const prevCap = prevTaskId ? allCapabilities.find(c => c.identifier === prevTaskId) : null;
+            const isNestedLoopChild = prevCap?.type === "foreach";
+
+            if (isNestedLoopChild) {
+              return null;
+            }
+
+            // Find the child capability if this is a foreach node
+            const childTaskId = isForeachNode ? tasks[index + 1] : null;
+            const childCap = childTaskId ? allCapabilities.find(c => c.identifier === childTaskId || c.id === childTaskId) : null;
+
             return (
               <div key={`${taskId}-${index}`} className="flex flex-col items-center w-full max-w-md">
                 {/* Node Box */}
-                <div className="w-full bg-card border rounded-lg shadow-sm p-4 relative group transition-all hover:border-primary">
+                <div className={cn(
+                  "w-full bg-card border rounded-lg shadow-sm p-4 relative group transition-all hover:border-primary",
+                  isForeachNode && "border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/10",
+                  isHumanApprovalNode && "border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/10"
+                )}>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-sm">{cap ? cap.name : taskId}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5 font-mono">{taskId}</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-sm">{cap ? cap.name : taskId}</h4>
+                        {cap && (
+                          <Link
+                            href={`/teams/${teamId}/settings/capabilities/${cap.id}`}
+                            className="opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+                            title="Edit Capability"
+                          >
+                            <Pencil className="size-3.5" />
+                          </Link>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground font-mono">{taskId}</p>
+                      {cap && <NodeTypeBadge type={cap.type} />}
                     </div>
                     <button
                       type="button"
@@ -103,6 +158,44 @@ export function WorkflowBuilder({
                     {index + 1}
                   </div>
                 </div>
+
+                {/* Loop Connector */}
+                {isForeachNode && childCap && (
+                  <>
+                    <div className="flex flex-col items-center my-2">
+                      <div className="h-8 w-px border-dashed border-l-2 border-amber-400 dark:border-amber-600 relative flex items-center justify-center">
+                        <div className="absolute bg-amber-100 dark:bg-amber-950 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-700 text-[10px] font-semibold text-amber-800 dark:text-amber-300 whitespace-nowrap">
+                          For each <span className="font-mono">{cap.loopItem || "item"}</span> in <span className="font-mono">{cap.loopOver || "list"}</span>:
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Child Node Box (nested inside the loop) */}
+                    <div className={cn(
+                      "w-full bg-card/60 border-2 border-dashed border-amber-300 dark:border-amber-700/60 rounded-lg p-4 relative group transition-all hover:border-amber-400 ml-6 max-w-[calc(100%-1.5rem)]",
+                    )}>
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-sm text-amber-900 dark:text-amber-200">{childCap.name}</h4>
+                            <Link
+                              href={`/teams/${teamId}/settings/capabilities/${childCap.id}`}
+                              className="opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+                              title="Edit Loop Capability"
+                            >
+                              <Pencil className="size-3.5" />
+                            </Link>
+                          </div>
+                          <p className="text-xs text-muted-foreground font-mono">{childCap.identifier}</p>
+                          <NodeTypeBadge type={childCap.type} />
+                        </div>
+                      </div>
+                      <div className="absolute -left-3 top-1/2 -translate-y-1/2 bg-amber-500 text-amber-50 text-[10px] font-bold rounded-full size-6 flex items-center justify-center border border-amber-600 shadow-sm">
+                        <Repeat className="size-3" />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Arrow */}
                 <div className="h-8 w-px bg-border my-1 relative">
@@ -124,7 +217,9 @@ export function WorkflowBuilder({
                   key={`next-node-select-${tasks.length}`}
                   value={null}
                   onChange={(val) => handleUpdateNode(tasks.length, val)}
-                  availableCapabilities={allCapabilities.filter(c => c.type === 'task_template')}
+                  availableCapabilities={allCapabilities.filter(c =>
+                    c.type === 'task_template' || c.type === 'human_approval' || c.type === 'foreach'
+                  )}
                 />
                 
                 <div className="relative">

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { AgentChatArea } from "@/components/AgentChatArea";
 import { useAuth } from "@/lib/auth";
+import { useTranslation } from "@/lib/i18n";
 
 function computeHealth(k8sStatus?: string): "online" | "offline" | "starting" {
   if (k8sStatus === "running") return "online";
@@ -16,6 +17,7 @@ function computeHealth(k8sStatus?: string): "online" | "offline" | "starting" {
 
 export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: string }) {
   const { token, user } = useAuth();
+  const { t } = useTranslation();
   // Acordeão fechado por default
   const [openAgentId, setOpenAgentId] = useState<string | null>(null);
 
@@ -66,7 +68,7 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
                 onClick={(e) => e.stopPropagation()}
               >
                 <Link href={`/agents/${leader.id}`}>
-                  Profile <ArrowRight className="size-3.5 ml-1.5" />
+                  {t.nav.profile} <ArrowRight className="size-3.5 ml-1.5" />
                 </Link>
               </Button>
               <div className="w-px h-4 bg-border mx-1" />

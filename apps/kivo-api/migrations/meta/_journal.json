@@ -43,6 +43,20 @@
       "when": 1780482654137,
       "tag": "0005_milky_black_tom",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780645981412,
+      "tag": "0006_foreach_capability",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780816042419,
+      "tag": "0007_rainy_zemo",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
-id: triage-pending-tickets
-name: Triage Pending Tickets
+id: retrieve-open-tickets
+name: Retrieve Open Tickets
 type: task
 assigned_agent: support-responder
 ---
