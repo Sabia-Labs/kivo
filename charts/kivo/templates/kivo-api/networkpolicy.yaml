@@ -25,18 +25,7 @@ spec:
         - podSelector:
             matchLabels:
               {{- include "kivo.kivoWeb.selectorLabels" . | nindent 14 }}
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: kivo-agent-controller
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: kivo-agent
-        - namespaceSelector:
-            matchLabels:
-              kivo.ai/component: workspace
-      ports:
-        - protocol: TCP
-          port: {{ .Values.kivoApi.port }}
+    # ── No internal ingress needed from sidecars/controllers anymore ──
 
   egress:
     # Allow DNS resolution
@@ -45,46 +34,6 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
-
-    # Allow connection to RabbitMQ
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: infra-messaging
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/component: rabbitmq
-      ports:
-        - protocol: TCP
-          port: 5672
-        - protocol: TCP
-          port: 15672
-
-    # Allow connection to Kubernetes API (for provisioning agents/namespaces)
-    - ports:
-        - protocol: TCP
-          port: 443
-
-    # Allow connection to Control Plane (Admin API) for configuration sync
-    - to:
-        - podSelector:
-            matchLabels:
-              {{- include "kivo.adminApi.selectorLabels" . | nindent 14 }}
-      ports:
-        - protocol: TCP
-          port: 4001
-
-    # Allow connection to Agent Sidecar (for direct message delivery)
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: kivo-agent
-        - namespaceSelector:
-            matchLabels:
-              kivo.ai/component: workspace
-      ports:
-        - protocol: TCP
-          port: 43124
 
     {{- if .Values.postgresql.embedded }}
     # Allow connection to embedded PostgreSQL

@@ -180,4 +180,3 @@ networkPolicy:
 imagePullSecrets: []
 # - name: ghcr-pull-secret
 
-# ── Agent Controller ──────────────────────────────────────────────────────────

@@ -62,24 +62,4 @@ networkPolicy:
   enabled: true
 
 imagePullSecrets:
-  - name: ghcr-pull-secret   # must exist in namespace (created by Terraform/ops)
-
-# ── RabbitMQ production ────────────────────────────────────────────────────────
-# RabbitMQ Cluster Operator must be pre-installed in the target cluster.
-# Admin credentials come from the `kivo-rabbit-default-user` Secret (auto-created
-# by the Operator) or a manually created Secret referenced here.
-rabbitmq:
-  enabled: true
-  replicas: 3           # HA: 3-node quorum
-  adminUser: admin
-  # adminPassword: set via Terraform / ops Secret — do NOT inline here
-  persistence:
-    storage: 20Gi
-  resources:
-    requests:
-      cpu: 500m
-      memory: 1Gi
-    limits:
-      cpu: "2"
-      memory: 2Gi
-
+  - name: ghcr-pull-secret
