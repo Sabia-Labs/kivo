@@ -8,5 +8,6 @@ tasks_workflow:
   - read-customer-ticket
   - gather-support-information
   - answer-customer-ticket
+  - approve-customer-answer
   - send-customer-answer
 ---

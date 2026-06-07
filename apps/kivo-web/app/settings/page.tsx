@@ -24,7 +24,7 @@ export default function SettingsPage() {
           {t.teamsPage.settings}
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Manage workspace settings, preferences, languages, and SSH pairing tunnels.
+          {t.systemSettings.subtitle}
         </p>
       </header>
 
@@ -37,9 +37,9 @@ export default function SettingsPage() {
               <Globe className="size-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold tracking-tight">Language & Region</h2>
+              <h2 className="text-base font-semibold tracking-tight">{t.systemSettings.langRegionTitle}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Switch user interface localizations. English, Portuguese, and Chinese are supported.
+                {t.systemSettings.langRegionDesc}
               </p>
             </div>
           </div>
@@ -66,7 +66,7 @@ export default function SettingsPage() {
                         console.error("Failed to sync language to workspace settings in DB", err);
                       }
                     }
-                    toast.success(`Language changed to ${l.label}`);
+                    toast.success(t.systemSettings.langChangedToast.replace("{label}", l.label));
                   }}
                   className={`flex items-center justify-between p-4 border rounded-xl bg-card hover:bg-accent/40 transition-all text-sm font-semibold ${
                     isActive
@@ -94,9 +94,9 @@ export default function SettingsPage() {
               <Shield className="size-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold tracking-tight">Access Control & Security</h2>
+              <h2 className="text-base font-semibold tracking-tight">{t.systemSettings.securityTitle}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Configure loopback gateways, SSH pairings, and secure Tailscale connection tunnels.
+                {t.systemSettings.securityDesc}
               </p>
             </div>
           </div>
@@ -104,25 +104,25 @@ export default function SettingsPage() {
           <div className="space-y-3 text-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl bg-muted/20 gap-3">
               <div>
-                <p className="font-semibold text-xs leading-none">SSH Tunnel Status</p>
+                <p className="font-semibold text-xs leading-none">{t.systemSettings.sshStatusLabel}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Secure local control tunnel active on port 18789.
+                  {t.systemSettings.sshStatusDesc}
                 </p>
               </div>
               <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-500">
-                Connected
+                {t.systemSettings.connectedBadge}
               </span>
             </div>
 
             <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border rounded-xl bg-muted/20 gap-3">
               <div>
-                <p className="font-semibold text-xs leading-none">Access Privilege Model</p>
+                <p className="font-semibold text-xs leading-none">{t.systemSettings.privilegeLabel}</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Non-privileged local worker sandbox orchestration.
+                  {t.systemSettings.privilegeDesc}
                 </p>
               </div>
               <span className="inline-flex items-center rounded-full bg-blue-500/10 border border-blue-500/20 px-2.5 py-0.5 text-xs font-semibold text-blue-500">
-                Sandbox Mode
+                {t.systemSettings.sandboxBadge}
               </span>
             </div>
           </div>
@@ -135,9 +135,9 @@ export default function SettingsPage() {
               <Terminal className="size-5" />
             </div>
             <div>
-              <h2 className="text-base font-semibold tracking-tight">System Information</h2>
+              <h2 className="text-base font-semibold tracking-tight">{t.systemSettings.systemInfoTitle}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Technical parameters, pairing keys, and environment specifications.
+                {t.systemSettings.systemInfoDesc}
               </p>
             </div>
           </div>
@@ -145,22 +145,22 @@ export default function SettingsPage() {
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between border-b pb-2 border-border/40">
               <span className="text-muted-foreground flex items-center gap-1">
-                <User className="size-3" /> User Context ID
+                <User className="size-3" /> {t.systemSettings.userContextId}
               </span>
               <span className="font-mono text-[10px] select-all">{user?.id || "N/A"}</span>
             </div>
             <div className="flex items-center justify-between border-b pb-2 border-border/40">
-              <span className="text-muted-foreground">Workspace Identifier</span>
+              <span className="text-muted-foreground">{t.systemSettings.workspaceIdentifier}</span>
               <span className="font-mono text-[10px] select-all">{workspaceId || "N/A"}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Gateway Address</span>
-              <span className="font-semibold text-muted-foreground">loopback (127.0.0.1)</span>
+              <span className="text-muted-foreground">{t.systemSettings.gatewayAddress}</span>
+              <span className="font-semibold text-muted-foreground">{t.systemSettings.gatewayLoopback}</span>
             </div>
           </div>
           <div className="flex justify-end pt-2">
-            <Button onClick={() => toast.success("Settings configuration saved successfully.")}>
-              Save Changes
+            <Button onClick={() => toast.success(t.systemSettings.settingsSavedToast)}>
+              {t.systemSettings.saveChanges}
             </Button>
           </div>
         </section>

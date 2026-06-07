@@ -26,8 +26,7 @@ export function Navbar() {
   const handleLogout = () => {
     logout();
     setDropdownOpen(false);
-    // Force a full page reload to the redirect route to ensure cross-domain logout sync
-    window.location.href = "/redirect-login";
+    router.push("/");
   };
 
   const initials = user?.name

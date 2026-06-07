@@ -61,7 +61,8 @@ export const notificationPriorityEnum = pgEnum("notification_priority", ["info",
 export const capabilityTypeEnum = pgEnum("capability_type", [
   "task_template", 
   "workflow",
-  "human_approval"
+  "human_approval",
+  "foreach"
 ]);
 
 export const workspaceTierEnum = pgEnum("workspace_tier", ["free_byok", "pro"]);
@@ -119,12 +120,40 @@ export const teamTypeRoles = pgTable("team_type_roles", {
   pk: primaryKey({ columns: [t.teamTypeId, t.agentRoleId] }),
 }));
 
+export const capabilities = pgTable("capabilities", {
+  id: text("id").primaryKey(), // e.g., 'triage-open-tickets'
+  name: text("name").notNull(),
+  type: capabilityTypeEnum("type").notNull(),
+  instructions: text("instructions").notNull(),
+  inputsDescription: text("inputs_description"),
+  expectedOutputsDescription: text("expected_outputs_description"),
+  tasksWorkflow: jsonb("tasks_workflow"), // Array of strings (capability IDs)
+  loopOver: text("loop_over"),
+  loopItem: text("loop_item"),
+  runWorkflow: text("run_workflow"),
+});
+
+export const teamTypeCapabilities = pgTable("team_type_capabilities", {
+  teamTypeId: text("team_type_id")
+    .notNull()
+    .references(() => teamTypes.id, { onDelete: "cascade" }),
+  capabilityId: text("capability_id")
+    .notNull()
+    .references(() => capabilities.id, { onDelete: "cascade" }),
+  isFavorite: boolean("is_favorite").notNull().default(false),
+  defaultAssignedRole: text("default_assigned_role").references(() => agentRoles.id),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.teamTypeId, t.capabilityId] }),
+}));
+
 // ── Operational Tables ───────────────────────────────────────────────────────
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
+  passwordHash: text("password_hash"),
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -138,6 +167,14 @@ export const workspaces = pgTable("workspaces", {
   tier: workspaceTierEnum("tier"),
   langchain: boolean("langchain").notNull().default(false),
   language: text("language").notNull().default("en"),
+});
+
+export const verificationCodes = pgTable("verification_codes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: text("email").notNull(),
+  code: text("code").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const teams = pgTable("teams", {
@@ -329,6 +366,12 @@ export const teamCapabilities = pgTable("team_capabilities", {
   scheduleConfig: jsonb("schedule_config"),
   assignedAgentId: uuid("assigned_agent_id").references(() => agents.id, { onDelete: "set null" }),
   assignedRole: text("assigned_role"),
+  /** foreach: the state key whose value is the array to iterate over (e.g. "pendingTickets") */
+  loopOver: text("loop_over"),
+  /** foreach: the state key name to bind each item to (e.g. "ticketId") */
+  loopItem: text("loop_item"),
+  /** foreach: the capability identifier of the sub-workflow to run per item */
+  runWorkflow: text("run_workflow"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
@@ -362,6 +405,10 @@ export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+export type Capability = typeof capabilities.$inferSelect;
+export type TeamTypeCapability = typeof teamTypeCapabilities.$inferSelect;
+export type VerificationCode = typeof verificationCodes.$inferSelect;
+export type NewVerificationCode = typeof verificationCodes.$inferInsert;
 
 export const workspaceLlmKeys = pgTable("workspace_llm_keys", {
   id: uuid("id").primaryKey().defaultRandom(),

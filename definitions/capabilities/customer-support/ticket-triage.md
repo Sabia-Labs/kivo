@@ -9,3 +9,6 @@ tasks_workflow:
   - loop-over-tickets
   - customer-support-resolution-flow
 ---
+
+# INSTRUCTIONS
+Retrieve the list of pending backlog tickets from the ticketing system and then process them sequentially in a batch loop using the Customer Support Resolution Flow.

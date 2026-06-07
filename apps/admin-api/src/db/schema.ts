@@ -84,6 +84,9 @@ export const capabilities = pgTable("capabilities", {
   inputsDescription: text("inputs_description"),
   expectedOutputsDescription: text("expected_outputs_description"),
   tasksWorkflow: jsonb("tasks_workflow"), // Array of strings (capability IDs)
+  loopOver: text("loop_over"),
+  loopItem: text("loop_item"),
+  runWorkflow: text("run_workflow"),
 });
 
 // ── Team Type Capabilities (Relationship) ───────────────────────────────

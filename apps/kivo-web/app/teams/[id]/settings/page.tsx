@@ -4,8 +4,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   ArrowLeft, Loader2, Trash2, Plus, Wand2, Check, Briefcase, 
-  GitBranch, FileText, Globe, LayoutTemplate, Send, ChevronDown, CheckCircle2,
-  X, Search, Edit2, Info, Star, Filter
+  FileText, Globe, LayoutTemplate, Send, ChevronDown, CheckCircle2,
+  X, Search, Edit2, Info, Star, Filter, Repeat
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -63,11 +63,37 @@ interface Capability {
   inputsDescription: string | null; 
   expectedOutputsDescription: string | null;
   tasksWorkflow: string[] | null; 
+  type: "task_template" | "workflow" | "human_approval" | "foreach";
   isEnabled: boolean; 
   scheduleConfig: Record<string, any> | null;
   assignedAgentId: string | null; 
   assignedRole: string | null; 
   isFavorite: boolean;
+}
+
+function NodeTypeBadge({ type }: { type: Capability["type"] }) {
+  if (type === "human_approval") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-200 dark:border-blue-800 shrink-0">
+        👤 Human Approval
+      </span>
+    );
+  }
+  if (type === "foreach") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300 border border-amber-200 dark:border-amber-800 shrink-0">
+        <Repeat className="size-3" /> Foreach Loop
+      </span>
+    );
+  }
+  if (type === "workflow") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300 border border-purple-200 dark:border-purple-800 shrink-0">
+        🔀 Multi-step Flow
+      </span>
+    );
+  }
+  return null;
 }
 
 
@@ -166,6 +192,7 @@ function AvatarPicker({ icon, color, onIconChange, onColorChange, onClose }: {
 
 
 function AIInsightsChat({ field, value, onApply, onClose }: { field: string, value: string, onApply: (val: string) => void, onClose: () => void }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<{role: 'ai'|'user', content: string}[]>([
     { role: 'ai', content: field === 'mission' ? 'What outcome should this team create for the customer or business?' : 'How should this team make decisions, communicate progress, and handle quality?' }
   ]);
@@ -190,7 +217,7 @@ function AIInsightsChat({ field, value, onApply, onClose }: { field: string, val
   return (
     <div className="absolute right-0 top-10 z-30 w-80 rounded-2xl border border-border bg-card shadow-xl overflow-hidden flex flex-col">
       <div className="bg-primary/5 px-4 py-2 border-b flex justify-between items-center">
-        <span className="text-xs font-semibold text-primary flex items-center gap-1"><Wand2 className="size-3"/> AI Assistant</span>
+        <span className="text-xs font-semibold text-primary flex items-center gap-1"><Wand2 className="size-3"/> {t.teamSettings.general.aiAssistant}</span>
         <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-3"/></button>
       </div>
       <div className="p-4 flex-1 max-h-60 overflow-y-auto space-y-3 text-sm">
@@ -200,14 +227,14 @@ function AIInsightsChat({ field, value, onApply, onClose }: { field: string, val
               {m.content}
             </div>
             {m.role === 'ai' && i > 0 && (
-              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs mt-1 text-primary" onClick={() => onApply(m.content)}>Insert</Button>
+              <Button size="sm" variant="ghost" className="h-6 px-2 text-xs mt-1 text-primary" onClick={() => onApply(m.content)}>{t.teamSettings.general.insert}</Button>
             )}
           </div>
         ))}
-        {isTyping && <div className="text-xs text-muted-foreground italic flex items-center gap-1"><Loader2 className="size-3 animate-spin"/> AI is thinking...</div>}
+        {isTyping && <div className="text-xs text-muted-foreground italic flex items-center gap-1"><Loader2 className="size-3 animate-spin"/> {t.teamSettings.general.aiThinking}</div>}
       </div>
       <div className="p-2 border-t bg-muted/20 flex gap-2">
-        <Input size={1} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Reply..." className="h-8 text-xs" />
+        <Input size={1} value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder={t.teamSettings.general.reply} className="h-8 text-xs" />
         <Button size="icon" className="h-8 w-8" onClick={handleSend}><Send className="size-3"/></Button>
       </div>
     </div>
@@ -698,7 +725,7 @@ export default function TeamSettingsPage() {
   const handleDeleteTeam = async () => {
     if (!token) return;
     if (confirmName !== teamName) {
-      toast.error("Please type the exact team name to confirm deletion.");
+      toast.error(t.teamSettings.dangerZone.confirmError);
       return;
     }
     setIsDeleting(true);
@@ -748,11 +775,11 @@ export default function TeamSettingsPage() {
       {/* ── HEADER ── */}
       <header className="flex flex-col gap-3 border-b pb-6 border-border/40">
         <Link href={`/teams/${teamId}`} className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary hover:text-primary/80 transition-colors">
-          <ArrowLeft className="size-3.5" /> Back to Team
+          <ArrowLeft className="size-3.5" /> {t.teamsPage.backToTeam}
         </Link>
-        <h1 className="text-3xl font-bold tracking-tight mt-1">Team Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight mt-1">{t.teamSettings.settingsTitle}</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          Configure how this team works, what it can do, and which external tools it can access.
+          {t.teamSettings.settingsSubtitle}
         </p>
       </header>
 
@@ -768,7 +795,7 @@ export default function TeamSettingsPage() {
           )}
         >
           <LayoutTemplate className="size-4" />
-          <span>General</span>
+          <span>{t.teamSettings.tabs.general}</span>
         </button>
         <button
           onClick={() => setActiveTab("workflow")}
@@ -780,7 +807,7 @@ export default function TeamSettingsPage() {
           )}
         >
           <Briefcase className="size-4" />
-          <span>Workflow</span>
+          <span>{t.teamSettings.tabs.workflow}</span>
         </button>
         <button
           onClick={() => setActiveTab("integrations")}
@@ -792,7 +819,7 @@ export default function TeamSettingsPage() {
           )}
         >
           <Globe className="size-4" />
-          <span>Integrations</span>
+          <span>{t.teamSettings.tabs.integrations}</span>
         </button>
         <button
           onClick={() => setActiveTab("danger")}
@@ -804,7 +831,7 @@ export default function TeamSettingsPage() {
           )}
         >
           <Trash2 className="size-4" />
-          <span>Danger Zone</span>
+          <span>{t.teamSettings.tabs.dangerZone}</span>
         </button>
       </nav>
 
@@ -815,7 +842,7 @@ export default function TeamSettingsPage() {
           {activeTab === "general" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="rounded-xl border border-border bg-card shadow-sm p-6 space-y-6">
-                <div><h2 className="text-lg font-semibold">Identity</h2><p className="text-sm text-muted-foreground">Basic information about the team.</p></div>
+                <div><h2 className="text-lg font-semibold">{t.teamSettings.general.identityTitle}</h2><p className="text-sm text-muted-foreground">{t.teamSettings.general.identityDesc}</p></div>
                 <div className="flex gap-6 items-start">
                   <div className="relative pt-6">
                     <button type="button" onClick={() => setAvatarOpen(!avatarOpen)} className="flex size-16 items-center justify-center rounded-2xl text-3xl shadow-sm transition-all hover:scale-105 active:scale-95" style={{ background: iconColor + "22" }}>{icon}</button>
@@ -823,11 +850,11 @@ export default function TeamSettingsPage() {
                   </div>
                   <div className="flex-1 space-y-4">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Team Name</label>
+                      <label className="text-sm font-medium">{t.teamSettings.general.teamName}</label>
                       <Input value={teamName} onChange={e => setTeamName(e.target.value)} onBlur={e => updateTeamField('name', e.target.value)} />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Timezone</label>
+                      <label className="text-sm font-medium">{t.teamSettings.general.timezone}</label>
                       <TimezoneCombobox value={timezone} onChange={v => { setTimezone(v); updateTeamField('timezone', v, true); }} />
                     </div>
                   </div>
@@ -835,23 +862,23 @@ export default function TeamSettingsPage() {
               </div>
 
               <div className="rounded-xl border border-border bg-card shadow-sm p-6 space-y-6">
-                <div><h2 className="text-lg font-semibold">Purpose & Practices</h2><p className="text-sm text-muted-foreground">Define the mission and ways of working for this team.</p></div>
+                <div><h2 className="text-lg font-semibold">{t.teamSettings.general.purposeTitle}</h2><p className="text-sm text-muted-foreground">{t.teamSettings.general.purposeDesc}</p></div>
                 <div className="space-y-4">
                   <div className="space-y-1.5 relative">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-medium">Mission</label>
-                      <Button variant="ghost" size="sm" onClick={() => setActiveAiChat('mission')} className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1"><Wand2 className="size-3" /> AI Insights</Button>
+                      <label className="text-sm font-medium">{t.teamSettings.general.mission}</label>
+                      <Button variant="ghost" size="sm" onClick={() => setActiveAiChat('mission')} className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1"><Wand2 className="size-3" /> {t.teamSettings.general.aiInsights}</Button>
                     </div>
-                    <textarea className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]" value={mission} onChange={e => setMission(e.target.value)} onBlur={e => updateTeamField('mission', e.target.value)} placeholder="What outcome should this team create?" />
+                    <textarea className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[80px]" value={mission} onChange={e => setMission(e.target.value)} onBlur={e => updateTeamField('mission', e.target.value)} placeholder={t.teamSettings.general.missionPlaceholder} />
                     {activeAiChat === 'mission' && <AIInsightsChat field="mission" value={mission} onApply={(v) => {setMission(v); updateTeamField('mission', v); setActiveAiChat(null);}} onClose={() => setActiveAiChat(null)} />}
                   </div>
 
                   <div className="space-y-1.5 relative">
                     <div className="flex justify-between items-center">
-                      <label className="text-sm font-medium">Ways of Working</label>
-                      <Button variant="ghost" size="sm" onClick={() => setActiveAiChat('waysOfWorking')} className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1"><Wand2 className="size-3" /> AI Insights</Button>
+                      <label className="text-sm font-medium">{t.teamSettings.general.waysOfWorking}</label>
+                      <Button variant="ghost" size="sm" onClick={() => setActiveAiChat('waysOfWorking')} className="h-6 px-2 text-xs text-primary hover:text-primary hover:bg-primary/10 gap-1"><Wand2 className="size-3" /> {t.teamSettings.general.aiInsights}</Button>
                     </div>
-                    <textarea className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[120px]" value={waysOfWorking} onChange={e => setWaysOfWorking(e.target.value)} onBlur={e => updateTeamField('waysOfWorking', e.target.value)} placeholder="How should this team communicate?" />
+                    <textarea className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring min-h-[120px]" value={waysOfWorking} onChange={e => setWaysOfWorking(e.target.value)} onBlur={e => updateTeamField('waysOfWorking', e.target.value)} placeholder={t.teamSettings.general.waysOfWorkingPlaceholder} />
                     {activeAiChat === 'waysOfWorking' && <AIInsightsChat field="waysOfWorking" value={waysOfWorking} onApply={(v) => {setWaysOfWorking(v); updateTeamField('waysOfWorking', v); setActiveAiChat(null);}} onClose={() => setActiveAiChat(null)} />}
                   </div>
                 </div>
@@ -865,12 +892,12 @@ export default function TeamSettingsPage() {
               <div className="rounded-xl border border-border bg-card shadow-sm p-6 space-y-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-lg font-semibold">What this team can do</h2>
-                    <p className="text-sm text-muted-foreground">Manage the active capabilities of your agents.</p>
+                    <h2 className="text-lg font-semibold">{t.teamSettings.workflow.title}</h2>
+                    <p className="text-sm text-muted-foreground">{t.teamSettings.workflow.desc}</p>
                   </div>
                   <Link href={`/teams/${teamId}/settings/capabilities/wizard`}>
                     <Button>
-                      <Plus className="size-4 mr-2" /> New Capability
+                      <Plus className="size-4 mr-2" /> {t.teamSettings.workflow.newCapability}
                     </Button>
                   </Link>
                 </div>
@@ -880,40 +907,40 @@ export default function TeamSettingsPage() {
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" className="h-9 gap-2 text-muted-foreground w-full sm:w-auto justify-start shadow-sm">
                         <Filter className="size-3.5" />
-                        Filters
+                        {t.teamSettings.workflow.filters}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" className="w-56">
-                      <DropdownMenuLabel>Status</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t.teamsPage.status}</DropdownMenuLabel>
                       <DropdownMenuCheckboxItem 
                         checked={showOnlyEnabled} 
                         onCheckedChange={setShowOnlyEnabled}
                       >
-                        Only enabled capabilities
+                        {t.teamSettings.workflow.onlyEnabled}
                       </DropdownMenuCheckboxItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel>Favorites</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t.teamsPage.favorites}</DropdownMenuLabel>
                       <DropdownMenuCheckboxItem 
                         checked={showOnlyFavorites} 
                         onCheckedChange={setShowOnlyFavorites}
                       >
-                        Only favorites
+                        {t.teamSettings.workflow.onlyFavorites}
                       </DropdownMenuCheckboxItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <div className="relative w-full sm:max-w-xs sm:ml-auto">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search capabilities..." className="pl-8 h-9" value={capSearch} onChange={e => setCapSearch(e.target.value)} />
+                    <Input placeholder={t.teamSettings.workflow.searchPlaceholder} className="pl-8 h-9" value={capSearch} onChange={e => setCapSearch(e.target.value)} />
                   </div>
                 </div>
 
                 <div className="space-y-2 border rounded-xl overflow-hidden bg-background">
                   {filteredCapabilities.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">No capabilities found matching your criteria.</div>
+                    <div className="p-8 text-center text-muted-foreground">{t.teamSettings.workflow.noCapsFound}</div>
                   ) : filteredCapabilities.map(cap => (
                     <div key={cap.id} className={cn("flex items-center justify-between p-3 border-b last:border-b-0 transition-colors", cap.isEnabled ? "bg-card" : "bg-muted/40 opacity-80")}>
                       <div className="flex flex-col gap-0.5">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <button
                             type="button"
                             onClick={() => updateCapability(cap.id, { isFavorite: !cap.isFavorite })}
@@ -921,11 +948,12 @@ export default function TeamSettingsPage() {
                           >
                             <Star className={cn("size-4", cap.isFavorite ? "fill-amber-500 text-amber-500" : "")} />
                           </button>
-                          <span className="font-medium text-sm text-foreground">{cap.name}</span>
+                          <span className="font-medium text-sm text-foreground">{translate(cap.name)}</span>
+                          <NodeTypeBadge type={cap.type} />
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <Link href={`/teams/${teamId}/settings/capabilities/${cap.id}`} className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"><Info className="size-3"/> Details</Link>
+                        <Link href={`/teams/${teamId}/settings/capabilities/${cap.id}`} className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"><Info className="size-3"/> {t.teamSettings.workflow.details}</Link>
                         <label className="flex items-center cursor-pointer">
                           <div className="relative">
                             <input type="checkbox" className="sr-only" checked={cap.isEnabled} onChange={(e) => updateCapability(cap.id, { isEnabled: e.target.checked })} />
@@ -1018,9 +1046,9 @@ export default function TeamSettingsPage() {
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="rounded-xl border border-red-500/20 bg-red-500/5 shadow-sm p-6 space-y-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
+                  <h2 className="text-lg font-semibold text-red-600 dark:text-red-400">{t.teamSettings.dangerZone.title}</h2>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Irreversible actions that affect your team, agents, and data.
+                    {t.teamSettings.dangerZone.subtitle}
                   </p>
                 </div>
 
@@ -1030,9 +1058,9 @@ export default function TeamSettingsPage() {
                       <Trash2 className="size-5 animate-pulse" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-sm text-foreground">Delete this team</h3>
+                      <h3 className="font-semibold text-sm text-foreground">{t.teamSettings.dangerZone.deleteTitle}</h3>
                       <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                        Once you delete this team, there is no going back. Please be certain.
+                        {t.teamSettings.dangerZone.deleteDesc}
                       </p>
                     </div>
                   </div>
@@ -1040,19 +1068,18 @@ export default function TeamSettingsPage() {
                   <div className="p-3.5 bg-muted/40 rounded-lg space-y-2 border border-border/40 text-xs text-muted-foreground">
                     <p className="font-semibold text-foreground flex items-center gap-1.5">
                       <Info className="size-3.5 text-red-500" />
-                      The following resources will be permanently removed:
+                      {t.teamSettings.dangerZone.resourcesRemovedTitle}
                     </p>
                     <ul className="list-disc list-inside space-y-1 pl-1">
-                      <li>All AI agent containers and running Kubernetes pods</li>
-                      <li>State directories and Persistent Volume Claims (PVCs) for all agents</li>
-                      <li>All bootstrap ConfigMaps and credentials Secrets</li>
-                      <li>Database configurations, tasks, messages, and conversation history</li>
+                      {t.teamSettings.dangerZone.resourcesRemovedList.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
                     </ul>
                   </div>
 
                   <div className="space-y-2 pt-2">
                     <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">
-                      To confirm, type <span className="font-mono font-bold text-foreground select-all bg-muted px-1.5 py-0.5 rounded border">{teamName}</span> below:
+                      {t.teamSettings.dangerZone.confirmPrompt.replace("{teamName}", "")} <span className="font-mono font-bold text-foreground select-all bg-muted px-1.5 py-0.5 rounded border">{teamName}</span>
                     </label>
                     <Input 
                       placeholder={teamName}
@@ -1074,10 +1101,10 @@ export default function TeamSettingsPage() {
                       {isDeleting ? (
                         <>
                           <Loader2 className="size-4 animate-spin mr-2" />
-                          Deleting Team...
+                          {t.teamSettings.dangerZone.deletingButton}
                         </>
                       ) : (
-                        "Permanently Delete Team"
+                        t.teamSettings.dangerZone.deleteButton
                       )}
                     </Button>
                   </div>

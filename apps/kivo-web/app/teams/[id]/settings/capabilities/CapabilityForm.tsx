@@ -12,12 +12,16 @@ export interface Capability {
   inputsDescription: string | null;
   expectedOutputsDescription: string | null;
   tasksWorkflow: string[] | null;
-  type: "task_template" | "workflow";
+  type: "task_template" | "workflow" | "human_approval" | "foreach";
   isEnabled: boolean;
   scheduleConfig: Record<string, any> | null;
   assignedAgentId: string | null;
   assignedRole: string | null;
   isFavorite: boolean;
+  /** foreach-specific fields */
+  loopOver?: string | null;
+  loopItem?: string | null;
+  runWorkflow?: string | null;
 }
 
 export function CapabilityForm({
@@ -68,7 +72,42 @@ export function CapabilityForm({
         </div>
       </div>
 
-      {/* 2. Inputs */}
+      {/* 2. Capability Type Selector (only for non-workflows) */}
+      {capability.type !== "workflow" && (
+        <div className={cn("rounded-xl border border-border bg-card shadow-sm p-6 space-y-6", isModal && "border-none shadow-none p-0")}>
+          <h2 className="text-lg font-semibold border-b pb-4">Capability Type</h2>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => setCapability({ ...capability, type: "task_template" })}
+              className={cn(
+                "flex-1 p-4 rounded-xl border-2 transition-all text-left",
+                capability.type === "task_template"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border hover:bg-muted/50 text-muted-foreground"
+              )}
+            >
+              <h3 className="font-bold text-sm">Automated Task Template</h3>
+              <p className="text-xs text-muted-foreground mt-1">Executed autonomously by an agent.</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setCapability({ ...capability, type: "human_approval", assignedRole: null, assignedAgentId: null })}
+              className={cn(
+                "flex-1 p-4 rounded-xl border-2 transition-all text-left",
+                capability.type === "human_approval"
+                  ? "border-primary bg-primary/5 text-primary"
+                  : "border-border hover:bg-muted/50 text-muted-foreground"
+              )}
+            >
+              <h3 className="font-bold text-sm">Human Approval step</h3>
+              <p className="text-xs text-muted-foreground mt-1">Pauses workflow execution to wait for a human operator.</p>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Inputs */}
       <div className={cn("rounded-xl border border-border bg-card shadow-sm p-6 space-y-6", isModal && "border-none shadow-none p-0")}>
         <div className="flex justify-between items-center border-b pb-4">
           <h2 className="text-lg font-semibold">Inputs</h2>
@@ -109,7 +148,7 @@ export function CapabilityForm({
         )}
       </div>
 
-      {/* 3. Work to be done */}
+      {/* 4. Work to be done */}
       <div className={cn("rounded-xl border border-border bg-card shadow-sm p-6 space-y-6", isModal && "border-none shadow-none p-0")}>
         <h2 className="text-lg font-semibold border-b pb-4">Work to be done</h2>
         <div className="space-y-2">
@@ -132,43 +171,45 @@ export function CapabilityForm({
         </div>
       </div>
 
-      {/* 4. Execution Rules */}
-      <div className={cn("rounded-xl border border-border bg-card shadow-sm p-6 space-y-6", isModal && "border-none shadow-none p-0")}>
-        <h2 className="text-lg font-semibold border-b pb-4">Execution Rules</h2>
-        <div className="space-y-4">
-          <label className="text-sm font-medium">Who can execute this?</label>
-          <p className="text-xs text-muted-foreground">Select a specific role required to execute this capability, or leave as "Anyone" if any agent can do it.</p>
-          <div className="flex flex-wrap gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setCapability({...capability, assignedRole: null, assignedAgentId: null})}
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
-                (!capability.assignedRole && !capability.assignedAgentId)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background text-foreground hover:bg-muted border-input"
-              )}
-            >
-              Anyone
-            </button>
-            {Array.from(new Set(agents.map(a => a.roleId))).map(role => (
+      {/* 5. Execution Rules */}
+      {capability.type !== "human_approval" && (
+        <div className={cn("rounded-xl border border-border bg-card shadow-sm p-6 space-y-6", isModal && "border-none shadow-none p-0")}>
+          <h2 className="text-lg font-semibold border-b pb-4">Execution Rules</h2>
+          <div className="space-y-4">
+            <label className="text-sm font-medium">Who can execute this?</label>
+            <p className="text-xs text-muted-foreground">Select a specific role required to execute this capability, or leave as "Anyone" if any agent can do it.</p>
+            <div className="flex flex-wrap gap-2 pt-2">
               <button
-                key={role}
                 type="button"
-                onClick={() => setCapability({...capability, assignedRole: role, assignedAgentId: null})}
+                onClick={() => setCapability({...capability, assignedRole: null, assignedAgentId: null})}
                 className={cn(
                   "px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
-                  capability.assignedRole === role
+                  (!capability.assignedRole && !capability.assignedAgentId)
                     ? "bg-primary text-primary-foreground border-primary"
                     : "bg-background text-foreground hover:bg-muted border-input"
                 )}
               >
-                {role}
+                Anyone
               </button>
-            ))}
+              {Array.from(new Set(agents.map(a => a.roleId))).map(role => (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => setCapability({...capability, assignedRole: role, assignedAgentId: null})}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-sm font-medium border transition-colors",
+                    capability.assignedRole === role
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-background text-foreground hover:bg-muted border-input"
+                  )}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Actions for Modal */}
       {isModal && (

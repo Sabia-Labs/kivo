@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import { db } from "../db/client";
 import { requests, notifications, conversations, messages, agents, teams, workspaces, comments } from "../db/schema";
@@ -7,6 +7,25 @@ import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
 import { logActivity } from "../lib/activity-logger";
 import { runRequestIngestion } from "../workflows/requestIngestion";
 import { t, resolveWorkspaceLanguage } from "../lib/i18n";
+
+/**
+ * Allocates the next sequential request number for a given team.
+ * Uses MAX(number)+1 to stay consistent with the HTTP route pattern.
+ */
+export async function getNextRequestNumber(teamId: string): Promise<number> {
+  const result = await db.execute(
+    sql`SELECT COALESCE(MAX(number), 0) + 1 AS next_number FROM ${requests} WHERE team_id = ${teamId}`
+  );
+  return Number((result.rows[0] as any).next_number);
+}
+
+/**
+ * Returns the team identifier prefix (e.g. "CS" for "CS-1").
+ */
+export async function getTeamIdentifierPrefix(teamId: string): Promise<string> {
+  const [team] = await db.select({ identifierPrefix: teams.identifierPrefix }).from(teams).where(eq(teams.id, teamId));
+  return team?.identifierPrefix ?? "REQ";
+}
 
 export async function handleRequestCreatedState(requestRecord: any) {
   try {

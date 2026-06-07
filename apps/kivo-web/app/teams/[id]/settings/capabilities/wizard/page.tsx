@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Loader2, Save, FileText, Network, X } from "lucide-react";
+import { ArrowLeft, Loader2, Save, FileText, Network, X, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -63,9 +63,11 @@ export default function CapabilityWizardPage() {
     }
   }, [authLoading, token, fetchData, router]);
 
-  const handleSelectType = (type: "task_template" | "workflow") => {
+  const handleSelectType = (type: "task_template" | "workflow" | "human_approval") => {
     if (type === "task_template") {
-      router.push(`/teams/${teamId}/settings/capabilities/new`);
+      router.push(`/teams/${teamId}/settings/capabilities/new?type=task_template`);
+    } else if (type === "human_approval") {
+      router.push(`/teams/${teamId}/settings/capabilities/new?type=human_approval`);
     } else {
       setStep(2);
     }
@@ -113,7 +115,7 @@ export default function CapabilityWizardPage() {
     if (!token || newCapIndex === null) return;
     setIsSaving(true);
     try {
-      const payload = { ...newCapabilityForm, type: "task_template" };
+      const payload = { ...newCapabilityForm, type: newCapabilityForm.type || "task_template" };
       const res = await fetch(`${API_BASE}/teams/${teamId}/capabilities`, {
         method: "POST", 
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -170,29 +172,42 @@ export default function CapabilityWizardPage() {
 
       <div className="pb-20">
         {step === 1 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
             <button 
               onClick={() => handleSelectType("task_template")}
-              className="flex flex-col items-center p-8 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all text-left text-foreground shadow-sm group"
+              className="flex flex-col items-center p-6 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all text-left text-foreground shadow-sm group"
             >
               <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <FileText className="size-8" />
               </div>
-              <h2 className="text-xl font-bold mb-2 text-center w-full">Create a Task Template</h2>
-              <p className="text-sm text-muted-foreground text-center">
+              <h2 className="text-lg font-bold mb-2 text-center w-full">Create a Task Template</h2>
+              <p className="text-xs text-muted-foreground text-center">
                 Define a single, atomic task that agents can perform. Specifies instructions, inputs, and expected outcomes.
+              </p>
+            </button>
+
+            <button 
+              onClick={() => handleSelectType("human_approval")}
+              className="flex flex-col items-center p-6 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all text-left text-foreground shadow-sm group"
+            >
+              <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                <CheckCircle2 className="size-8" />
+              </div>
+              <h2 className="text-lg font-bold mb-2 text-center w-full">Human Approval Step</h2>
+              <p className="text-xs text-muted-foreground text-center">
+                Define a step where a human operator must review, approve, or provide manual feedback before a workflow continues.
               </p>
             </button>
             
             <button 
               onClick={() => handleSelectType("workflow")}
-              className="flex flex-col items-center p-8 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all text-left text-foreground shadow-sm group"
+              className="flex flex-col items-center p-6 rounded-xl border-2 border-border bg-card hover:border-primary hover:bg-primary/5 transition-all text-left text-foreground shadow-sm group"
             >
               <div className="size-16 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Network className="size-8" />
               </div>
-              <h2 className="text-xl font-bold mb-2 text-center w-full">Define a Workflow</h2>
-              <p className="text-sm text-muted-foreground text-center">
+              <h2 className="text-lg font-bold mb-2 text-center w-full">Define a Workflow</h2>
+              <p className="text-xs text-muted-foreground text-center">
                 Chain multiple Task Templates together to form a sequential process. Great for complex, multi-step requests.
               </p>
             </button>

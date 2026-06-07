@@ -177,6 +177,9 @@ export async function seed() {
       inputsDescription,
       expectedOutputsDescription,
       tasksWorkflow: data.tasks_workflow || [],
+      loopOver: data.loop_over || null,
+      loopItem: data.loop_item || null,
+      runWorkflow: data.run_workflow || null,
     }).onConflictDoUpdate({
       target: capabilities.id,
       set: {
@@ -186,6 +189,9 @@ export async function seed() {
         inputsDescription,
         expectedOutputsDescription,
         tasksWorkflow: data.tasks_workflow || [],
+        loopOver: data.loop_over || null,
+        loopItem: data.loop_item || null,
+        runWorkflow: data.run_workflow || null,
       }
     });
 

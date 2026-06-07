@@ -109,15 +109,23 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
     
   const capabilitiesWorkflow = (requestRecord.capabilitiesWorkflow as string[]) || [];
   
-  if (allTasks.length >= capabilitiesWorkflow.length) {
+  let foreachCount = 0;
+  for (const t of allTasks) {
+    if (t.instructions?.includes("[CAPABILITY_TYPE: foreach]")) {
+      foreachCount++;
+    }
+  }
+  const nextCapabilityIndex = allTasks.length + foreachCount;
+
+  if (nextCapabilityIndex >= capabilitiesWorkflow.length) {
     console.log(`[request-continuation] All ${capabilitiesWorkflow.length} capabilities executed. Completing request.`);
     await completeRequest(state.requestId, "success", taskRecord.result || "All tasks completed.");
     return { task: taskRecord, request: updatedRequest };
   }
 
   // Find next capability
-  const nextCapabilityIdentifier = capabilitiesWorkflow[allTasks.length];
-  console.log(`[request-continuation] Executing next capability (${allTasks.length + 1} of ${capabilitiesWorkflow.length}): ${nextCapabilityIdentifier}`);
+  const nextCapabilityIdentifier = capabilitiesWorkflow[nextCapabilityIndex];
+  console.log(`[request-continuation] Executing next capability (${nextCapabilityIndex + 1} of ${capabilitiesWorkflow.length}): ${nextCapabilityIdentifier}`);
   
   const capability = await getCapabilityByIdentifier(state.teamId, nextCapabilityIdentifier);
   if (!capability) {
@@ -237,7 +245,7 @@ You are executing a Task. You must process it following this standard workflow:
    to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. 
    Do not leave the task open; it must be resolved.`;
 
-  const finalInstructions = `${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
+  const finalInstructions = `[CAPABILITY_TYPE: ${state.capability?.type || "task"}]\n${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 
   await createTaskAndNotifyAgent(
     state.teamId,
