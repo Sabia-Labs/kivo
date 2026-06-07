@@ -39,8 +39,8 @@ export function PlanSelectionBanner() {
     return () => { isMounted = false; };
   }, [token, pathname]);
 
-  // If loading or tier is set (not null), don't show the banner
-  if (tier !== null) return null;
+  // If loading or tier is set to basic/pro, don't show the banner
+  if (tier !== null && tier !== "free" && tier !== "free_byok") return null;
 
   return (
     <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-3 flex items-center justify-center gap-3 shrink-0">

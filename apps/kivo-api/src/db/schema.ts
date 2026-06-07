@@ -65,7 +65,7 @@ export const capabilityTypeEnum = pgEnum("capability_type", [
   "foreach"
 ]);
 
-export const workspaceTierEnum = pgEnum("workspace_tier", ["free_byok", "pro"]);
+export const workspaceTierEnum = pgEnum("workspace_tier", ["free", "basic", "pro"]);
 
 export const llmProviderEnum = pgEnum("llm_provider", [
   "openai",
@@ -74,7 +74,6 @@ export const llmProviderEnum = pgEnum("llm_provider", [
   "deepseek"
 ]);
 
-export const voucherStatusEnum = pgEnum("voucher_status", ["available", "redeemed"]);
 
 // ── Reference Tables (Replica from Admin API) ────────────────────────────────
 
@@ -164,7 +163,10 @@ export const workspaces = pgTable("workspaces", {
     .references(() => users.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   k8sNamespace: text("k8s_namespace"),
-  tier: workspaceTierEnum("tier"),
+  tier: workspaceTierEnum("tier").notNull().default("free"),
+  teamLimit: integer("team_limit"),
+  agentsPerTeamLimit: integer("agents_per_team_limit"),
+  monthlyAutomationLimit: integer("monthly_automation_limit"),
   langchain: boolean("langchain").notNull().default(false),
   language: text("language").notNull().default("en"),
 });
@@ -424,17 +426,8 @@ export const workspaceLlmKeys = pgTable("workspace_llm_keys", {
   unq_workspace_provider: unique().on(t.workspaceId, t.provider),
 }));
 
-export const vouchers = pgTable("vouchers", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  code: text("code").notNull().unique(),
-  status: voucherStatusEnum("status").notNull().default("available"),
-  redeemedByWorkspaceId: uuid("redeemed_by_workspace_id").references(() => workspaces.id, { onDelete: "set null" }),
-  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+
 
 export type WorkspaceLlmKey = typeof workspaceLlmKeys.$inferSelect;
 export type NewWorkspaceLlmKey = typeof workspaceLlmKeys.$inferInsert;
-export type Voucher = typeof vouchers.$inferSelect;
-export type NewVoucher = typeof vouchers.$inferInsert;
 

@@ -124,6 +124,7 @@ export default function SignupPage() {
           email,
           code: otp,
           workspaceName,
+          language: lang,
         }),
       });
 
@@ -153,7 +154,7 @@ export default function SignupPage() {
   }
 
   const handleGoogleSSO = () => {
-    window.location.href = `${API_BASE}/auth/google`;
+    window.location.href = `${API_BASE}/auth/google?lang=${lang}`;
   }
 
   return (

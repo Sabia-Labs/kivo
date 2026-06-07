@@ -8,6 +8,13 @@
       "when": 1780823310586,
       "tag": "0000_keen_nicolaos",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780840283109,
+      "tag": "0001_premium_silverclaw",
+      "breakpoints": true
     }
   ]
 }

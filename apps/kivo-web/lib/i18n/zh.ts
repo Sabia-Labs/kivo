@@ -924,8 +924,54 @@ export const zh: Dictionary = {
     failureReason: "失败原因",
     close: "关闭",
   },
+  plans: {
+    title: "选择您的套餐",
+    currentPlan: "当前套餐",
+    free: {
+      name: "Free",
+      subtitle: "用于在有限容量下测试 Kivo。",
+      price: "€0/月",
+      features: [
+        "2 个团队",
+        "每个团队最多 4 个智能体",
+        "基础集成",
+        "每月自动化次数有限",
+        "包含有限容量的 AI",
+        "可选自定义 API Key"
+      ],
+      button: "免费开始"
+    },
+    basic: {
+      name: "Basic",
+      subtitle: "适合认真使用 Kivo 的个人和小型团队。",
+      price: "€19/月",
+      features: [
+        "5 个团队",
+        "每个团队最多 8 个智能体",
+        "更多每月自动化次数",
+        "高级集成",
+        "包含 AI，并设有合理使用限制",
+        "可选自定义 API Key"
+      ],
+      button: "选择 Basic"
+    },
+    pro: {
+      name: "Pro",
+      subtitle: "适合需要完整运营能力的团队。",
+      price: "€49/月",
+      features: [
+        "团队数量不限",
+        "智能体数量不限",
+        "所有集成",
+        "最高每月自动化限制",
+        "包含高级 AI 模型",
+        "可选自定义 API Key"
+      ],
+      button: "升级到 Pro"
+    }
+  },
   planBanner: {
-    inactiveMessage: "您的智能体处于非活动状态。请选择一个计划来启用人工智能。",
-    choosePlan: "选择计划",
+    inactiveMessage: "您的工作区正在以有限的 AI 容量运行。",
+    choosePlan: "查看套餐",
   }
 };

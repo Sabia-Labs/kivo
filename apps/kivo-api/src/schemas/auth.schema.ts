@@ -4,6 +4,7 @@ export const signupSchema = z.object({
   email: z.string().email("Invalid email"),
   workspaceName: z.string().min(1, "Workspace name is required"),
   code: z.string().length(4, "OTP code must be 4 digits"),
+  language: z.string().optional(),
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;

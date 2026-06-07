@@ -921,8 +921,54 @@ export const pt = {
     failureReason: "Motivo da Falha",
     close: "Fechar",
   },
+  plans: {
+    title: "Escolha seu plano",
+    currentPlan: "Plano atual",
+    free: {
+      name: "Free",
+      subtitle: "Para testar o Kivo com capacidade limitada.",
+      price: "€0/mês",
+      features: [
+        "2 times",
+        "Até 4 agentes por time",
+        "Integrações básicas",
+        "Automações mensais limitadas",
+        "IA incluída com capacidade limitada",
+        "Chave de API própria opcional"
+      ],
+      button: "Começar grátis"
+    },
+    basic: {
+      name: "Basic",
+      subtitle: "Para indivíduos e pequenos times usando o Kivo de forma séria.",
+      price: "€19/mês",
+      features: [
+        "5 times",
+        "Até 8 agentes por time",
+        "Mais automações mensais",
+        "Integrações avançadas",
+        "IA incluída com limites de uso justo",
+        "Chave de API própria opcional"
+      ],
+      button: "Escolher Basic"
+    },
+    pro: {
+      name: "Pro",
+      subtitle: "Para times que querem capacidade operacional completa.",
+      price: "€49/mês",
+      features: [
+        "Times ilimitados",
+        "Agentes ilimitados",
+        "Todas as integrações",
+        "Maior limite mensal de automações",
+        "Modelos premium de IA incluídos",
+        "Chave de API própria opcional"
+      ],
+      button: "Fazer upgrade para Pro"
+    }
+  },
   planBanner: {
-    inactiveMessage: "Seus agentes estão inativos. Escolha um plano para ativar a inteligência artificial.",
-    choosePlan: "Escolher Plano",
+    inactiveMessage: "Seu workspace está operando com capacidade limitada de IA.",
+    choosePlan: "Ver planos",
   }
 };

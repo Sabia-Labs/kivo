@@ -1,10 +1,26 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { eq, and, sql } from "drizzle-orm";
 import { db } from "../db/client";
-import { workspaces, workspaceLlmKeys, vouchers, teams, agents } from "../db/schema";
+import { workspaces, workspaceLlmKeys, teams, agents } from "../db/schema";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { success, failure } from "../lib/response";
-import { updateWorkspaceTierSchema, saveWorkspaceLlmKeySchema, redeemVoucherSchema } from "../schemas/workspace.schema";
+import { updateWorkspaceTierSchema, saveWorkspaceLlmKeySchema } from "../schemas/workspace.schema";
+import { PLANS } from "../config/plans";
+
+function getDowngradeErrorMsg(lang: string, reason: "teams" | "agents", limit: number) {
+  if (lang === "pt") {
+    return reason === "teams" 
+      ? `Não é possível alterar para este plano pois você possui mais times do que o limite permitido (${limit}).`
+      : `Não é possível alterar para este plano pois um dos seus times possui mais agentes do que o limite permitido (${limit}).`;
+  } else if (lang === "zh") {
+    return reason === "teams"
+      ? `无法更改为此套餐，因为您的团队数量超出了允许的限制 (${limit})。`
+      : `无法更改为此套餐，因为您的某个团队中的智能体数量超出了允许的限制 (${limit})。`;
+  }
+  return reason === "teams"
+    ? `Cannot change to this plan because you have more teams than the allowed limit (${limit}).`
+    : `Cannot change to this plan because one of your teams has more agents than the allowed limit (${limit}).`;
+}
 
 export const workspacesRouter = Router();
 
@@ -35,9 +51,36 @@ workspacesRouter.put("/:id/tier", authMiddleware, requireWorkspaceOwnership, asy
   try {
     const { tier } = updateWorkspaceTierSchema.parse(req.body);
 
+    const limits = tier && tier !== "pro" ? PLANS[tier as keyof typeof PLANS] : PLANS.pro;
+    const planLimits = limits ? {
+      teamLimit: limits.teamLimit,
+      agentsPerTeamLimit: limits.agentsPerTeamLimit,
+      monthlyAutomationLimit: limits.monthlyAutomationLimit,
+    } : {};
+
+    if (limits) {
+      const workspaceTeams = await db.select().from(teams).where(eq(teams.workspaceId, String(req.params.id)));
+      
+      if (limits.teamLimit !== null && workspaceTeams.length > limits.teamLimit) {
+        return res.status(400).json(failure(getDowngradeErrorMsg((req as any).workspace.language, "teams", limits.teamLimit)));
+      }
+
+      if (limits.agentsPerTeamLimit !== null) {
+        for (const team of workspaceTeams) {
+          const teamAgents = await db.select().from(agents).where(eq(agents.teamId, team.id));
+          if (teamAgents.length > limits.agentsPerTeamLimit) {
+            return res.status(400).json(failure(getDowngradeErrorMsg((req as any).workspace.language, "agents", limits.agentsPerTeamLimit)));
+          }
+        }
+      }
+    }
+
     const [updated] = await db
       .update(workspaces)
-      .set({ tier })
+      .set({ 
+        tier,
+        ...planLimits
+      })
       .where(eq(workspaces.id, String(req.params.id)))
       .returning();
 
@@ -82,10 +125,6 @@ workspacesRouter.post("/:id/llm-keys", authMiddleware, requireWorkspaceOwnership
       result = created;
     }
 
-    // Ensure tier is set to free_byok if not already set or changing from pro
-    await db.update(workspaces).set({ tier: "free_byok" }).where(eq(workspaces.id, workspaceId));
-
-
     res.json(success(result));
   } catch (err) {
     next(err);
@@ -108,50 +147,6 @@ workspacesRouter.get("/:id/llm-keys", authMiddleware, requireWorkspaceOwnership,
       .where(eq(workspaceLlmKeys.workspaceId, String(req.params.id)));
 
     res.json(success(keys));
-  } catch (err) {
-    next(err);
-  }
-});
-
-// ── POST /workspaces/:id/redeem-voucher ────────────────────────────────────────
-workspacesRouter.post("/:id/redeem-voucher", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const { code } = redeemVoucherSchema.parse(req.body);
-    const workspaceId = String(req.params.id);
-
-    // Check if voucher exists and is available
-    const [voucher] = await db
-      .select()
-      .from(vouchers)
-      .where(eq(vouchers.code, code));
-
-    if (!voucher) {
-      return res.status(404).json(failure("Voucher not found"));
-    }
-
-    if (voucher.status !== "available") {
-      return res.status(400).json(failure("Voucher has already been redeemed or is invalid"));
-    }
-
-    // Redeem voucher within a transaction
-    await db.transaction(async (tx) => {
-      await tx
-        .update(vouchers)
-        .set({
-          status: "redeemed",
-          redeemedByWorkspaceId: workspaceId,
-          redeemedAt: new Date(),
-        })
-        .where(eq(vouchers.id, voucher.id));
-
-      await tx
-        .update(workspaces)
-        .set({ tier: "pro" })
-        .where(eq(workspaces.id, workspaceId));
-    });
-
-
-    res.json(success({ message: "Voucher redeemed successfully", tier: "pro" }));
   } catch (err) {
     next(err);
   }
