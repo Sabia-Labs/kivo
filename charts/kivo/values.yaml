@@ -181,27 +181,3 @@ imagePullSecrets: []
 # - name: ghcr-pull-secret
 
 # ── Agent Controller ──────────────────────────────────────────────────────────
-controller:
-  enabled: true
-  replicaCount: 2
-
-  image:
-    repository: ghcr.io/ltreven/kivo-controller
-    tag: "latest"
-    pullPolicy: IfNotPresent
-
-  # Image the controller injects as the main agent container.
-  agentImage: "ghcr.io/ltreven/kivo-agent:latest"
-  agentImagePullPolicy: "IfNotPresent"
-
-  # Image the controller injects as the kivo-consumer sidecar.
-  consumerImage: "ghcr.io/ltreven/kivo-consumer:latest"
-  consumerImagePullPolicy: "IfNotPresent"
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 200m
-      memory: 128Mi

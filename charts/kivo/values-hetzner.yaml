@@ -56,27 +56,3 @@ adminWeb:
     NEXT_PUBLIC_KIVO_WEB_URL: "https://kivo.sabialabs.de"
     KIVO_WEB_URL: "https://kivo.sabialabs.de"
     ADMIN_WEB_URL: "https://auth.sabialabs.de"
-controller:
-  image:
-    repository: ghcr.io/sabia-labs/kivo-controller
-    tag: 064ef6f56b67d2c50fa6abff1a3ccc0a7278b08e
-    pullPolicy: Always
-  agentImage: "ghcr.io/sabia-labs/kivo-agent:latest"
-  agentImagePullPolicy: Always
-  consumerImage: "ghcr.io/sabia-labs/kivo-consumer:latest"
-ingress:
-  enabled: true
-  className: traefik # k3s uses traefik by default
-  host: sabialabs.de
-  tls:
-    enabled: true
-    secretName: kivo-tls
-    certManager:
-      enabled: true
-      clusterIssuer: letsencrypt-prod
-postgresql:
-  embedded: true
-networkPolicy:
-  enabled: false
-rabbitmq:
-  enabled: false

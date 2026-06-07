@@ -26,11 +26,8 @@ import {
 
 import { AgentChatAccordion } from "@/components/AgentChatAccordion";
 
-function computeHealth(a: Agent): HealthStatus {
-  const k8s = a.k8sStatus;
-  if (k8s === "running") return "online";
-  if (k8s === "failed" || k8s === "terminated") return "offline";
-  return "starting";
+function computeDisplayStatus(a: any): "available" | "busy" | "blocked" | "provisioning" | "offline" {
+  return a.availability || "available";
 }
 
 function getFileIcon(filename: string) {
@@ -818,7 +815,7 @@ export default function TeamDetailPage() {
               <div className="flex flex-col gap-1 p-4 rounded-lg bg-muted/50 border border-border/50">
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{t.nav.agents}</span>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold">{agents.filter(a => computeHealth(a) === "online").length}/{agents.length}</span>
+                  <span className="text-2xl font-bold">{agents.filter(a => true).length}/{agents.length}</span>
                   <span className="text-xs text-muted-foreground">{t.teamsPage.online}</span>
                 </div>
               </div>

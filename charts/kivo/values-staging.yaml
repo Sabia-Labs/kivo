@@ -82,35 +82,3 @@ adminWeb:
     NEXT_PUBLIC_API_URL: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api"
     NEXT_PUBLIC_KIVO_WEB_URL: "https://app.kivo-staging.34-141-70-109.nip.io"
     API_INTERNAL_URL: "http://kivo-admin-api:4001"
-controller:
-  replicaCount: 1
-  image:
-    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-controller
-    tag: "9527ad650cf01f46d7633672dee232566c189ae9"
-    pullPolicy: Always
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-      ephemeral-storage: "100Mi"
-  agentImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-agent:latest"
-  agentImagePullPolicy: "Always"
-  consumerImage: "europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-consumer:latest"
-  consumerImagePullPolicy: "Always"
-ingress:
-  enabled: true
-  className: nginx
-  host: kivo-staging.34-141-70-109.nip.io
-  tls:
-    enabled: true
-    secretName: kivo-staging-tls
-    certManager:
-      enabled: true
-      clusterIssuer: letsencrypt-prod
-postgresql:
-  embedded: true
-  persistence:
-    storageClassName: "standard"
-networkPolicy:
-  enabled: true
-imagePullSecrets: []

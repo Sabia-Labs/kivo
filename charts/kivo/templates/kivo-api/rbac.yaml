@@ -1,11 +1,6 @@
 {{- /*
   RBAC for the Kivo API pod.
-  Permissions needed:
-    - Create/read Namespaces (one per workspace)
-    - CRUD KivoAgent CRs (agents.kivo.ai) in workspace namespaces
-    - CRUD Secrets (credentials per agent) in workspace namespaces
-    - List Pods + Exec into them (for openclaw pairing approve)
-    - Patch Deployments (for rollout restart on token update)
+  (Stripped down: kivo-api no longer needs Kubernetes API access directly)
 */ -}}
 ---
 apiVersion: v1
@@ -16,54 +11,4 @@ metadata:
   labels:
     app.kubernetes.io/name: kivo-api
     app.kubernetes.io/managed-by: {{ .Release.Service }}
-automountServiceAccountToken: true
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kivo-api
-  labels:
-    app.kubernetes.io/name: kivo-api
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-rules:
-  # Namespace management — one per workspace (kivo-ws-*)
-  - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["get", "list", "create"]
-  # KivoAgent Custom Resources — desired state write
-  - apiGroups: ["kivo.ai"]
-    resources: ["agents"]
-    verbs: ["get", "list", "create", "update", "patch", "delete"]
-  # Credentials Secrets — created alongside KivoAgent CRs
-  - apiGroups: [""]
-    resources: ["secrets"]
-    verbs: ["get", "create", "update", "patch", "delete"]
-  # Pod listing + exec — required for execInAgentPod() (pairing approve)
-  # 'get' is needed for WebSocket exec (HTTP GET upgrade).
-  # 'create' is needed for SPDY exec (HTTP POST).
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["pods/exec"]
-    verbs: ["get", "create"]
-  # Deployment patch — required for rolloutRestartDeployment()
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "patch", "update"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kivo-api
-  labels:
-    app.kubernetes.io/name: kivo-api
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kivo-api
-subjects:
-  - kind: ServiceAccount
-    name: kivo-api
-    namespace: {{ .Values.namespace }}
+automountServiceAccountToken: false

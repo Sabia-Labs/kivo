@@ -5,43 +5,9 @@ import { workspaces, workspaceLlmKeys, vouchers, teams, agents } from "../db/sch
 import { authMiddleware } from "../middleware/authMiddleware";
 import { success, failure } from "../lib/response";
 import { updateWorkspaceTierSchema, saveWorkspaceLlmKeySchema, redeemVoucherSchema } from "../schemas/workspace.schema";
-import { applyCredentialsSecret, applyKivoAgentCR, ensureNamespace, workspaceNamespace, rolloutRestartDeployment } from "../k8s/provisioner";
 
 export const workspacesRouter = Router();
 
-async function triggerWorkspaceProvisioning(workspaceId: string) {
-  const [workspace] = await db.select().from(workspaces).where(eq(workspaces.id, workspaceId));
-  if (!workspace) return;
-  
-  if (process.env.FEATURE_FLAG_LANGCHAIN === "true" && workspace.langchain) {
-    console.log(`[workspaces] Skipping K8s provisioning for workspace ${workspaceId} due to LangChain feature flag.`);
-    return;
-  }
-
-  const namespace = workspace.k8sNamespace ?? workspaceNamespace(workspaceId);
-
-  await ensureNamespace(namespace).catch(console.error);
-  if (!workspace.k8sNamespace) {
-    await db.update(workspaces).set({ k8sNamespace: namespace }).where(eq(workspaces.id, workspaceId));
-  }
-
-  const workspaceTeams = await db.select().from(teams).where(eq(teams.workspaceId, workspaceId));
-  for (const team of workspaceTeams) {
-    const teamAgents = await db.select().from(agents).where(eq(agents.teamId, team.id));
-    for (const agent of teamAgents) {
-      try {
-        await applyCredentialsSecret(namespace, agent);
-        await applyKivoAgentCR(namespace, agent, workspaceId, team.name);
-        await rolloutRestartDeployment(namespace, agent.id).catch(() => {});
-        await db.update(agents).set({ k8sStatus: "provisioning", k8sResourceName: agent.id }).where(eq(agents.id, agent.id));
-      } catch (err) {
-        console.error(`[workspaces] Failed to provision agent ${agent.id}:`, err);
-      }
-    }
-  }
-}
-
-// Middleware to ensure workspace belongs to the user
 const requireWorkspaceOwnership = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const workspaceId = String(req.params.id);
@@ -119,8 +85,6 @@ workspacesRouter.post("/:id/llm-keys", authMiddleware, requireWorkspaceOwnership
     // Ensure tier is set to free_byok if not already set or changing from pro
     await db.update(workspaces).set({ tier: "free_byok" }).where(eq(workspaces.id, workspaceId));
 
-    // Provision agents now that tier is set
-    await triggerWorkspaceProvisioning(workspaceId);
 
     res.json(success(result));
   } catch (err) {
@@ -186,8 +150,6 @@ workspacesRouter.post("/:id/redeem-voucher", authMiddleware, requireWorkspaceOwn
         .where(eq(workspaces.id, workspaceId));
     });
 
-    // Provision agents now that tier is set
-    await triggerWorkspaceProvisioning(workspaceId);
 
     res.json(success({ message: "Voucher redeemed successfully", tier: "pro" }));
   } catch (err) {

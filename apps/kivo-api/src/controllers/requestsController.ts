@@ -3,7 +3,7 @@ import { randomBytes } from "crypto";
 import { db } from "../db/client";
 import { requests, notifications, conversations, messages, agents, teams, workspaces, comments } from "../db/schema";
 import { buildTeamRequestFinishedMessage } from "../lib/messages";
-import { workspaceNamespace, deliverMessageToAgent } from "../k8s/provisioner";
+
 import { logActivity } from "../lib/activity-logger";
 import { runRequestIngestion } from "../workflows/requestIngestion";
 import { t, resolveWorkspaceLanguage } from "../lib/i18n";
@@ -89,30 +89,7 @@ export async function handleRequestCompletedState(requestRecord: any) {
       content: messageContent
     }).returning();
 
-    // Publish to Agent
-    const [agent] = await db.select().from(agents).where(eq(agents.id, targetAgentId));
-    if (agent) {
-       const [team] = await db.select().from(teams).where(eq(teams.id, agent.teamId));
-       const workspaceId = team?.workspaceId;
-       
-       if (workspaceId) {
-          const namespace = workspaceNamespace(workspaceId);
 
-          try {
-            const delivered = await deliverMessageToAgent(namespace, agent.id, {
-              sessionKey: conversation.id,
-              content: messageContent,
-              messageId: userMessage.id,
-            });
-
-            if (delivered) {
-              await db.update(messages).set({ deliveredAt: new Date() }).where(eq(messages.id, userMessage.id));
-            }
-          } catch (err) {
-            console.error("[team-requests] HTTP push for completion failed:", err);
-          }
-       }
-    }
   }
 }
 

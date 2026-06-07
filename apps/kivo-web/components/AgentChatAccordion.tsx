@@ -9,11 +9,7 @@ import { AgentChatArea } from "@/components/AgentChatArea";
 import { useAuth } from "@/lib/auth";
 import { useTranslation } from "@/lib/i18n";
 
-function computeHealth(k8sStatus?: string): "online" | "offline" | "starting" {
-  if (k8sStatus === "running") return "online";
-  if (k8sStatus === "failed" || k8sStatus === "terminated") return "offline";
-  return "starting";
-}
+
 
 export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: string }) {
   const { token, user } = useAuth();
@@ -44,8 +40,7 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
                   {leader.icon || "🤖"}
                 </div>
                 <span className={cn(
-                  "absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-card",
-                  computeHealth(leader.k8sStatus) === "online" ? "bg-emerald-500" : computeHealth(leader.k8sStatus) === "starting" ? "bg-amber-500 animate-pulse" : "bg-red-500"
+                  "absolute bottom-0 right-0 size-2.5 rounded-full ring-2 ring-card bg-emerald-500"
                 )} />
               </div>
               <div>
@@ -96,7 +91,6 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
       {members.length > 0 && (
         <div className="flex flex-wrap gap-2 px-1">
           {members.map((member) => {
-            const health = computeHealth(member.k8sStatus);
             return (
               <Link 
                 key={member.id}
@@ -108,8 +102,7 @@ export function AgentChatAccordion({ agents, teamId }: { agents: any[], teamId: 
                     {member.icon || "🤖"}
                   </div>
                   <span className={cn(
-                    "absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-1 ring-card",
-                    health === "online" ? "bg-emerald-500" : health === "starting" ? "bg-amber-500 animate-pulse" : "bg-red-500"
+                    "absolute -bottom-0.5 -right-0.5 size-2 rounded-full ring-1 ring-card bg-emerald-500"
                   )} />
                 </div>
                 <div className="flex flex-col min-w-0">

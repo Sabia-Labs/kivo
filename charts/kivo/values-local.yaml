@@ -85,37 +85,6 @@ networkPolicy:
   # Disable NetworkPolicy locally — Docker Desktop doesn't enforce them well
   enabled: false
 
-controller:
-  enabled: true
-  replicaCount: 1   # single replica locally (no need for HA)
-  image:
-    repository: kivo/controller
-    tag: local
-    pullPolicy: Never
-  # Image the controller will use for agent Pods.
-  # In local dev: built by Tilt with pullPolicy=Never.
-  # In prod: override with the published ghcr.io reference.
-  agentImage: "kivo/agent"
-  agentImagePullPolicy: "IfNotPresent"
-  # Consumer sidecar image — built by Tilt locally.
-  # Set to empty string here; the kivo-consumer-image ConfigMap (applied by Tilt)
-  # overrides this when the build is ready. While the build is pending, the controller
-  # reads an empty string → skips sidecar injection → agents start as 1/1.
-  consumerImage: ""
-  consumerImagePullPolicy: "IfNotPresent"
-
-# ── RabbitMQ local dev ──────────────────────────────────────────────────────────
-rabbitmq:
-  enabled: true
-  replicas: 1          # single node is fine for local dev
-  adminUser: admin
-  adminPassword: kivo_rabbit_local   # NOT a real secret — local only
-  persistence:
-    storage: 2Gi
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
     limits:
       cpu: "300m"
       memory: 512Mi
