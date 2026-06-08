@@ -35,7 +35,7 @@ networkPolicy:
   enabled: true
 ingress:
   enabled: true
-  className: nginx
+  className: traefik
   host: sabialabs.de
   tls:
     enabled: true
