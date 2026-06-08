@@ -260,40 +260,24 @@ async function getTeamCapabilityNode(state: typeof IngestionState.State) {
   return { capability };
 }
 
-const prepareTaskSchema = z.object({
-  prompt: z.string().describe("The task prompt must reflect the work to be done, what the end user expects to be achieved. The agents will rely on this prompt to understand the task."),
-  instructions: z.string().describe("Instructions for the agent to perform the task.")
-});
-
 async function prepareTaskNode(state: typeof IngestionState.State) {
   console.log(`[request-ingestion] Node: prepareTask. Request ID: ${state.requestId}`);
-  const prompt = `You are a very helpful agent who will help prepare a task for another agent. Your job is to take the user request and prepare a prompt and instructions for the assigned agent to do the work.
-  Please don't try to solve the request yourself. That is not your job. Instead, use the task template below to create a prompt and instructions for the assigned agent to do the work.
-  
-  What the user wants (the request): ${state.request.title}
-  The request Details (the work to be done, remember, not by you, but by another agent): ${state.request.requestDetails || "None"}
-  
-  You must understand this template to give instructions to other agents:
-  - Template Name: ${state.capability?.name}
-  - Template Instructions: ${state.capability?.instructions}
-  - Required Inputs: ${state.capability?.inputsDescription || "None"}
-  - Expected Outputs: ${state.capability?.expectedOutputsDescription || "None"}
-  
-  Now, create a prompt and instructions for the assigned agent to perform the task. 
-  Make the prompt reflect the work to be done and what the end user expects to be achieved. The agents will rely on this prompt to understand the task.
-  The instructions should be detailed and specific. It should be clear for the agent, what it needs to do to perform the task, what are the inputs and outputs it needs to consider.
-  `;
 
-  const structuredLlm = getLlm().withStructuredOutput(prepareTaskSchema);
-  const result = await structuredLlm.invoke(prompt);
+  const taskPrompt = state.request.requestDetails || state.request.title;
+  
+  let taskInstructions = state.capability?.instructions || "";
+  if (state.capability?.inputsDescription) {
+    taskInstructions += `\n- **Required Inputs:** ${state.capability.inputsDescription}`;
+  }
+  if (state.capability?.expectedOutputsDescription) {
+    taskInstructions += `\n- **Expected Outputs:** ${state.capability.expectedOutputsDescription}`;
+  }
 
   console.log(`[request-ingestion] Node: prepareTask. 
     Request ID: ${state.requestId}
-    Returning...
-    \ntaskPrompt: ${result.prompt}
-    \ntaskInstructions: ${result.instructions}`);
+    Returning static instructions to bypass LLM rewriting.`);
 
-  return { taskPrompt: result.prompt, taskInstructions: result.instructions };
+  return { taskPrompt, taskInstructions };
 }
 
 const agentAssignmentSchema = z.object({
@@ -333,7 +317,7 @@ async function createTaskNode(state: typeof IngestionState.State) {
 CRITICAL TASK WORKFLOW INSTRUCTIONS:
 You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
-2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. If simple, provide a brief rationale in the 'plan' field. Summarize your actions and thoughts in the 'workSummary' field. If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. In whatever situation you MUST ALWAYS finish by updating the task 'status' field with 'success' or 'failed'. If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. Do not leave the task open; it must be resolved.`;
+2. EXECUTION: Provide a brief rationale of your actions in the 'workSummary' field. If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. In whatever situation you MUST ALWAYS finish by updating the task 'status' field with 'success' or 'failed'. If the task was completed satisfactorily, you MUST set 'status' to 'success'. If you are in doubt, encounter a blocker, or are unable to execute the requested actions, you MUST set 'status' to 'failed' to signal the failure. Do not leave the task open; it must be resolved.`;
 
   const finalInstructions = `[CAPABILITY_TYPE: ${state.capability?.type || "task"}]\n${state.taskInstructions || ""}\n${agentTaskWorkflowInstructions}`;
 

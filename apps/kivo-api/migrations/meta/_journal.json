@@ -50,6 +50,13 @@
       "when": 1780875028029,
       "tag": "0006_outstanding_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1780920681066,
+      "tag": "0007_giant_leo",
+      "breakpoints": true
     }
   ]
 }
