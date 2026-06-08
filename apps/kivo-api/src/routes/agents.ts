@@ -2,10 +2,11 @@ import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../db/client";
-import { agents, workspaces, teams, users } from "../db/schema";
+import { agents, workspaces, teams, users, agentRoles } from "../db/schema";
 import { createAgentSchema, updateAgentSchema } from "../schemas/agent.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
+import { getAgentLlmSettings } from "../lib/agentSettings";
 
 export const agentsRouter = Router();
 
@@ -39,7 +40,15 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
       }
     }
 
-    const gatewayToken = randomBytes(32).toString("base64url");
+    let competence = null;
+    let identity = null;
+    if (input.roleId) {
+      const [role] = await db.select().from(agentRoles).where(eq(agentRoles.id, input.roleId));
+      if (role) {
+        competence = role.competence;
+        identity = role.identity;
+      }
+    }
 
     const [agent] = await db
       .insert(agents)
@@ -48,8 +57,10 @@ agentsRouter.post("/", async (req: Request, res: Response, next: NextFunction) =
         name: input.name,
         roleId: input.roleId,
         icon: input.icon,
-        gatewayToken,
+        competence,
+        identity,
         metadata: input.metadata || {},
+        ...getAgentLlmSettings(false),
       })
       .returning();
 
@@ -139,7 +150,7 @@ agentsRouter.get("/:id", async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    const { gatewayToken: _gt, ...safeAgent } = agent as any;
+    const safeAgent = { ...agent } as any;
     
     // Sanitize metadata to hide token and add status flags for UI
     if (safeAgent.metadata) {

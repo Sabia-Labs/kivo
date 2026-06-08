@@ -466,12 +466,10 @@ export const zh: Dictionary = {
     brainMemoryTitle: "大脑与记忆",
     brainMemoryDesc: "配置该智能体的核心个性、身份与运行规则。",
     brainFields: {
-      soul: "SOUL (灵魂)",
-      soulDesc: "实时查看智能体的个性、价值观与行为边界。",
+      competence: "COMPETENCE (能力)",
+      competenceDesc: "实时查看智能体的能力与操作说明。",
       identity: "IDENTITY (身份)",
       identityDesc: "实时查看姓名、角色、使命与声音定义。",
-      process: "PROCESS (流程)",
-      processDesc: "实时查看运行规则与行为指令。",
     },
     editor: {
       titleSuffix: "内容",

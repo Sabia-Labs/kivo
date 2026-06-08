@@ -59,9 +59,8 @@ metaRouter.get("/team-types/:id/roles", async (req: Request, res: Response, next
           suggestedNameI18nKey: agentRoles.suggestedNameI18nKey,
           emoji: agentRoles.emoji,
           emojiBgColor: agentRoles.emojiBgColor,
-          soul: agentRoles.soul,
           identity: agentRoles.identity,
-          operatingInstructions: agentRoles.operatingInstructions,
+          competence: agentRoles.competence,
         },
         isLeader: teamTypeRoles.isLeader,
         quantity: teamTypeRoles.quantity,
@@ -89,9 +88,8 @@ metaRouter.get("/agent-roles", async (req: Request, res: Response, next: NextFun
         suggestedNameI18nKey: agentRoles.suggestedNameI18nKey,
         emoji: agentRoles.emoji,
         emojiBgColor: agentRoles.emojiBgColor,
-        soul: agentRoles.soul,
         identity: agentRoles.identity,
-        operatingInstructions: agentRoles.operatingInstructions,
+        competence: agentRoles.competence,
       })
       .from(agentRoles)
       .$dynamic();

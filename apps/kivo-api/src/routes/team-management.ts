@@ -1,12 +1,13 @@
 import { randomBytes } from "crypto";
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../db/client";
-import { agents, workspaces, teams, users } from "../db/schema";
+import { agents, workspaces, teams, users, agentRoles } from "../db/schema";
 import { createAgentSchema } from "../schemas/agent.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { replacePlaceholders } from "../lib/messages";
+import { getAgentLlmSettings } from "../lib/agentSettings";
 
 import { getTeamById } from "../controllers/teamsController";
 import { getAgentsByTeam } from "../controllers/agentsController";
@@ -77,7 +78,7 @@ teamManagementRouter.get("/members", async (req: Request, res: Response, next: N
     const rows = await getAgentsByTeam(teamId);
 
     const sanitized = rows.map((a: any) => {
-      const { gatewayToken: _gt, ...safeAgent } = a;
+      const safeAgent = { ...a };
       if (safeAgent.metadata) {
         const { telegramBotToken: _tok, ...safeMeta } = safeAgent.metadata;
         safeAgent.metadata = { ...safeMeta, hasTelegramToken: Boolean(_tok) };
@@ -135,7 +136,15 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
       return;
     }
 
-    const gatewayToken = randomBytes(32).toString("base64url");
+    let competence = null;
+    let identity = null;
+    if (input.roleId) {
+      const [role] = await db.select().from(agentRoles).where(eq(agentRoles.id, input.roleId));
+      if (role) {
+        competence = role.competence;
+        identity = role.identity;
+      }
+    }
 
     const [newAgent] = await db
       .insert(agents)
@@ -144,15 +153,17 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
         name: input.name,
         roleId: input.roleId, // input.roleId holds the role ID from client
         icon: input.icon,
-        gatewayToken,
+        competence,
+        identity,
         metadata: input.metadata || {},
+        ...getAgentLlmSettings(false),
       })
       .returning();
 
 
 
 
-    const { gatewayToken: _gt, ...safeAgent } = newAgent as any;
+    const safeAgent = { ...newAgent } as any;
     res.status(201).json(success(safeAgent));
   } catch (err) {
     next(err);
@@ -160,4 +171,3 @@ teamManagementRouter.post("/members", async (req: Request, res: Response, next: 
 });
 
 // Import helpers for join logic
-import { and } from "drizzle-orm";

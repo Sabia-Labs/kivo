@@ -103,6 +103,12 @@ const start = async () => {
     // ── Template Seed (Sync from Control Plane) ─────────────────────────────────
     const { runTemplateSeed } = await import("./lib/templateSeed");
     await runTemplateSeed().catch(err => console.error("Template seed failed:", err));
+
+    // ── Background Jobs ───────────────────────────────────────────────────────────
+    const { summarizeMemories } = await import("./jobs/memorySummarizer");
+    setInterval(() => {
+      summarizeMemories().catch(err => console.error("Memory Summarizer interval failed:", err));
+    }, 6 * 60 * 60 * 1000); // Every 6 hours
   });
 };
 

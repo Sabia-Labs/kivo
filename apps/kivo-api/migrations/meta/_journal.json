@@ -15,6 +15,41 @@
       "when": 1780840283109,
       "tag": "0001_premium_silverclaw",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780867987942,
+      "tag": "0002_cloudy_havok",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780869344251,
+      "tag": "0003_bright_banshee",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1780871167446,
+      "tag": "0004_high_martin_li",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1780871523733,
+      "tag": "0005_foamy_microbe",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1780875028029,
+      "tag": "0006_outstanding_hairball",
+      "breakpoints": true
     }
   ]
 }

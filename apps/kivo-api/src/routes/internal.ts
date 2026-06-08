@@ -116,28 +116,13 @@ internalRouter.post(
         return req;
       });
 
-      // 3. Create NEW Conversation
-      const [conversation] = await db.insert(conversations).values({
-        agentId: targetAgentId,
-        counterpartType: "external" as any,
-        counterpartId: "system",
-        counterpartName: "System Orchestrator"
-      }).returning();
 
-      // 4. Create Message
-      const messageContent = buildTeamRequestMessage(requestRecord);
-
-      await db.insert(messages).values({
-        conversationId: conversation.id,
-        role: "user" as any,
-        content: messageContent
-      });
 
       // 5. Trigger Request Ingestion Workflow
       console.log(`[internal] Triggering request ingestion for scheduled capability ${capability.name}`);
       runRequestIngestion(requestRecord.id, capability.teamId).catch(console.error);
 
-      res.status(200).json(success({ request: requestRecord, conversation }));
+      res.status(200).json(success({ request: requestRecord }));
     } catch (err) {
       next(err);
     }

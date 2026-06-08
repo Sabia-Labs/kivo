@@ -1,0 +1,1 @@
+ALTER TABLE "teams" ADD COLUMN "long_term_memory" text;

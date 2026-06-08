@@ -5,6 +5,8 @@ import { conversations, messages, agents, workspaces, teams } from "../db/schema
 import { createConversationSchema, createMessageSchema } from "../schemas/conversation.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
+import { runChatEngine } from "../workflows/langgraph/chatEngine";
+import { resolveWorkspaceLanguage } from "../lib/i18n";
 
 export const conversationsRouter = Router();
 
@@ -112,6 +114,44 @@ conversationsRouter.post("/:id/messages", authMiddleware, async (req: Request, r
 
     // Return the user message immediately. The UI already polls for replies.
     res.status(201).json(success({ userMessage, agentMessage: null }));
+
+    // ── 2. Run Chat Engine Asynchronously ──────────────────────────────────────
+    if (req.actor && req.actor.type === "human") {
+      db.select().from(agents).where(eq(agents.id, conversation.agentId)).then(([agent]) => {
+        if (agent) {
+          runChatEngine({
+            conversationId,
+            teamId: agent.teamId, // Provide the actual valid team ID from the agent
+            agentId: conversation.agentId,
+            userId: req.actor!.id, // Non-null asserted because of the check
+            userMessage: input.content,
+          }).catch(async (err) => {
+            console.error(`[chat-engine] Failed to run for conversation ${conversationId}:`, err);
+            
+            try {
+              // ── Write fallback message ──────────────────────────────────────────
+              const lang = await resolveWorkspaceLanguage(agent.teamId);
+              let errorMessage = "An internal error occurred and I could not process your request.";
+              if (lang === "pt") errorMessage = "Ocorreu um erro interno e não consegui processar sua mensagem.";
+              if (lang === "zh") errorMessage = "发生内部错误，我无法处理您的请求。";
+
+              await db.insert(messages).values({
+                conversationId,
+                role: "assistant",
+                content: errorMessage,
+              });
+
+              await db.update(conversations)
+                .set({ updatedAt: new Date() })
+                .where(eq(conversations.id, conversationId));
+            } catch (fallbackErr) {
+              console.error(`[chat-engine] Failed to save fallback message for conversation ${conversationId}:`, fallbackErr);
+            }
+          });
+        }
+      });
+    }
+
   } catch (err) {
     next(err);
   }

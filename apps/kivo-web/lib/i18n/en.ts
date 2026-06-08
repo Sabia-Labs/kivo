@@ -464,12 +464,10 @@ export const en = {
     brainMemoryTitle: "Brain & Memory",
     brainMemoryDesc: "Configure the core personality, identity, and operational rules for this agent.",
     brainFields: {
-      soul: "SOUL",
-      soulDesc: "Live view of the agent's personality, values and boundaries.",
+      competence: "COMPETENCE",
+      competenceDesc: "Live view of the agent's competence and operating instructions.",
       identity: "IDENTITY",
       identityDesc: "Live view of name, role, mission and voice definitions.",
-      process: "PROCESS",
-      processDesc: "Live view of operational rules and behavior instructions.",
     },
     editor: {
       titleSuffix: "Content",
