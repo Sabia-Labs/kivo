@@ -7,6 +7,7 @@ import { createAgentSchema, updateAgentSchema } from "../schemas/agent.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { getAgentLlmSettings } from "../lib/agentSettings";
+import { telegramManager } from "../lib/telegramManager";
 
 export const agentsRouter = Router();
 
@@ -187,7 +188,77 @@ agentsRouter.put("/:id", async (req: Request, res: Response, next: NextFunction)
       .where(eq(agents.id, String(req.params.id)))
       .returning();
 
+    // If telegram token was updated, restart the bot
+    const newToken = (input.metadata as any)?.telegramBotToken;
+    const oldToken = (existing.metadata as any)?.telegramBotToken;
+    if (newToken && newToken !== oldToken) {
+      telegramManager.startBot(updated.id, newToken).catch(err => {
+        console.error(`[Telegram] Failed to start bot after update for agent ${updated.id}:`, err);
+      });
+    } else if (oldToken && !newToken) {
+      telegramManager.stopBot(updated.id);
+    }
+
     res.json(success(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /agents/:id/telegram/approve-pairing ─────────────────────────────────
+agentsRouter.post("/:id/telegram/approve-pairing", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      res.status(400).json(failure("Missing pairing code"));
+      return;
+    }
+
+    const [agent] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.id, String(req.params.id)));
+
+    if (!agent) {
+      res.status(404).json(failure("Agent not found"));
+      return;
+    }
+
+    const meta = agent.metadata as Record<string, any> || {};
+
+    if (!meta.telegramPairingCode || meta.telegramPairingCode !== code) {
+      res.status(400).json(failure("Invalid or expired pairing code"));
+      return;
+    }
+
+    if (!meta.telegramPendingChatId) {
+      res.status(400).json(failure("No pending chat to pair"));
+      return;
+    }
+
+    // Approve the pairing: clear code, save chat id, update status
+    const updatedMeta = {
+      ...meta,
+      telegramPairingCode: undefined,
+      telegramChatId: meta.telegramPendingChatId,
+      telegramPendingChatId: undefined,
+      telegramStatus: "complete",
+    };
+
+    const [updatedAgent] = await db
+      .update(agents)
+      .set({ metadata: updatedMeta, updatedAt: new Date() })
+      .where(eq(agents.id, agent.id))
+      .returning();
+
+    // Optionally notify the user via Telegram that pairing is complete
+    telegramManager.sendMessage(agent.id, "✅ Your Telegram chat is now securely connected to Kivo! You can start chatting with your agent.");
+
+    // Return sanitized metadata
+    const { telegramBotToken: _tok, ...safeMeta } = updatedMeta as any;
+    const safeAgent = { ...updatedAgent, metadata: { ...safeMeta, hasTelegramToken: Boolean(_tok) } };
+
+    res.json(success(safeAgent));
   } catch (err) {
     next(err);
   }
@@ -200,6 +271,10 @@ agentsRouter.delete("/:id", async (req: Request, res: Response, next: NextFuncti
     if (!agent) return res.status(404).json(failure("Agent not found"));
 
     await db.delete(agents).where(eq(agents.id, agent.id));
+    
+    // Stop bot if running
+    telegramManager.stopBot(agent.id);
+
     res.status(200).json(success({ deleted: true, id: agent.id }));
   } catch (err) {
     next(err);

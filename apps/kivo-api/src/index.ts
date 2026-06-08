@@ -14,6 +14,8 @@ import { mcpRouter } from "./routes/mcp";
 import { metaRouter } from "./routes/meta";
 import { notificationsRouter } from "./routes/notifications";
 import { workspacesRouter } from "./routes/workspaces";
+import { webhooksRouter } from "./routes/webhooks";
+import { telegramManager } from "./lib/telegramManager";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 4000);
@@ -76,6 +78,7 @@ app.use("/mcp", mcpRouter);
 app.use("/meta", metaRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/workspaces", workspacesRouter);
+app.use("/webhooks", webhooksRouter);
 
 // ── Global error handler ──────────────────────────────────────────────────────
 
@@ -109,6 +112,11 @@ const start = async () => {
     setInterval(() => {
       summarizeMemories().catch(err => console.error("Memory Summarizer interval failed:", err));
     }, 6 * 60 * 60 * 1000); // Every 6 hours
+
+    // ── Telegram Bots ─────────────────────────────────────────────────────────────
+    telegramManager.initAll().catch(err => {
+      console.error("[Telegram] Failed to initialize bots:", err);
+    });
   });
 };
 
