@@ -56,6 +56,7 @@ fi
   RESEND_KEY=$(grep "^RESEND_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_CLIENT_ID=$(grep "^GOOGLE_CLIENT_ID=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  G_REDIRECT_URI=$(grep "^GOOGLE_REDIRECT_URI=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
 
   # Generate or reuse sensitive tokens
   JWT_SECRET=$(k get secret kivo-api-secret -n "$NS" -o jsonpath='{.data.JWT_SECRET}' 2>/dev/null | base64 -d || openssl rand -base64 32)
@@ -74,6 +75,7 @@ stringData:
   OPENAI_API_KEY: "$OAI_KEY"
   GOOGLE_CLIENT_ID: "$G_CLIENT_ID"
   GOOGLE_CLIENT_SECRET: "$G_CLIENT_SECRET"
+  GOOGLE_REDIRECT_URI: "$G_REDIRECT_URI"
   GEMINI_API_KEY: "$GEMINI_KEY"
   RESEND_API_KEY: "$RESEND_KEY"
 EOF
