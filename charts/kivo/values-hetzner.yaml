@@ -10,7 +10,7 @@ kivoApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-api
-    tag: 064ef6f56b67d2c50fa6abff1a3ccc0a7278b08e
+    tag: c94fe1c2cec241e2795c23668b0ff20ff7586965
     pullPolicy: Always
   existingSecret: "kivo-api-secret"
   databaseSecret: "kivo-db-credentials"
@@ -22,7 +22,7 @@ kivoWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: 064ef6f56b67d2c50fa6abff1a3ccc0a7278b08e
+    tag: c94fe1c2cec241e2795c23668b0ff20ff7586965
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
@@ -30,7 +30,6 @@ kivoWeb:
     NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
     SITE_URL: "https://auth.sabialabs.de"
     ADMIN_WEB_URL: "https://auth.sabialabs.de"
-
 ingress:
   enabled: true
   className: nginx
