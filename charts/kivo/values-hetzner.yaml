@@ -18,11 +18,12 @@ kivoApi:
   env:
     CORS_ORIGIN: "https://kivo.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de,https://auth.sabialabs.de"
     APP_URL: "https://kivo.sabialabs.de"
+    TELEGRAM_WEBHOOK_DOMAIN: "https://auth.sabialabs.de"
 kivoWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: 81ab7fad1049361a32a4dfd23b279ba2e8f0694c
+    tag: latest
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
@@ -30,6 +31,7 @@ kivoWeb:
     NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
     SITE_URL: "https://auth.sabialabs.de"
     ADMIN_WEB_URL: "https://auth.sabialabs.de"
+
 ingress:
   enabled: true
   className: nginx

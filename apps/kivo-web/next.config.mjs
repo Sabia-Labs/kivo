@@ -20,6 +20,10 @@ const nextConfig = {
         source: '/api/:path*',
         destination: `${apiBase}/:path*`,
       },
+      {
+        source: '/webhooks/:path*',
+        destination: `${apiBase}/webhooks/:path*`,
+      },
     ]
   },
 }
