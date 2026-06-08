@@ -55,7 +55,7 @@ jobs:
       - name: Build & push API image
         uses: docker/build-push-action@v6
         with:
-          context: apps/kivo-api
+          context: .
           file: apps/kivo-api/Dockerfile
           push: true
           tags: |
@@ -68,7 +68,7 @@ jobs:
       - name: Build & push Web image
         uses: docker/build-push-action@v6
         with:
-          context: apps/kivo-web
+          context: .
           file: apps/kivo-web/Dockerfile
           push: true
           tags: |
@@ -77,71 +77,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=kivo-web
           cache-to: type=gha,mode=max,scope=kivo-web
-
-      - name: Build & push Admin API image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: apps/admin-api/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-api:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-api:latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=admin-api
-          cache-to: type=gha,mode=max,scope=admin-api
-
-      - name: Build & push Admin Web image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/admin-web
-          file: apps/admin-web/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-web:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-web:latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=admin-web
-          cache-to: type=gha,mode=max,scope=admin-web
-
-      - name: Build & push Controller image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/controller
-          file: apps/controller/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-controller:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-controller:latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=controller
-          cache-to: type=gha,mode=max,scope=controller
-
-      - name: Build & push Agent image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/agents
-          file: apps/agents/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-agent:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-agent:latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=agents
-          cache-to: type=gha,mode=max,scope=agents
-
-      - name: Build & push Consumer image
-        uses: docker/build-push-action@v6
-        with:
-          context: apps/consumer
-          file: apps/consumer/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-consumer:${{ github.sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-consumer:latest
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=consumer
-          cache-to: type=gha,mode=max,scope=consumer
 
   update-manifests:
     name: Update GitOps Manifests
@@ -162,9 +97,6 @@ jobs:
           # Use yq to update the image tag for all components in values-hetzner.yaml
           yq -i '.kivoApi.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
           yq -i '.kivoWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
-          yq -i '.adminApi.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
-          yq -i '.adminWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
-          yq -i '.controller.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
           
       - name: Commit and push changes
         run: |

@@ -18,19 +18,6 @@ kivoApi:
   env:
     CORS_ORIGIN: "https://kivo.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de,https://auth.sabialabs.de"
     APP_URL: "https://kivo.sabialabs.de"
-adminApi:
-  replicaCount: 1
-  image:
-    repository: ghcr.io/sabia-labs/kivo-admin-api
-    tag: 064ef6f56b67d2c50fa6abff1a3ccc0a7278b08e
-    pullPolicy: Always
-  existingSecret: "kivo-api-secret"
-  databaseSecret: "kivo-admin-db-credentials"
-  runMigrations: true
-  env:
-    ADMIN_WEB_URL: "https://auth.sabialabs.de"
-    KIVO_WEB_URL: "https://kivo.sabialabs.de"
-    GOOGLE_REDIRECT_URI: "https://auth.sabialabs.de/admin-api/auth/google/callback"
 kivoWeb:
   replicaCount: 1
   image:
@@ -43,16 +30,14 @@ kivoWeb:
     NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
     SITE_URL: "https://auth.sabialabs.de"
     ADMIN_WEB_URL: "https://auth.sabialabs.de"
-adminWeb:
-  replicaCount: 1
-  image:
-    repository: ghcr.io/sabia-labs/kivo-admin-web
-    tag: 064ef6f56b67d2c50fa6abff1a3ccc0a7278b08e
-    pullPolicy: Always
-  env:
-    API_INTERNAL_URL: "http://kivo-admin-api:4001"
-    NEXT_PUBLIC_API_URL: "/admin-api"
-    NEXT_PUBLIC_ADMIN_WEB_URL: "https://auth.sabialabs.de"
-    NEXT_PUBLIC_KIVO_WEB_URL: "https://kivo.sabialabs.de"
-    KIVO_WEB_URL: "https://kivo.sabialabs.de"
-    ADMIN_WEB_URL: "https://auth.sabialabs.de"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: sabialabs.de
+  tls:
+    enabled: true
+    secretName: kivo-tls
+    certManager:
+      enabled: true
+      clusterIssuer: letsencrypt-prod
