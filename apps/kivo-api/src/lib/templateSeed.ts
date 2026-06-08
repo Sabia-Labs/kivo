@@ -22,14 +22,6 @@ export async function runTemplateSeed() {
   const DEFINITIONS_DIR = definitionsPath;
 
   try {
-    // 1. Load Shared Blocks
-    const sharedDir = path.join(DEFINITIONS_DIR, "shared");
-    const agentsBase = fs.readFileSync(path.join(sharedDir, "AGENTS.md"), "utf-8");
-    const heartbeatBase = fs.readFileSync(path.join(sharedDir, "HEARTBEAT.md"), "utf-8");
-    const memoryBase = fs.readFileSync(path.join(sharedDir, "MEMORY.md"), "utf-8");
-    const toolsBase = fs.readFileSync(path.join(sharedDir, "TOOLS.md"), "utf-8");
-    const userBase = fs.readFileSync(path.join(sharedDir, "USER.md"), "utf-8");
-
     // 2. Sync Agent Roles
     const rolesDir = path.join(DEFINITIONS_DIR, "agent-roles");
     const roleFiles = fs.readdirSync(rolesDir).filter(f => f.endsWith(".md"));
@@ -43,9 +35,8 @@ export async function runTemplateSeed() {
 
       // Split body by H1 sections
       const sections = body.split(/^# /m).filter(s => s.trim());
-      const soul = sections.find(s => s.startsWith("SOUL"))?.replace(/^SOUL\n/, "").trim() || "";
       const identity = sections.find(s => s.startsWith("IDENTITY"))?.replace(/^IDENTITY\n/, "").trim() || "";
-      const operatingInstructions = sections.find(s => s.startsWith("OPERATING INSTRUCTIONS"))?.replace(/^OPERATING INSTRUCTIONS\n/, "").trim() || "";
+      const competence = sections.find(s => s.startsWith("COMPETENCE"))?.replace(/^COMPETENCE\n/, "").trim() || "";
 
       console.log(`   -> Syncing Role: ${data.id}`);
 
@@ -56,14 +47,8 @@ export async function runTemplateSeed() {
         suggestedNameI18nKey: data.suggested_name_i18n_key,
         emoji: data.emoji,
         emojiBgColor: data.emoji_bg_color,
-        soul,
         identity,
-        operatingInstructions,
-        userContext: userBase,
-        memory: memoryBase,
-        toolsNotes: toolsBase,
-        heartbeat: heartbeatBase,
-        agentsBase: agentsBase,
+        competence,
       }).onConflictDoUpdate({
         target: agentRoles.id,
         set: {
@@ -72,14 +57,8 @@ export async function runTemplateSeed() {
           suggestedNameI18nKey: data.suggested_name_i18n_key,
           emoji: data.emoji,
           emojiBgColor: data.emoji_bg_color,
-          soul,
           identity,
-          operatingInstructions,
-          userContext: userBase,
-          memory: memoryBase,
-          toolsNotes: toolsBase,
-          heartbeat: heartbeatBase,
-          agentsBase: agentsBase,
+          competence,
         }
       });
     }

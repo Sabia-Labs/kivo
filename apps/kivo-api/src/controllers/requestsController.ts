@@ -63,34 +63,6 @@ export async function handleRequestCompletedState(requestRecord: any) {
       relatedEntityType: "request"
     });
   } 
-  // 2. If agent requester, dispatch a message to the agent
-  else if (requestRecord.requesterAgentId) {
-    const targetAgentId = requestRecord.requesterAgentId;
-    
-    // Create NEW Conversation with the orchestrator
-    const [conversation] = await db.insert(conversations).values({
-      agentId: targetAgentId,
-      counterpartType: "external" as any,
-      counterpartId: "system",
-      counterpartName: "System Orchestrator"
-    }).returning();
-
-    // Create Message
-    const messageContent = buildTeamRequestFinishedMessage({
-      identifier: requestRecord.identifier,
-      title: requestRecord.title,
-      status: requestRecord.status,
-      response: requestRecord.response
-    });
-
-    const [userMessage] = await db.insert(messages).values({
-      conversationId: conversation.id,
-      role: "user" as any,
-      content: messageContent
-    }).returning();
-
-
-  }
 }
 
 export async function completeRequest(requestId: string, status: "success" | "failed", response: string) {

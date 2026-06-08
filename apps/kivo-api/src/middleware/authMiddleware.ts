@@ -67,28 +67,8 @@ export async function authMiddleware(
       return next();
     }
   } catch (err) {
-    // JWT validation failed, falling through to check Agent token...
+    // JWT validation failed
+    console.warn(`[auth] Human auth failed for token: "${token}"`);
+    res.status(401).json(failure("Invalid or expired token"));
   }
-
-  // ── 2. Try Agent (Gateway Token) ────────────────────────────────────────
-  try {
-    const [agent] = await db
-      .select({ id: agents.id, teamId: agents.teamId })
-      .from(agents)
-      .where(eq(agents.gatewayToken, token))
-      .limit(1);
-
-    if (agent) {
-      req.actor = { id: agent.id, type: "agent", teamId: agent.teamId };
-      return next();
-    } else {
-      console.warn(`[auth] Agent token not found in DB: "${token}"`);
-    }
-  } catch (err) {
-    return next(err);
-  }
-
-  // ── 3. Both failed ──────────────────────────────────────────────────────
-  console.warn(`[auth] Both human and agent auth failed for token: "${token}"`);
-  res.status(401).json(failure("Invalid or expired token"));
 }

@@ -1,8 +1,9 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
 import { randomBytes } from "crypto";
-import { eq } from "drizzle-orm";
+import { eq, inArray, desc, sql, and } from "drizzle-orm";
 import { db } from "../db/client";
-import { workspaces, teams, agents, agentRoles, teamTypes, teamCapabilities, users } from "../db/schema";
+import { workspaces, teams, agents, agentRoles, teamTypes, teamCapabilities, users, teamTypeRoles } from "../db/schema";
+import { getAgentLlmSettings } from "../lib/agentSettings";
 import { createTeamSchema, updateTeamSchema } from "../schemas/team.schema";
 import { success, failure } from "../lib/response";
 import { authMiddleware } from "../middleware/authMiddleware";
@@ -130,7 +131,9 @@ teamsRouter.post("/", authMiddleware, async (req: Request, res: Response, next: 
                 roleId: a.roleId,
                 isLeader: a.isLeader || false,
                 icon: a.icon || role?.emoji,
-                gatewayToken: randomBytes(32).toString("base64url"),
+                identity: role?.identity || null,
+                competence: role?.competence || null,
+                ...getAgentLlmSettings(a.isLeader || false),
               };
             })
           : [];
@@ -426,14 +429,6 @@ teamsRouter.put("/:id/integrations/:role", authMiddleware, async (req: Request, 
       result = created;
     }
     
-    const teamAgents = await getAgentsByTeam(teamId);
-    for (const agent of teamAgents) {
-      const metadata = (agent.metadata ?? {}) as Record<string, unknown>;
-      if (provider === "linear") metadata.linearApiKey = req.body.apiKey;
-      else if (provider === "github") metadata.githubToken = req.body.apiKey;
-      
-      await db.update(agentsTable).set({ metadata, updatedAt: new Date() }).where(eq(agentsTable.id, agent.id));
-    }
     res.json(success(result));
   } catch (err) { next(err); }
 });

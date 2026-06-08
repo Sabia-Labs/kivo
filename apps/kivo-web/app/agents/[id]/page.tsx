@@ -36,7 +36,7 @@ interface AgentMetadata {
   avatarColor?: string;
   hasTelegramToken?: boolean;
   telegramStatus?: TelegramStatus;
-  soul?: string;
+  competence?: string;
   identity?: string;
   agents?: string;
   personality?: string;
@@ -49,9 +49,8 @@ interface Agent {
   teamId?: string;
 
   availability?: string;
-  soul?: string;
   identity?: string;
-  agentsInstructions?: string;
+  competence?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -427,14 +426,13 @@ export default function AgentPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   // Brain Editors State
-  type BrainField = "soul" | "identity" | "agentsInstructions";
+  type BrainField = "identity" | "competence";
   const [editingBrainField, setEditingBrainField] = useState<BrainField | null>(null);
   const [brainContent, setBrainContent] = useState("");
 
   const fieldTitleMap: Record<BrainField, string> = {
-    soul: t.agentPage.brainFields.soul,
     identity: t.agentPage.brainFields.identity,
-    agentsInstructions: t.agentPage.brainFields.process,
+    competence: t.agentPage.brainFields.competence,
   };
   const [isFetchingLive, setIsFetchingLive] = useState(false);
 
@@ -465,9 +463,8 @@ export default function AgentPage() {
     setBrainContent(""); // Clear before loading
 
     const filenameMap: Record<BrainField, string> = {
-      soul: "SOUL.md",
       identity: "IDENTITY.md",
-      agentsInstructions: "AGENTS.md"
+      competence: "COMPETENCE.md"
     };
 
     const liveContent = await fetchLiveFile(filenameMap[field]);
@@ -476,10 +473,8 @@ export default function AgentPage() {
       setBrainContent(liveContent);
     } else {
       // Fallback to DB data (while migrating or if pod is down)
-      if (field === "soul") setBrainContent(agent?.soul ?? "");
-      else if (field === "identity") setBrainContent(agent?.identity ?? "");
-      else if (field === "agentsInstructions") setBrainContent(agent?.agentsInstructions ?? "");
-      toast.info("Showing cached data (Agent pod unreachable)");
+      if (field === "identity") setBrainContent(agent?.identity ?? "");
+      else if (field === "competence") setBrainContent(agent?.competence ?? "");
     }
   };
 
@@ -754,18 +749,14 @@ export default function AgentPage() {
               {t.agentPage.brainMemoryDesc}
             </p>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "soul" && "ring-2 ring-primary")} onClick={() => openBrainEditor("soul")}>
-                <span className="font-semibold mb-1">{t.agentPage.brainFields.soul}</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.soulDesc}</span>
-              </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "identity" && "ring-2 ring-primary")} onClick={() => openBrainEditor("identity")}>
                 <span className="font-semibold mb-1">{t.agentPage.brainFields.identity}</span>
                 <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.identityDesc}</span>
               </Button>
-              <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "agentsInstructions" && "ring-2 ring-primary")} onClick={() => openBrainEditor("agentsInstructions")}>
-                <span className="font-semibold mb-1">{t.agentPage.brainFields.process}</span>
-                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.processDesc}</span>
+              <Button variant="outline" className={cn("h-auto flex-col items-start p-4 text-left transition-all", editingBrainField === "competence" && "ring-2 ring-primary")} onClick={() => openBrainEditor("competence")}>
+                <span className="font-semibold mb-1">{t.agentPage.brainFields.competence}</span>
+                <span className="text-xs text-muted-foreground font-normal whitespace-normal line-clamp-3">{t.agentPage.brainFields.competenceDesc}</span>
               </Button>
             </div>
 

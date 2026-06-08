@@ -2,18 +2,6 @@ import { pgTable, uuid, text, timestamp, pgEnum, jsonb, integer, boolean, unique
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
-/**
- * Tracks the Kubernetes provisioning state of an agent workload.
- * Updated by the Agent Controller via PATCH /internal/agents/:id/k8s-status.
- */
-export const agentK8sStatusEnum = pgEnum("agent_k8s_status", [
-  "pending",       // CR not yet applied to cluster
-  "provisioning", // CR applied, controller reconciling
-  "running",      // Deployment Available
-  "failed",       // Reconciliation error
-  "terminated",   // CR deleted, resources being GC'd
-]);
-
 export const agentAvailabilityEnum = pgEnum("agent_availability", [
   "available",
   "busy",
@@ -84,14 +72,8 @@ export const agentRoles = pgTable("agent_roles", {
   suggestedNameI18nKey: text("suggested_name_i18n_key").notNull(),
   emoji: text("emoji").notNull(),
   emojiBgColor: text("emoji_bg_color").notNull(),
-  soul: text("soul").notNull(),
   identity: text("identity").notNull(),
-  operatingInstructions: text("operating_instructions").notNull(),
-  userContext: text("user_context").notNull().default(""),
-  memory: text("memory").notNull().default(""),
-  toolsNotes: text("tools_notes").notNull().default(""),
-  heartbeat: text("heartbeat").notNull().default(""),
-  agentsBase: text("agents_base").notNull().default(""),
+  competence: text("competence").notNull(),
 });
 
 export const teamTypes = pgTable("team_types", {
@@ -150,6 +132,7 @@ export const teamTypeCapabilities = pgTable("team_type_capabilities", {
 export const users = pgTable("users", {
   id: uuid("id").primaryKey(),
   name: text("name").notNull(),
+  preferredName: text("preferred_name"),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash"),
   isAdmin: boolean("is_admin").notNull().default(false),
@@ -189,6 +172,7 @@ export const teams = pgTable("teams", {
   icon: text("icon"),
   mission: text("mission"),
   waysOfWorking: text("ways_of_working"),
+  longTermMemory: text("long_term_memory"),
   /** Refers to teamTypes.id template */
   templateId: text("template_id").references(() => teamTypes.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -210,11 +194,15 @@ export const agents = pgTable("agents", {
   /** The agent's custom background color */
   bgColor: text("bg_color"),
   metadata: jsonb("metadata"),
-  gatewayToken: text("gateway_token"),
-  k8sStatus: agentK8sStatusEnum("k8s_status").default("pending"),
-  k8sResourceName: text("k8s_resource_name"),
   availability: agentAvailabilityEnum("availability").notNull().default("available"),
   isLeader: boolean("is_leader").notNull().default(false),
+  longTermMemory: text("long_term_memory"),
+  shortTermJournal: text("short_term_journal"),
+  llmProvider: text("llm_provider"),
+  llmModel: text("llm_model"),
+  llmApiKey: text("llm_api_key"),
+  identity: text("identity"),
+  competence: text("competence"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

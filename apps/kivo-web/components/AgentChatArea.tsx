@@ -128,20 +128,7 @@ export function AgentChatArea({
     return () => clearInterval(interval);
   }, [conv?.id, sending, fetchMessages]);
 
-  useEffect(() => {
-    if (!token || !agentId || conv?.id) return;
-    // Initial fetch to find if there's an existing conversation
-    fetch(`${API_BASE}/conversations?agentId=${agentId}`, { headers: headers() })
-      .then(res => res.json())
-      .then(d => {
-        const existing = (d.data || []).find((c: any) => c.counterpartName === userName);
-        if (existing) {
-          setConv(existing);
-          fetchMessages(existing.id);
-        }
-      })
-      .catch(() => {});
-  }, [agentId, token, userName, conv?.id, headers, fetchMessages]);
+  // Conversation history loading removed to ensure chat always starts empty
 
   const isThinking = sending || (messages.length > 0 && messages[messages.length - 1].role === "user");
 
