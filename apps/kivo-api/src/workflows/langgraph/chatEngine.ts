@@ -236,12 +236,20 @@ async function generateResponse(state: ChatEngineStateType): Promise<Partial<Cha
   console.log(`[chat-engine:DEBUG] [Node: generateResponse] Preparing prompt for LLM.`);
   const [agent] = await db.select().from(agents).where(eq(agents.id, state.agentId));
   const [team] = await db.select().from(teams).where(eq(teams.id, state.teamId));
-  const [user] = await db.select().from(users).where(eq(users.id, state.userId));
+  
+  let preferredName = "Human";
+  if (state.userId && state.userId.length === 36) { // basic uuid check
+    const [user] = await db.select().from(users).where(eq(users.id, state.userId));
+    if (user) preferredName = user.preferredName || user.name;
+  } else {
+    const [conv] = await db.select().from(conversations).where(eq(conversations.id, state.conversationId));
+    if (conv && conv.counterpartName) {
+      preferredName = conv.counterpartName;
+    }
+  }
   
   // Use agent specific LLM config if available
   const llm = LLMFactory.createModel("orchestrator"); // Or pass agent specific settings if LLMFactory supports it
-
-  const preferredName = user.preferredName || user.name;
   
   const lang = await resolveWorkspaceLanguage(state.teamId);
   const langName = lang === "pt" ? "Portuguese (Brazil)" : lang === "zh" ? "Chinese (Simplified)" : "English";
@@ -322,6 +330,21 @@ async function saveJournal(state: ChatEngineStateType): Promise<Partial<ChatEngi
     role: "assistant",
     content: state.agentResponse,
   });
+
+  // If conversation originated from Telegram, send the reply back
+  const [conv] = await db.select().from(conversations).where(eq(conversations.id, state.conversationId));
+  console.log(`[chat-engine:DEBUG] [Node: saveJournal] Checking telegram dispatch. conv counterpart: ${conv?.counterpartType} / ${conv?.counterpartId}`);
+  if (conv && conv.counterpartType === "external" && conv.counterpartId?.startsWith("telegram:")) {
+    console.log(`[chat-engine:DEBUG] [Node: saveJournal] Dispatching message to Telegram for agent ${state.agentId}`);
+    try {
+      const { telegramManager } = await import("../../lib/telegramManager");
+      telegramManager.sendMessage(state.agentId, state.agentResponse).catch(err => {
+        console.error(`[Telegram] Failed to dispatch agent response:`, err);
+      });
+    } catch (err) {
+      console.error(`[Telegram] Failed to dynamically import telegramManager:`, err);
+    }
+  }
 
   // 2. Draft and save a short term journal (just a placeholder logic for now)
   const shortSummary = `Last discussed intent: ${state.intent}.`;
