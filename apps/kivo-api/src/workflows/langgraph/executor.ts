@@ -367,7 +367,11 @@ export async function runLangchainExecutor(taskId: string) {
   const resolvedEntities: Record<string, any> = {};
 
   for (const pt of previousTasks) {
-    if (pt.result) {
+    if (pt.structuredState) {
+      Object.entries(pt.structuredState).forEach(([k, v]) => {
+        resolvedEntities[k] = v;
+      });
+    } else if (pt.result) {
       const { frontmatter, content } = parseFrontmatter(pt.result);
       Object.keys(frontmatter).forEach(k => {
         resolvedEntities[k] = frontmatter[k];
@@ -405,7 +409,7 @@ RULES:
      "input": { "id": "$ticketId" }
      Do NOT output "input": { "ticketId": "$ticketId" } because "ticketId" is not the parameter expected by the tool's schema.
 3. OUTPUT SCHEMA: Copy all "# EXPECTED OUTPUTS" from the task into "expectedOutputSchema".
-4. EXECUTOR GUIDANCE: Rewrite instructions into a checklist.
+4. EXECUTOR GUIDANCE: Keep instructions simple.
 
 Return ONLY a JSON object:
 { 
@@ -419,7 +423,6 @@ Return ONLY a JSON object:
       "input": { "param": "$stateVariable" } 
     }
   ], 
-  "instructionsForExecutor": ["Step 1...", "..."], 
   "expectedOutputSchema": { "key": "description" } 
 }`;
 
@@ -451,7 +454,6 @@ Prompt: ${state.taskRecord.prompt || ""}`;
         readiness: "ready",
         resolvedInputs: {},
         selectedActions: [],
-        instructionsForExecutor: [state.taskRecord.instructions || ""],
         expectedOutputSchema: {}
       };
     }
@@ -569,8 +571,8 @@ keyName2: value2
 ### Main Markdown Content Body
 [Your markdown content goes here in ${langName}]`;
 
-      const userPrompt = `### TASK CHECKLIST:
-${prep.instructionsForExecutor ? prep.instructionsForExecutor.join("\n") : state.taskRecord.instructions}
+      const userPrompt = `### TASK INSTRUCTIONS:
+${state.taskRecord.instructions}
 
 ### STATE EVIDENCE:
 ${JSON.stringify(state.resolvedEntities, null, 2)}
@@ -927,16 +929,47 @@ ${JSON.stringify(state.messages.slice(-5).map((m: any) => ({ type: m._getType(),
 
     console.log(`\x1b[32m[UPDATE] Validation succeeded! Expected outputs resolved: ${expectedKeys.join(", ")}\x1b[0m`);
 
-    const planText = content.substring(0, 1000) || "Plan executed programmatically.";
-    const workSummaryText = "Task executed and outputs resolved.";
+    const planLines = (prep.selectedActions || []).map((a: any) => `* **${a.name}**: ${a.reason || 'Execute tool'}`);
+    const executedTools = state.messages.filter(m => m._getType() === "tool").map(m => m.name);
+    const uniqueTools = Array.from(new Set(executedTools));
+    const workSummaryText = uniqueTools.length > 0
+      ? `Task executed successfully. Tools utilized: ${uniqueTools.join(", ")}.`
+      : `Task executed successfully using internal reasoning.`;
+
+    // --- Rewrite Result for UI ---
+    console.log(`\x1b[1;36m▶ Rewriting output for UI... \x1b[0m`);
+    const lang = await resolveWorkspaceLanguage(state.taskRecord?.teamId);
+    const langName = lang === "pt" ? "Portuguese (Brazil)" : lang === "zh" ? "Chinese (Simplified)" : "English";
+    
+    const rewriteSystem = `You are an enterprise AI assistant. Your job is to summarize the technical execution of a task into a pragmatic, concise, and professional result for the user.
+    
+Write in ${langName}.
+Be pragmatic. No boilerplate useless words. Just report the execution result directly.
+Do NOT use YAML frontmatter blocks. Do NOT invent new facts.`;
+    const rewriteUser = `Original Instructions:
+${state.taskRecord.instructions || ""}
+
+Extracted Variables (State):
+${JSON.stringify(tempResolved, null, 2)}
+
+Execution Draft/Log:
+${content}
+
+Provide the concise summary of this execution now.`;
+
+    let rewrittenResult = taskOutput; // fallback
+    try {
+      rewrittenResult = await queryLLM(rewriteSystem, rewriteUser, false);
+    } catch (err: any) {
+      console.warn(`\x1b[33m[UPDATE] Rewrite failed: ${err.message}. Using raw output.\x1b[0m`);
+    }
 
     // Save to task in DB
     await db.update(tasks).set({
       status: "success",
-      plan: planText,
-      taskList: expectedKeys.map(k => `- [x] ${k}`).join("\n"),
       workSummary: workSummaryText,
-      result: taskOutput, // Raw frontmatter output
+      structuredState: tempResolved,
+      result: rewrittenResult,
       updatedAt: new Date()
     }).where(eq(tasks.id, tid));
 
@@ -1193,7 +1226,9 @@ async function runForeachLoop(
 
   const resolvedEntities: Record<string, any> = {};
   for (const pt of previousTasks) {
-    if (pt.result) {
+    if (pt.structuredState) {
+      Object.entries(pt.structuredState).forEach(([k, v]) => { resolvedEntities[k] = v; });
+    } else if (pt.result) {
       const { frontmatter: fm, content } = parseFrontmatter(pt.result);
       Object.entries(fm).forEach(([k, v]) => { resolvedEntities[k] = v; });
       if (pt.title?.includes("Answer Customer") && content.trim()) {
@@ -1270,8 +1305,6 @@ async function runForeachLoop(
 
   await db.update(tasks).set({
     status: "success",
-    plan: summaryText,
-    taskList: loopResults.map((r, i) => `- [${r.success ? 'x' : ' '}] ${i + 1}. ${loopItem}=${r.item}`).join("\n"),
     workSummary: summaryText,
     result: resultYaml,
     updatedAt: new Date()

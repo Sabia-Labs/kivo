@@ -290,6 +290,7 @@ export const tasks = pgTable("tasks", {
   taskList: text("task_list"),
   workSummary: text("work_summary"),
   result: text("result"),
+  structuredState: jsonb("structured_state"),
   failureReason: text("failure_reason"),
   assignedToId: uuid("assigned_to_id"),
   status: taskStatusEnum("status").notNull().default("open"),

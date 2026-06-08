@@ -119,7 +119,40 @@ async function analyzeCompletionNode(state: typeof ContinuationState.State) {
 
   if (nextCapabilityIndex >= capabilitiesWorkflow.length) {
     console.log(`[request-continuation] All ${capabilitiesWorkflow.length} capabilities executed. Completing request.`);
-    await completeRequest(state.requestId, "success", taskRecord.result || "All tasks completed.");
+    
+    // --- Rewrite Result for UI ---
+    console.log(`\x1b[1;36m▶ Rewriting final request output for UI... \x1b[0m`);
+    const lang = await resolveWorkspaceLanguage(state.teamId);
+    const langName = lang === "pt" ? "Portuguese (Brazil)" : lang === "zh" ? "Chinese (Simplified)" : "English";
+    
+    const rewriteSystem = `You are an enterprise AI assistant. Your job is to summarize the entire execution of a request into a pragmatic, concise, and professional final result for the user.
+    
+Write in ${langName}.
+Be pragmatic. No boilerplate useless words. Just report the overall execution results clearly.
+Do NOT use YAML frontmatter blocks. Do NOT invent new facts.`;
+    const rewriteUser = `Original Request:
+${requestRecord.title || ""}
+
+Execution History (Tasks Completed):
+${updatedState.join("\n")}
+
+Provide the concise, final summary of this entire request execution now.`;
+
+    let finalSummary = taskRecord.result || "All tasks completed."; // fallback
+    try {
+      const plannerModel = LLMFactory.createModel("planner");
+      const { SystemMessage, HumanMessage } = await import("@langchain/core/messages");
+      const response = await plannerModel.invoke([
+        new SystemMessage(rewriteSystem),
+        new HumanMessage(rewriteUser)
+      ]);
+      finalSummary = typeof response.content === "string" ? response.content : JSON.stringify(response.content);
+      finalSummary = finalSummary.trim();
+    } catch (err: any) {
+      console.warn(`\x1b[33m[request-continuation] Final rewrite failed: ${err.message}. Using last task result.\x1b[0m`);
+    }
+
+    await completeRequest(state.requestId, "success", finalSummary);
     return { task: taskRecord, request: updatedRequest };
   }
 
@@ -158,11 +191,6 @@ function routeAfterAnalysis(state: typeof ContinuationState.State) {
   return END;
 }
 
-const prepareTaskSchema = z.object({
-  prompt: z.string().describe("The task prompt must reflect the work to be done, what the end user expects to be achieved. The agents will rely on this prompt to understand the task."),
-  instructions: z.string().describe("Instructions for the agent to perform the task.")
-});
-
 async function prepareTaskNode(state: typeof ContinuationState.State) {
   console.log(`[request-continuation] Node: prepareTask. Request ID: ${state.requestId}`);
   
@@ -170,31 +198,17 @@ async function prepareTaskNode(state: typeof ContinuationState.State) {
     ? state.request.state.join("\n\n") 
     : "None";
 
-  const prompt = `You are a helpful agent preparing a task for another agent in a sequential workflow.
-  
-  What the user wants (Original Request): ${state.request.title}
-  Original Request Details: ${state.request.requestDetails || "None"}
-  
-  The results of previous steps in this workflow are below. You MUST USE this information to prepare the input for the next step:
-  === PREVIOUS WORK STATE ===
-  ${requestStateContext}
-  ===========================
-  
-  You must understand the capability template for the NEXT step to give instructions to the assigned agent:
-  - Template Name: ${state.capability?.name}
-  - Template Instructions: ${state.capability?.instructions}
-  - Required Inputs: ${state.capability?.inputsDescription || "None"}
-  - Expected Outputs: ${state.capability?.expectedOutputsDescription || "None"}
-  
-  Now, create a prompt and instructions for the assigned agent to perform this next task. 
-  Make the prompt specific and ensure you pass any necessary data from the "PREVIOUS WORK STATE" that satisfies the "Required Inputs" of the template.
-  The instructions should be detailed. It should be clear for the agent what it needs to do.
-  `;
+  const taskPrompt = `${state.request.title}\n${state.request.requestDetails || "None"}\n\n=== PREVIOUS WORK STATE ===\n${requestStateContext}`;
 
-  const structuredLlm = getLlm().withStructuredOutput(prepareTaskSchema);
-  const result = await structuredLlm.invoke(prompt);
+  let taskInstructions = state.capability?.instructions || "";
+  if (state.capability?.inputsDescription) {
+    taskInstructions += `\n- **Required Inputs:** ${state.capability.inputsDescription}`;
+  }
+  if (state.capability?.expectedOutputsDescription) {
+    taskInstructions += `\n- **Expected Outputs:** ${state.capability.expectedOutputsDescription}`;
+  }
 
-  return { taskPrompt: result.prompt, taskInstructions: result.instructions };
+  return { taskPrompt, taskInstructions };
 }
 
 const agentAssignmentSchema = z.object({
@@ -234,9 +248,7 @@ async function createTaskNode(state: typeof ContinuationState.State) {
 CRITICAL TASK WORKFLOW INSTRUCTIONS:
 You are executing a Task. You must process it following this standard workflow:
 1. INPUT: Use the 'title', 'prompt', and 'context' fields to understand the request. Respect all specific 'instructions'.
-2. EXECUTION: If the activity is complex, formulate a plan and list steps in the 'plan' and 'taskList' fields. 
-   If simple, provide a brief rationale in the 'plan' field. 
-   Summarize your actions and thoughts in the 'workSummary' field. 
+2. EXECUTION: Provide a brief rationale of your actions in the 'workSummary' field. 
    If you successfully accomplished the requested task, populate the 'result' field with the final deliverable/outcome. 
    If the task failed or you could not complete it, got blocked or whatever reason you did not proceed, then you MUST populate 
    the 'failureReason' field with a detailed description of the error, blocker, or why you could not execute it. 

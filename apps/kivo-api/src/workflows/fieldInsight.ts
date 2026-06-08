@@ -569,6 +569,20 @@ async function evaluateSelectedCapabilityNode(state: typeof FieldInsightState.St
     `=============================`,
   ].join("\n");
 
+  if (!requiresInputs && state.requestDetails.trim().length === 0) {
+    let msg = `The capability "${cap.name}" requires no inputs. You can submit the request now so the team can begin.`;
+    if (lang === "pt") msg = `A funcionalidade "${cap.name}" não requer entradas. Você pode enviar a solicitação agora para que a equipe possa começar.`;
+    else if (lang === "zh") msg = `功能 "${cap.name}" 不需要输入。您现在可以提交请求，以便团队可以开始。`;
+
+    const update = { 
+      leaderThought: msg,
+      suggestedCapabilityIdentifier: cap.identifier,
+      suggestedTitle: cap.name
+    };
+    logState("EXIT (FAST NO-INPUTS)", { ...state, ...update });
+    return update;
+  }
+
   let prompt = "";
   if (!requiresInputs) {
     prompt = `${langBlock}
@@ -698,8 +712,6 @@ RULES:
 // CONDITIONAL ROUTING FUNCTIONS
 // ==========================================
 function routeAfterClassification(state: typeof FieldInsightState.State) {
-  // Pre-selected capability from the UI → evaluate it directly
-  if (state.capabilityIdentifier) return "evaluateSelectedCapability";
 
   const category = state.classification?.category;
   const isSimpleQuestion = state.classification?.isSimpleQuestion ?? true;
@@ -757,7 +769,10 @@ const workflow = new StateGraph(FieldInsightState)
   .addNode("evaluateMatchedCapability", evaluateMatchedCapabilityNode)
 
   .addEdge(START, "fetchContexts")
-  .addEdge("fetchContexts", "classifyRequest")
+  .addConditionalEdges("fetchContexts", (state) => {
+    if (state.capabilityIdentifier) return "evaluateSelectedCapability";
+    return "classifyRequest";
+  })
   .addConditionalEdges("classifyRequest", routeAfterClassification)
 
   .addEdge("fetchKivoContext", "answerSimpleQuestion")
