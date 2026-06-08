@@ -11,7 +11,7 @@ CREATE TYPE "public"."notification_priority" AS ENUM('info', 'normal', 'high', '
 CREATE TYPE "public"."request_status" AS ENUM('draft', 'open', 'in_progress', 'waiting_user', 'success', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."task_status" AS ENUM('open', 'in_progress', 'success', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."voucher_status" AS ENUM('available', 'redeemed');--> statement-breakpoint
-CREATE TYPE "public"."workspace_tier" AS ENUM('free_byok', 'pro');--> statement-breakpoint
+CREATE TYPE "public"."workspace_tier" AS ENUM('free', 'basic', 'pro');--> statement-breakpoint
 CREATE TABLE "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"team_id" uuid NOT NULL,
