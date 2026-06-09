@@ -352,14 +352,15 @@ authRouter.get("/google/callback", async (req, res) => {
       name: user.name || user.email.split('@')[0],
       isAdmin: user.isAdmin 
     });
-    
-    // Redirect to frontend with token
-    const ADMIN_WEB_URL = process.env.ADMIN_WEB_URL || "";
-    if (!ADMIN_WEB_URL) {
-      console.error("[auth/google/callback] Error: ADMIN_WEB_URL is not defined");
-      return res.status(500).send("Server configuration error: Missing ADMIN_WEB_URL");
+    // Redirect back to frontend with token
+    const FRONTEND_URL = process.env.FRONTEND_URL || "";
+    if (!FRONTEND_URL) {
+      console.error("[auth/google/callback] Error: FRONTEND_URL is not defined");
+      return res.status(500).send("Server configuration error: Missing FRONTEND_URL");
     }
-    res.redirect(`${ADMIN_WEB_URL}/auth/callback?token=${token}&userId=${user.id}&workspaceId=${workspaceId || ""}&isNew=${isNewUser}`);
+
+    res.redirect(`${FRONTEND_URL}/auth/callback?token=${token}&userId=${user.id}&workspaceId=${workspaceId || ""}&isNew=${isNewUser}`);
+
   } catch (err) {
     console.error("[auth/google/callback] Google Auth Error:", {
       error: err,
