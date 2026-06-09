@@ -89,12 +89,6 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: GOOGLE_REDIRECT_URI
                   optional: true
-            - name: FRONTEND_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: FRONTEND_URL
-                  optional: true
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -176,12 +170,6 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: GOOGLE_REDIRECT_URI
-                  optional: true
-            - name: FRONTEND_URL
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.kivoApi.existingSecret }}
-                  key: FRONTEND_URL
                   optional: true
             - name: OPENAI_API_KEY
               valueFrom:
