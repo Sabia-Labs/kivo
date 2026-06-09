@@ -28,12 +28,17 @@ spec:
     # ── No internal ingress needed from sidecars/controllers anymore ──
 
   egress:
-    # Allow DNS resolution
+    # Allow connection to DNS
     - ports:
         - protocol: UDP
           port: 53
         - protocol: TCP
           port: 53
+
+    # Allow connection to Internet (HTTPS) for OAuth, OpenAI, etc.
+    - ports:
+        - protocol: TCP
+          port: 443
 
     {{- if .Values.postgresql.embedded }}
     # Allow connection to embedded PostgreSQL
