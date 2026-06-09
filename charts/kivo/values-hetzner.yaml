@@ -36,10 +36,15 @@ networkPolicy:
 ingress:
   enabled: true
   className: traefik
-  host: sabialabs.de
+  # Use auth.sabialabs.de as the primary host for the ingress templates that expect a single .Values.ingress.host
+  host: auth.sabialabs.de
   tls:
     enabled: true
     secretName: kivo-tls
     certManager:
       enabled: true
       clusterIssuer: letsencrypt-staging
+    # Explicitly list ONLY the domains that are passing validation
+    hosts:
+      - kivo.sabialabs.de
+      - auth.sabialabs.de
