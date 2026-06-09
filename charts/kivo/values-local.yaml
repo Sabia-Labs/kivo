@@ -27,7 +27,7 @@ kivoApi:
     KIVO_NAMESPACE: "kivo"
     JWT_SECRET: "kivo-local-dev-secret-change-in-prod"
 
-    ADMIN_WEB_URL: "http://kivo.localhost"
+    FRONTEND_URL: "http://kivo.localhost"
     GOOGLE_REDIRECT_URI: "http://localhost:4000/auth/google/callback"
   # No existingSecret in local — DATABASE_URL is built from embedded PostgreSQL
   existingSecret: ""

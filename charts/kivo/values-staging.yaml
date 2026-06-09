@@ -59,7 +59,7 @@ adminApi:
     NODE_ENV: production
     ADMIN_PORT: "4001"
     CORS_ORIGIN: "https://www.kivo-staging.34-141-70-109.nip.io"
-    ADMIN_WEB_URL: "https://www.kivo-staging.34-141-70-109.nip.io"
+    FRONTEND_URL: "https://www.kivo-staging.34-141-70-109.nip.io"
     GOOGLE_REDIRECT_URI: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api/auth/google/callback"
     KIVO_API_INTERNAL_URL: "http://kivo-api:4000"
     KIVO_SHARED_NAMESPACE: "kivo-staging"
