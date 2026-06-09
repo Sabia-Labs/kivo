@@ -42,4 +42,4 @@ ingress:
     secretName: kivo-tls
     certManager:
       enabled: true
-      clusterIssuer: letsencrypt-prod
+      clusterIssuer: letsencrypt-staging
