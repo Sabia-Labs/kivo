@@ -26,16 +26,35 @@ spec:
   {{- if .Values.ingress.tls.enabled }}
   tls:
     - hosts:
+        {{- if .Values.ingress.tls.hosts }}
+        {{- toYaml .Values.ingress.tls.hosts | nindent 8 }}
+        {{- else }}
         - {{ .Values.ingress.host }}
         - www.{{ .Values.ingress.host }}
         - kivo.{{ .Values.ingress.host }}
         - auth.{{ .Values.ingress.host }}
+        {{- end }}
       secretName: {{ .Values.ingress.tls.secretName }}
   {{- end }}
   rules:
+    {{- if .Values.ingress.tls.hosts }}
+    {{- range .Values.ingress.tls.hosts }}
+    - host: {{ . }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kivo-web
+                port:
+                  name: http
+    {{- end }}
+    {{- else }}
     # Admin/Marketing Portal
     - host: {{ .Values.ingress.host }}
-      http:
+...
+
         paths:
           - path: /
             pathType: Prefix

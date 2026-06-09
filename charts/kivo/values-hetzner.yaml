@@ -36,8 +36,8 @@ networkPolicy:
 ingress:
   enabled: true
   className: traefik
-  # Use auth.sabialabs.de as the primary host for the ingress templates that expect a single .Values.ingress.host
-  host: auth.sabialabs.de
+  # Set host to the root domain for the helper templates, but we will override the rules
+  host: sabialabs.de
   tls:
     enabled: true
     secretName: kivo-tls
