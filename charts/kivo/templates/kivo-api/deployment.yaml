@@ -71,6 +71,24 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: RESEND_API_KEY
                   optional: true
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: GOOGLE_CLIENT_SECRET
+                  optional: true
+            - name: GOOGLE_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: GOOGLE_REDIRECT_URI
+                  optional: true
             - name: OPENAI_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -134,6 +152,24 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: RESEND_API_KEY
+                  optional: true
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: GOOGLE_CLIENT_ID
+                  optional: true
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: GOOGLE_CLIENT_SECRET
+                  optional: true
+            - name: GOOGLE_REDIRECT_URI
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: GOOGLE_REDIRECT_URI
                   optional: true
             - name: OPENAI_API_KEY
               valueFrom:
