@@ -10,7 +10,7 @@ kivoApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-api
-    tag: 86c952caf9db28aecd1e8b25058b22d9ac8a9b06
+    tag: ece8313ca6eebf78217f956eba6592310bfce051
     pullPolicy: Always
   existingSecret: "kivo-api-secret"
   databaseSecret: "kivo-db-credentials"
@@ -23,7 +23,7 @@ kivoWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: 86c952caf9db28aecd1e8b25058b22d9ac8a9b06
+    tag: ece8313ca6eebf78217f956eba6592310bfce051
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
