@@ -43,7 +43,7 @@ ingress:
     secretName: kivo-tls
     certManager:
       enabled: true
-      clusterIssuer: letsencrypt-staging
+      clusterIssuer: letsencrypt-prod
     # Explicitly list ONLY the domains that are passing validation
     hosts:
       - kivo.sabialabs.de
