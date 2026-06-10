@@ -30,6 +30,8 @@ export const metadata: Metadata = {
 const figtree = { variable: "--font-sans" };
 const fontMono = { variable: "--font-mono" };
 
+export const dynamic = 'force-dynamic';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,7 +47,7 @@ export default function RootLayout({
             , "font-sans", figtree.variable)}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `window.__ENV = ${JSON.stringify({ SITE_URL: process.env.NEXT_PUBLIC_SITE_URL })};` }} />
+        <script dangerouslySetInnerHTML={{ __html: `window.__ENV = ${JSON.stringify({ SITE_URL: process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL })};` }} />
       </head>
       <body className="font-sans">
         <ThemeProvider>
