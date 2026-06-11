@@ -32,20 +32,10 @@ def _parse_dotenv(lines):
   return env
 _env = _parse_dotenv(dotenv)
 
-OPENAI_KEY    = _env.get("OPENAI_API_KEY",  "")
-MODEL_PROVIDER = _env.get("MODEL_PROVIDER", "openai")
-MODEL_NAME     = _env.get("MODEL_NAME",    "gpt-5.4")
-
+PLATFORM_OPENAI_API_KEY    = _env.get("PLATFORM_OPENAI_API_KEY",  "")
+PLATFORM_GEMINI_API_KEY    = _env.get("PLATFORM_GEMINI_API_KEY",  "")
+PLATFORM_DEEPSEEK_API_KEY  = _env.get("PLATFORM_DEEPSEEK_API_KEY",  "")
 FEATURE_FLAG_LANGCHAIN = _env.get("FEATURE_FLAG_LANGCHAIN", "false")
-PLANNER_PROVIDER       = _env.get("PLANNER_PROVIDER", "")
-PLANNER_MODEL          = _env.get("PLANNER_MODEL", "")
-PLANNER_API_KEY        = _env.get("PLANNER_API_KEY", "")
-EXECUTOR_PROVIDER      = _env.get("EXECUTOR_PROVIDER", "")
-EXECUTOR_MODEL         = _env.get("EXECUTOR_MODEL", "")
-EXECUTOR_API_KEY       = _env.get("EXECUTOR_API_KEY", "")
-ORCHESTRATOR_PROVIDER  = _env.get("ORCHESTRATOR_PROVIDER", "")
-ORCHESTRATOR_MODEL     = _env.get("ORCHESTRATOR_MODEL", "")
-ORCHESTRATOR_API_KEY   = _env.get("ORCHESTRATOR_API_KEY", "")
 
 GOOGLE_CLIENT_ID        = _env.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET    = _env.get("GOOGLE_CLIENT_SECRET", "")
@@ -132,7 +122,7 @@ docker_build(
 # ── 4a. Build Kivo Web image ─────────────────────────────────────────────────
 docker_build(
   KIVO_WEB_IMAGE,
-  context='apps/kivo-web',
+  context='.',
   dockerfile='apps/kivo-web/Dockerfile',
   build_args={
     'NEXT_PUBLIC_API_URL': 'http://localhost:4000',
@@ -159,19 +149,10 @@ k8s_yaml(
       'kivoWeb.env.NEXT_PUBLIC_SITE_URL=http://' + TILT_HOST,
       'ingress.host=' + TILT_HOST,
       # Platform AI credentials — read from .env (gitignored)
-      'kivoApi.env.OPENAI_API_KEY=' + OPENAI_KEY,
-      'kivoApi.env.MODEL_PROVIDER=' + MODEL_PROVIDER,
-      'kivoApi.env.MODEL_NAME=' + MODEL_NAME,
+      'kivoApi.env.PLATFORM_OPENAI_API_KEY=' + PLATFORM_OPENAI_API_KEY,
+      'kivoApi.env.PLATFORM_GEMINI_API_KEY=' + PLATFORM_GEMINI_API_KEY,
+      'kivoApi.env.PLATFORM_DEEPSEEK_API_KEY=' + PLATFORM_DEEPSEEK_API_KEY,
       'kivoApi.env.FEATURE_FLAG_LANGCHAIN=' + FEATURE_FLAG_LANGCHAIN,
-      'kivoApi.env.PLANNER_PROVIDER=' + PLANNER_PROVIDER,
-      'kivoApi.env.PLANNER_MODEL=' + PLANNER_MODEL,
-      'kivoApi.env.PLANNER_API_KEY=' + PLANNER_API_KEY,
-      'kivoApi.env.EXECUTOR_PROVIDER=' + EXECUTOR_PROVIDER,
-      'kivoApi.env.EXECUTOR_MODEL=' + EXECUTOR_MODEL,
-      'kivoApi.env.EXECUTOR_API_KEY=' + EXECUTOR_API_KEY,
-      'kivoApi.env.ORCHESTRATOR_PROVIDER=' + ORCHESTRATOR_PROVIDER,
-      'kivoApi.env.ORCHESTRATOR_MODEL=' + ORCHESTRATOR_MODEL,
-      'kivoApi.env.ORCHESTRATOR_API_KEY=' + ORCHESTRATOR_API_KEY,
       'kivoApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
       'kivoApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
     ],

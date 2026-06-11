@@ -83,7 +83,7 @@ export default function TaskPage() {
           fetch(`${API_BASE}/teams/${teamId}/requests/${tObj.requestId}`, { headers: headers() })
             .then(res => res.json())
             .then(data => {
-              if (data.success && data.data) {
+              if (!data.error && data.data) {
                 setRequest(data.data);
               }
             })

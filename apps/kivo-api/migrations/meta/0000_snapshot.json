@@ -1,5 +1,5 @@
 {
-  "id": "8d52f2c5-e027-45d6-8d66-1ff9f48672dd",
+  "id": "0650c081-a582-4e10-a13e-884ef02479ce",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -167,58 +167,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "soul": {
-          "name": "soul",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "identity": {
           "name": "identity",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "operating_instructions": {
-          "name": "operating_instructions",
+        "competence": {
+          "name": "competence",
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "user_context": {
-          "name": "user_context",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "memory": {
-          "name": "memory",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "tools_notes": {
-          "name": "tools_notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "heartbeat": {
-          "name": "heartbeat",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
-        },
-        "agents_base": {
-          "name": "agents_base",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "''"
         }
       },
       "indexes": {},
@@ -276,26 +235,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "gateway_token": {
-          "name": "gateway_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "k8s_status": {
-          "name": "k8s_status",
-          "type": "agent_k8s_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'pending'"
-        },
-        "k8s_resource_name": {
-          "name": "k8s_resource_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "availability": {
           "name": "availability",
           "type": "agent_availability",
@@ -310,6 +249,48 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "long_term_memory": {
+          "name": "long_term_memory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "short_term_journal": {
+          "name": "short_term_journal",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "llm_provider": {
+          "name": "llm_provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "llm_model": {
+          "name": "llm_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "llm_api_key": {
+          "name": "llm_api_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "identity": {
+          "name": "identity",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "competence": {
+          "name": "competence",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -697,6 +678,65 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.llm_models": {
+      "name": "llm_models",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "provider": {
+          "name": "provider",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tier": {
+          "name": "tier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_per_call": {
+          "name": "cost_per_call",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.messages": {
       "name": "messages",
       "schema": "",
@@ -866,6 +906,104 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.plans": {
+      "name": "plans",
+      "schema": "",
+      "columns": {
+        "tier": {
+          "name": "tier",
+          "type": "workspace_tier",
+          "typeSchema": "public",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "team_limit": {
+          "name": "team_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agents_per_team_limit": {
+          "name": "agents_per_team_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "monthly_automation_limit": {
+          "name": "monthly_automation_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "daily_ai_credits": {
+          "name": "daily_ai_credits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10
+        },
+        "default_leader_model": {
+          "name": "default_leader_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_executor_model": {
+          "name": "default_executor_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "plans_default_leader_model_llm_models_id_fk": {
+          "name": "plans_default_leader_model_llm_models_id_fk",
+          "tableFrom": "plans",
+          "tableTo": "llm_models",
+          "columnsFrom": [
+            "default_leader_model"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "plans_default_executor_model_llm_models_id_fk": {
+          "name": "plans_default_executor_model_llm_models_id_fk",
+          "tableFrom": "plans",
+          "tableTo": "llm_models",
+          "columnsFrom": [
+            "default_executor_model"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -1154,6 +1292,12 @@
         "result": {
           "name": "result",
           "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "structured_state": {
+          "name": "structured_state",
+          "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
@@ -1680,6 +1824,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "long_term_memory": {
+          "name": "long_term_memory",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "template_id": {
           "name": "template_id",
           "type": "text",
@@ -1760,6 +1910,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "preferred_name": {
+          "name": "preferred_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "email": {
           "name": "email",
@@ -1845,81 +2001,6 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.vouchers": {
-      "name": "vouchers",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "code": {
-          "name": "code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "voucher_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'available'"
-        },
-        "redeemed_by_workspace_id": {
-          "name": "redeemed_by_workspace_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "redeemed_at": {
-          "name": "redeemed_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "vouchers_redeemed_by_workspace_id_workspaces_id_fk": {
-          "name": "vouchers_redeemed_by_workspace_id_workspaces_id_fk",
-          "tableFrom": "vouchers",
-          "tableTo": "workspaces",
-          "columnsFrom": [
-            "redeemed_by_workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "vouchers_code_unique": {
-          "name": "vouchers_code_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "code"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -2039,6 +2120,25 @@
           "type": "workspace_tier",
           "typeSchema": "public",
           "primaryKey": false,
+          "notNull": true,
+          "default": "'free'"
+        },
+        "team_limit": {
+          "name": "team_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "agents_per_team_limit": {
+          "name": "agents_per_team_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "monthly_automation_limit": {
+          "name": "monthly_automation_limit",
+          "type": "integer",
+          "primaryKey": false,
           "notNull": false
         },
         "langchain": {
@@ -2054,6 +2154,46 @@
           "primaryKey": false,
           "notNull": true,
           "default": "'en'"
+        },
+        "planner_llm_model": {
+          "name": "planner_llm_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "executor_llm_model": {
+          "name": "executor_llm_model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "leader_llm_mode": {
+          "name": "leader_llm_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'platform'"
+        },
+        "executor_llm_mode": {
+          "name": "executor_llm_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'platform'"
+        },
+        "ai_credits_limit": {
+          "name": "ai_credits_limit",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 10
+        },
+        "ai_credits_used": {
+          "name": "ai_credits_used",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         }
       },
       "indexes": {},
@@ -2069,6 +2209,32 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workspaces_planner_llm_model_llm_models_id_fk": {
+          "name": "workspaces_planner_llm_model_llm_models_id_fk",
+          "tableFrom": "workspaces",
+          "tableTo": "llm_models",
+          "columnsFrom": [
+            "planner_llm_model"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "workspaces_executor_llm_model_llm_models_id_fk": {
+          "name": "workspaces_executor_llm_model_llm_models_id_fk",
+          "tableFrom": "workspaces",
+          "tableTo": "llm_models",
+          "columnsFrom": [
+            "executor_llm_model"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -2095,17 +2261,6 @@
         "available",
         "busy",
         "blocked"
-      ]
-    },
-    "public.agent_k8s_status": {
-      "name": "agent_k8s_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "provisioning",
-        "running",
-        "failed",
-        "terminated"
       ]
     },
     "public.capability_type": {
@@ -2156,7 +2311,10 @@
         "openai",
         "gemini",
         "anthropic",
-        "deepseek"
+        "deepseek",
+        "moonshot",
+        "qwen",
+        "zhipu"
       ]
     },
     "public.message_role": {
@@ -2199,19 +2357,12 @@
         "failed"
       ]
     },
-    "public.voucher_status": {
-      "name": "voucher_status",
-      "schema": "public",
-      "values": [
-        "available",
-        "redeemed"
-      ]
-    },
     "public.workspace_tier": {
       "name": "workspace_tier",
       "schema": "public",
       "values": [
-        "free_byok",
+        "free",
+        "basic",
         "pro"
       ]
     }

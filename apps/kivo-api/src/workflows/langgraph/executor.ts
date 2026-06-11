@@ -192,8 +192,8 @@ function extractExpectedOutputs(taskTemplate: string): Record<string, string> {
   return schema;
 }
 
-async function queryLLM(systemPrompt: string, userPrompt: string, formatJson: boolean = true): Promise<any> {
-  const plannerModel = LLMFactory.createModel("planner");
+async function queryLLM(systemPrompt: string, userPrompt: string, teamId: string, formatJson: boolean = true): Promise<any> {
+  const plannerModel = await LLMFactory.createModel("planner", { teamId });
   try {
     const response = await plannerModel.invoke([
       new SystemMessage(systemPrompt),
@@ -447,7 +447,7 @@ Prompt: ${state.taskRecord.prompt || ""}`;
     
     let payload: any;
     try {
-      payload = await queryLLM(systemPrompt, userPrompt);
+      payload = await queryLLM(systemPrompt, userPrompt, state.taskRecord.teamId);
     } catch (err: any) {
       console.log(`\n\x1b[33m⚠️ [Planner Fallback] Small-LLM JSON parser error: ${err.message}. Using default structured payload.\x1b[0m`);
       payload = {
@@ -586,7 +586,7 @@ ${Object.keys(prep.expectedOutputSchema || {}).join(", ")}`;
       logPrompt(`EXECUTOR [${cid || tid}]`, systemPrompt, userPrompt);
     }
 
-    const llm = LLMFactory.createModel("executor");
+    const llm = await LLMFactory.createModel("executor", { teamId: state.taskRecord.teamId });
     const selectedActionNames = new Set(
       (prep.selectedActions || []).map((a: any) => a.name.replace(/\./g, "_"))
     );
@@ -662,11 +662,10 @@ ${Object.keys(prep.expectedOutputSchema || {}).join(", ")}`;
       }
 
       if (mockToolCalls.length > 0) {
-        const mockAssistantMessage = new AIMessage({
-          content: "",
-          tool_calls: mockToolCalls
-        });
-        activeMessages.push(mockAssistantMessage, ...toolMessages);
+        const preToolResults = mockToolCalls.map((tc, idx) => {
+          return `Tool: ${tc.name}\nArgs: ${JSON.stringify(tc.args)}\nOutput: ${toolMessages[idx].content}`;
+        }).join("\n\n");
+        activeMessages.push(new SystemMessage(`[SYSTEM AUTOMATION]\nThe following tools were executed automatically prior to your invocation. You can use these results directly without calling the tools again:\n\n${preToolResults}`));
       }
     }
 
@@ -775,6 +774,7 @@ ${Object.keys(prep.expectedOutputSchema || {}).join(", ")}`;
       if (mockToolCalls.length > 0) {
         const mockAssistantMessage = new AIMessage({
           content: result.content,
+          additional_kwargs: { reasoning_content: (result as any).additional_kwargs?.reasoning_content || "Executing resilient fallback tool call." },
           tool_calls: mockToolCalls
         });
 
@@ -882,7 +882,7 @@ CONVERSATION HISTORY (Tool Outputs):
 ${JSON.stringify(state.messages.slice(-5).map((m: any) => ({ type: m._getType(), content: m.content })), null, 2)}`;
 
       try {
-        const extractedJson = await queryLLM(extractionSystem, userPrompt, true);
+        const extractedJson = await queryLLM(extractionSystem, userPrompt, state.taskRecord.teamId, true);
         
         // Re-validate against extractedJson
         const stillMissing: string[] = [];
@@ -959,7 +959,7 @@ Provide the concise summary of this execution now.`;
 
     let rewrittenResult = taskOutput; // fallback
     try {
-      rewrittenResult = await queryLLM(rewriteSystem, rewriteUser, false);
+      rewrittenResult = await queryLLM(rewriteSystem, rewriteUser, state.taskRecord.teamId, false);
     } catch (err: any) {
       console.warn(`\x1b[33m[UPDATE] Rewrite failed: ${err.message}. Using raw output.\x1b[0m`);
     }

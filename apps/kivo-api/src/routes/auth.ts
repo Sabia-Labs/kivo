@@ -4,12 +4,11 @@ import { eq, and, gt } from "drizzle-orm";
 import { OAuth2Client } from "google-auth-library";
 import { Resend } from "resend";
 import { db } from "../db/client";
-import { users, workspaces, verificationCodes } from "../db/schema";
+import { users, workspaces, verificationCodes, plans, llmModels } from "../db/schema";
 import { loginSchema, signupSchema, otpSendSchema } from "../schemas/auth.schema";
 import { signToken } from "../lib/jwt";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { success, failure } from "../lib/response";
-import { PLANS } from "../config/plans";
 
 export const authRouter = Router();
 
@@ -213,6 +212,10 @@ authRouter.post("/signup/verify", async (req, res, next) => {
         else if (acceptLang.startsWith("zh")) lang = "zh";
       }
 
+      const [freePlan] = await tx.select().from(plans).where(eq(plans.tier, "free"));
+      const [leaderDb] = await tx.select().from(llmModels).where(eq(llmModels.id, freePlan?.defaultLeaderModel || ""));
+      const [executorDb] = await tx.select().from(llmModels).where(eq(llmModels.id, freePlan?.defaultExecutorModel || ""));
+
       const [workspace] = await tx
         .insert(workspaces)
         .values({ 
@@ -222,9 +225,15 @@ authRouter.post("/signup/verify", async (req, res, next) => {
           langchain: true,
           tier: "free",
           language: lang,
-          teamLimit: PLANS.free.teamLimit,
-          agentsPerTeamLimit: PLANS.free.agentsPerTeamLimit,
-          monthlyAutomationLimit: PLANS.free.monthlyAutomationLimit,
+          teamLimit: freePlan?.teamLimit || 2,
+          agentsPerTeamLimit: freePlan?.agentsPerTeamLimit || 4,
+          monthlyAutomationLimit: freePlan?.monthlyAutomationLimit || 100,
+          plannerLlmModel: leaderDb?.id || "gpt-5.4-mini",
+          executorLlmModel: executorDb?.id || "qwen2.5-coder:1.5b",
+          leaderLlmMode: "platform",
+          executorLlmMode: "platform",
+          aiCreditsLimit: freePlan?.dailyAiCredits || 10,
+          aiCreditsUsed: 0,
         })
         .returning();
 
@@ -321,6 +330,10 @@ authRouter.get("/google/callback", async (req, res) => {
           else if (acceptLang.startsWith("zh")) lang = "zh";
         }
 
+        const [freePlan] = await tx.select().from(plans).where(eq(plans.tier, "free"));
+        const [leaderDb] = await tx.select().from(llmModels).where(eq(llmModels.id, freePlan?.defaultLeaderModel || ""));
+        const [executorDb] = await tx.select().from(llmModels).where(eq(llmModels.id, freePlan?.defaultExecutorModel || ""));
+
         const [newWorkspace] = await tx.insert(workspaces).values({ 
           id: randomUUID(),
           userId: newUser.id, 
@@ -328,9 +341,15 @@ authRouter.get("/google/callback", async (req, res) => {
           langchain: true,
           tier: "free",
           language: lang,
-          teamLimit: PLANS.free.teamLimit,
-          agentsPerTeamLimit: PLANS.free.agentsPerTeamLimit,
-          monthlyAutomationLimit: PLANS.free.monthlyAutomationLimit,
+          teamLimit: freePlan?.teamLimit || 2,
+          agentsPerTeamLimit: freePlan?.agentsPerTeamLimit || 4,
+          monthlyAutomationLimit: freePlan?.monthlyAutomationLimit || 100,
+          plannerLlmModel: leaderDb?.id || "gpt-5.4-mini",
+          executorLlmModel: executorDb?.id || "qwen2.5-coder:1.5b",
+          leaderLlmMode: "platform",
+          executorLlmMode: "platform",
+          aiCreditsLimit: freePlan?.dailyAiCredits || 10,
+          aiCreditsUsed: 0,
         }).returning();
         
         await tx.update(workspaces)

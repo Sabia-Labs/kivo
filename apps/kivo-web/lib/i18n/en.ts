@@ -860,9 +860,9 @@ export const en = {
   },
   systemSettings: {
     title: "System Settings",
-    subtitle: "Manage workspace settings, preferences, languages, and SSH pairing tunnels.",
+    subtitle: "Manage workspace settings, change your plan, and define your AI model usage strategy.",
     langRegionTitle: "Language & Region",
-    langRegionDesc: "Switch user interface localizations. English, Portuguese, and Chinese are supported.",
+    langRegionDesc: "Switch user interface localizations.",
     langChangedToast: "Language changed to {label}",
     securityTitle: "Access Control & Security",
     securityDesc: "Configure loopback gateways, SSH pairings, and secure Tailscale connection tunnels.",
@@ -875,11 +875,30 @@ export const en = {
     systemInfoTitle: "System Information",
     systemInfoDesc: "Technical parameters, pairing keys, and environment specifications.",
     userContextId: "User Context ID",
-    workspaceIdentifier: "Workspace Identifier",
-    gatewayAddress: "Gateway Address",
-    gatewayLoopback: "loopback (127.0.0.1)",
+    workspaceIdentifier: "Workspace Identifier (ID)",
+    gatewayAddress: "Kivo Gateway Address",
+    gatewayLoopback: "127.0.0.1:4000",
     saveChanges: "Save Changes",
-    settingsSavedToast: "Settings configuration saved successfully.",
+    settingsSavedToast: "Settings saved!",
+    plansTitle: "Plans and Subscription",
+    plansDesc: "Manage your subscription, agent limits and automation.",
+    viewPlansButton: "View Plans",
+    modelsTitle: "LLM Models",
+    modelsDesc: "Configure models for different roles in your workspace.",
+    leaderModelTitle: "Lead Agents / Planner",
+    leaderModelDesc: "Responsible for planning, decision making, and chat with the leader.",
+    executorModelTitle: "Team Members / Executors",
+    executorModelDesc: "Responsible for task execution and chat with team members (non-leaders).",
+    defaultKivo: "Default",
+    modelsSavedToast: "Models successfully updated!",
+    dailyCreditsTitle: "Daily AI Credits Utilization",
+    dailyCreditsHelper: "Credits reset daily. Different models consume different amounts of credits per invocation based on their size and cost.",
+    agentRoutingTitle: "Agent Capabilities & Routing",
+    agentRoutingDesc: "Configure the LLM models and API credentials for your workspace agents.",
+    leaderTitle: "Lead Agents / Planner",
+    leaderDesc: "Responsible for planning, orchestrating, and decision-making.",
+    executorTitle: "Team Members / Executors",
+    executorDesc: "Responsible for task execution and agent chat.",
   },
   taskPage: {
     notFound: "Task not found.",
@@ -887,30 +906,30 @@ export const en = {
     deleteTask: "Delete Task",
     deleteConfirm: "Are you sure you want to delete this task? This action cannot be undone.",
     taskDeleted: "Task deleted",
-    failedDeleteTask: "Failed to delete task",
+    failedDeleteTask: "Delete task failed",
     failedLoadTaskDetails: "Failed to load task details.",
     taskTitle: "Task Title",
     createdOn: "Created on",
-    executedBy: "executed by",
+    executedBy: "Executed by",
     unassigned: "Unassigned",
-    relatedRequest: "Related request",
+    relatedRequest: "Related Request",
     input: "Input",
     prompt: "Prompt",
-    viewPassedInstructions: "View passed instructions",
+    viewPassedInstructions: "View Passed Instructions",
     passedInstructions: "Passed Instructions",
     execution: "Execution",
-    noPlanOrListNeeded: "No execution plan or task list was necessary due to the simplicity of the task.",
+    noPlanOrListNeeded: "No execution plan or task list was needed as the task is straightforward.",
     plan: "Plan",
     taskList: "Task List",
     result: "Result",
     workSummary: "Work Summary",
     success: "Success",
     failed: "Failed",
-    noResultYet: "No result or failure reason provided yet.",
+    noResultYet: "No result or failure reason yet.",
     commentsAndUpdates: "Comments & Updates",
     addCommentPlaceholder: "Add a comment...",
     postComment: "Post Comment",
-    postingComment: "Posting Comment...",
+    postingComment: "Posting...",
     commentPosted: "Comment posted",
     failedPostComment: "Failed to post comment",
     deleteCommentConfirm: "Are you sure you want to delete this comment?",
@@ -920,7 +939,7 @@ export const en = {
     close: "Close",
   },
   plans: {
-    title: "Choose Your Plan",
+    title: "Select your plan",
     currentPlan: "Current plan",
     free: {
       name: "Free",
@@ -930,11 +949,9 @@ export const en = {
         "2 teams",
         "Up to 4 agents per team",
         "Basic integrations",
-        "Limited monthly automations",
-        "AI included with limited capacity",
-        "Optional custom API key"
+        "AI included with limited capacity"
       ],
-      button: "Start for Free"
+      button: "Switch to Free"
     },
     basic: {
       name: "Basic",
@@ -943,12 +960,10 @@ export const en = {
       features: [
         "5 teams",
         "Up to 8 agents per team",
-        "More monthly automations",
         "Advanced integrations",
-        "AI included with fair usage limits",
-        "Optional custom API key"
+        "AI included with fair usage limits"
       ],
-      button: "Choose Basic"
+      button: "Switch to Basic"
     },
     pro: {
       name: "Pro",
@@ -958,11 +973,9 @@ export const en = {
         "Unlimited teams",
         "Unlimited agents",
         "All integrations",
-        "Highest monthly automation limit",
-        "Premium AI models included",
-        "Optional custom API key"
+        "Premium AI models included"
       ],
-      button: "Upgrade to Pro"
+      button: "Switch to Pro"
     }
   },
   planBanner: {

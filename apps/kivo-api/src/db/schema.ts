@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, pgEnum, jsonb, integer, boolean, unique, primaryKey, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, pgEnum, jsonb, integer, boolean, unique, primaryKey, real, type AnyPgColumn } from "drizzle-orm/pg-core";
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 
@@ -59,7 +59,10 @@ export const llmProviderEnum = pgEnum("llm_provider", [
   "openai",
   "gemini",
   "anthropic",
-  "deepseek"
+  "deepseek",
+  "moonshot",
+  "qwen",
+  "zhipu",
 ]);
 
 
@@ -152,6 +155,12 @@ export const workspaces = pgTable("workspaces", {
   monthlyAutomationLimit: integer("monthly_automation_limit"),
   langchain: boolean("langchain").notNull().default(false),
   language: text("language").notNull().default("en"),
+  plannerLlmModel: text("planner_llm_model").references(() => llmModels.id),
+  executorLlmModel: text("executor_llm_model").references(() => llmModels.id),
+  leaderLlmMode: text("leader_llm_mode").default("platform").notNull(),
+  executorLlmMode: text("executor_llm_mode").default("platform").notNull(),
+  aiCreditsLimit: integer("ai_credits_limit").default(10).notNull(),
+  aiCreditsUsed: real("ai_credits_used").default(0).notNull(),
 });
 
 export const verificationCodes = pgTable("verification_codes", {
@@ -400,6 +409,34 @@ export type Capability = typeof capabilities.$inferSelect;
 export type TeamTypeCapability = typeof teamTypeCapabilities.$inferSelect;
 export type VerificationCode = typeof verificationCodes.$inferSelect;
 export type NewVerificationCode = typeof verificationCodes.$inferInsert;
+
+export const llmModels = pgTable("llm_models", {
+  id: text("id").primaryKey(), // e.g. "gpt-4o", "qwen3:8b"
+  name: text("name").default("").notNull(),
+  provider: text("provider").notNull(),
+  tier: text("tier").notNull(),
+  costPerCall: real("cost_per_call").default(1.0).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type LlmModel = typeof llmModels.$inferSelect;
+export type NewLlmModel = typeof llmModels.$inferInsert;
+
+export const plans = pgTable("plans", {
+  tier: workspaceTierEnum("tier").primaryKey(),
+  teamLimit: integer("team_limit").notNull(),
+  agentsPerTeamLimit: integer("agents_per_team_limit").notNull(),
+  monthlyAutomationLimit: integer("monthly_automation_limit").notNull(),
+  dailyAiCredits: integer("daily_ai_credits").notNull().default(10),
+  defaultLeaderModel: text("default_leader_model").references(() => llmModels.id),
+  defaultExecutorModel: text("default_executor_model").references(() => llmModels.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export type Plan = typeof plans.$inferSelect;
+export type NewPlan = typeof plans.$inferInsert;
 
 export const workspaceLlmKeys = pgTable("workspace_llm_keys", {
   id: uuid("id").primaryKey().defaultRandom(),

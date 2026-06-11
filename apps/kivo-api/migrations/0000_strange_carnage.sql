@@ -1,16 +1,14 @@
 CREATE TYPE "public"."actor_type" AS ENUM('human', 'agent');--> statement-breakpoint
 CREATE TYPE "public"."agent_availability" AS ENUM('available', 'busy', 'blocked');--> statement-breakpoint
-CREATE TYPE "public"."agent_k8s_status" AS ENUM('pending', 'provisioning', 'running', 'failed', 'terminated');--> statement-breakpoint
 CREATE TYPE "public"."capability_type" AS ENUM('task_template', 'workflow', 'human_approval', 'foreach');--> statement-breakpoint
 CREATE TYPE "public"."change_type" AS ENUM('data', 'status', 'relationship', 'creation', 'deletion');--> statement-breakpoint
 CREATE TYPE "public"."counterpart_type" AS ENUM('human', 'agent', 'external');--> statement-breakpoint
 CREATE TYPE "public"."integration_provider" AS ENUM('linear', 'jira', 'trello', 'github', 'notion');--> statement-breakpoint
-CREATE TYPE "public"."llm_provider" AS ENUM('openai', 'gemini', 'anthropic', 'deepseek');--> statement-breakpoint
+CREATE TYPE "public"."llm_provider" AS ENUM('openai', 'gemini', 'anthropic', 'deepseek', 'moonshot', 'qwen', 'zhipu');--> statement-breakpoint
 CREATE TYPE "public"."message_role" AS ENUM('user', 'assistant');--> statement-breakpoint
 CREATE TYPE "public"."notification_priority" AS ENUM('info', 'normal', 'high', 'alert');--> statement-breakpoint
 CREATE TYPE "public"."request_status" AS ENUM('draft', 'open', 'in_progress', 'waiting_user', 'success', 'failed');--> statement-breakpoint
 CREATE TYPE "public"."task_status" AS ENUM('open', 'in_progress', 'success', 'failed');--> statement-breakpoint
-CREATE TYPE "public"."voucher_status" AS ENUM('available', 'redeemed');--> statement-breakpoint
 CREATE TYPE "public"."workspace_tier" AS ENUM('free', 'basic', 'pro');--> statement-breakpoint
 CREATE TABLE "activities" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -33,14 +31,8 @@ CREATE TABLE "agent_roles" (
 	"suggested_name_i18n_key" text NOT NULL,
 	"emoji" text NOT NULL,
 	"emoji_bg_color" text NOT NULL,
-	"soul" text NOT NULL,
 	"identity" text NOT NULL,
-	"operating_instructions" text NOT NULL,
-	"user_context" text DEFAULT '' NOT NULL,
-	"memory" text DEFAULT '' NOT NULL,
-	"tools_notes" text DEFAULT '' NOT NULL,
-	"heartbeat" text DEFAULT '' NOT NULL,
-	"agents_base" text DEFAULT '' NOT NULL
+	"competence" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "agents" (
@@ -51,11 +43,15 @@ CREATE TABLE "agents" (
 	"icon" text,
 	"bg_color" text,
 	"metadata" jsonb,
-	"gateway_token" text,
-	"k8s_status" "agent_k8s_status" DEFAULT 'pending',
-	"k8s_resource_name" text,
 	"availability" "agent_availability" DEFAULT 'available' NOT NULL,
 	"is_leader" boolean DEFAULT false NOT NULL,
+	"long_term_memory" text,
+	"short_term_journal" text,
+	"llm_provider" text,
+	"llm_model" text,
+	"llm_api_key" text,
+	"identity" text,
+	"competence" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -106,6 +102,16 @@ CREATE TABLE "integrations" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "llm_models" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text DEFAULT '' NOT NULL,
+	"provider" text NOT NULL,
+	"tier" text NOT NULL,
+	"cost_per_call" real DEFAULT 1 NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "messages" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"conversation_id" uuid NOT NULL,
@@ -127,6 +133,18 @@ CREATE TABLE "notifications" (
 	"is_read" boolean DEFAULT false NOT NULL,
 	"related_entity_id" uuid,
 	"related_entity_type" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "plans" (
+	"tier" "workspace_tier" PRIMARY KEY NOT NULL,
+	"team_limit" integer NOT NULL,
+	"agents_per_team_limit" integer NOT NULL,
+	"monthly_automation_limit" integer NOT NULL,
+	"daily_ai_credits" integer DEFAULT 10 NOT NULL,
+	"default_leader_model" text,
+	"default_executor_model" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -166,6 +184,7 @@ CREATE TABLE "tasks" (
 	"task_list" text,
 	"work_summary" text,
 	"result" text,
+	"structured_state" jsonb,
 	"failure_reason" text,
 	"assigned_to_id" uuid,
 	"status" "task_status" DEFAULT 'open' NOT NULL,
@@ -233,6 +252,7 @@ CREATE TABLE "teams" (
 	"icon" text,
 	"mission" text,
 	"ways_of_working" text,
+	"long_term_memory" text,
 	"template_id" text,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -242,6 +262,7 @@ CREATE TABLE "teams" (
 CREATE TABLE "users" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
+	"preferred_name" text,
 	"email" text NOT NULL,
 	"password_hash" text,
 	"is_admin" boolean DEFAULT false NOT NULL,
@@ -255,16 +276,6 @@ CREATE TABLE "verification_codes" (
 	"code" text NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "vouchers" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"code" text NOT NULL,
-	"status" "voucher_status" DEFAULT 'available' NOT NULL,
-	"redeemed_by_workspace_id" uuid,
-	"redeemed_at" timestamp with time zone,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "vouchers_code_unique" UNIQUE("code")
 );
 --> statement-breakpoint
 CREATE TABLE "workspace_llm_keys" (
@@ -283,9 +294,18 @@ CREATE TABLE "workspaces" (
 	"user_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"k8s_namespace" text,
-	"tier" "workspace_tier",
+	"tier" "workspace_tier" DEFAULT 'free' NOT NULL,
+	"team_limit" integer,
+	"agents_per_team_limit" integer,
+	"monthly_automation_limit" integer,
 	"langchain" boolean DEFAULT false NOT NULL,
-	"language" text DEFAULT 'en' NOT NULL
+	"language" text DEFAULT 'en' NOT NULL,
+	"planner_llm_model" text,
+	"executor_llm_model" text,
+	"leader_llm_mode" text DEFAULT 'platform' NOT NULL,
+	"executor_llm_mode" text DEFAULT 'platform' NOT NULL,
+	"ai_credits_limit" integer DEFAULT 10 NOT NULL,
+	"ai_credits_used" real DEFAULT 0 NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "activities" ADD CONSTRAINT "activities_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -300,6 +320,8 @@ ALTER TABLE "conversations" ADD CONSTRAINT "conversations_agent_id_agents_id_fk"
 ALTER TABLE "integrations" ADD CONSTRAINT "integrations_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_conversation_id_conversations_id_fk" FOREIGN KEY ("conversation_id") REFERENCES "public"."conversations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "notifications" ADD CONSTRAINT "notifications_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "plans" ADD CONSTRAINT "plans_default_leader_model_llm_models_id_fk" FOREIGN KEY ("default_leader_model") REFERENCES "public"."llm_models"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "plans" ADD CONSTRAINT "plans_default_executor_model_llm_models_id_fk" FOREIGN KEY ("default_executor_model") REFERENCES "public"."llm_models"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_team_id_teams_id_fk" FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_requester_user_id_users_id_fk" FOREIGN KEY ("requester_user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "requests" ADD CONSTRAINT "requests_requester_agent_id_agents_id_fk" FOREIGN KEY ("requester_agent_id") REFERENCES "public"."agents"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -316,6 +338,7 @@ ALTER TABLE "team_type_roles" ADD CONSTRAINT "team_type_roles_team_type_id_team_
 ALTER TABLE "team_type_roles" ADD CONSTRAINT "team_type_roles_agent_role_id_agent_roles_id_fk" FOREIGN KEY ("agent_role_id") REFERENCES "public"."agent_roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "teams" ADD CONSTRAINT "teams_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "teams" ADD CONSTRAINT "teams_template_id_team_types_id_fk" FOREIGN KEY ("template_id") REFERENCES "public"."team_types"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "vouchers" ADD CONSTRAINT "vouchers_redeemed_by_workspace_id_workspaces_id_fk" FOREIGN KEY ("redeemed_by_workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "workspace_llm_keys" ADD CONSTRAINT "workspace_llm_keys_workspace_id_workspaces_id_fk" FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_planner_llm_model_llm_models_id_fk" FOREIGN KEY ("planner_llm_model") REFERENCES "public"."llm_models"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "workspaces" ADD CONSTRAINT "workspaces_executor_llm_model_llm_models_id_fk" FOREIGN KEY ("executor_llm_model") REFERENCES "public"."llm_models"("id") ON DELETE no action ON UPDATE no action;

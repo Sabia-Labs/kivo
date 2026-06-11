@@ -17,8 +17,8 @@ export interface ModelOption {
 
 export const AVAILABLE_MODELS: ModelOption[] = [
   { provider: "auto",      model: "auto",              label: "Auto Route",          badge: "Smart",     color: "violet" },
-  { provider: "openai",    model: "gpt-4o",            label: "GPT-4o",             badge: "OpenAI",    color: "emerald" },
-  { provider: "openai",    model: "gpt-4o-mini",       label: "GPT-4o mini",        badge: "OpenAI",    color: "emerald" },
+  { provider: "openai",    model: "gpt-5.5",            label: "GPT-5.5",             badge: "OpenAI",    color: "emerald" },
+  { provider: "openai",    model: "gpt-5.4-mini",       label: "GPT-5.4 mini",        badge: "OpenAI",    color: "emerald" },
   { provider: "openai",    model: "o3",                label: "o3",                 badge: "OpenAI",    color: "emerald" },
   { provider: "google",    model: "gemini-2.0-flash",  label: "Gemini 2.0 Flash",   badge: "Google",    color: "blue" },
   { provider: "google",    model: "gemini-2.5-pro",    label: "Gemini 2.5 Pro",     badge: "Google",    color: "blue" },

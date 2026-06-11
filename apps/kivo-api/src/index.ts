@@ -15,6 +15,7 @@ import { metaRouter } from "./routes/meta";
 import { notificationsRouter } from "./routes/notifications";
 import { workspacesRouter } from "./routes/workspaces";
 import { webhooksRouter } from "./routes/webhooks";
+import { plansRouter } from "./routes/plans";
 import { telegramManager } from "./lib/telegramManager";
 
 const app = express();
@@ -79,6 +80,7 @@ app.use("/meta", metaRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/workspaces", workspacesRouter);
 app.use("/webhooks", webhooksRouter);
+app.use("/plans", plansRouter);
 
 // ── Global error handler ──────────────────────────────────────────────────────
 

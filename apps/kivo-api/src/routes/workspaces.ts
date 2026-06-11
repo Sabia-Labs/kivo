@@ -1,11 +1,10 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { db } from "../db/client";
-import { workspaces, workspaceLlmKeys, teams, agents } from "../db/schema";
+import { workspaces, workspaceLlmKeys, teams, agents, llmModels, plans } from "../db/schema";
 import { authMiddleware } from "../middleware/authMiddleware";
 import { success, failure } from "../lib/response";
-import { updateWorkspaceTierSchema, saveWorkspaceLlmKeySchema } from "../schemas/workspace.schema";
-import { PLANS } from "../config/plans";
+import { updateWorkspaceTierSchema, saveWorkspaceLlmKeySchema, updateWorkspaceModelsSchema } from "../schemas/workspace.schema";
 
 function getDowngradeErrorMsg(lang: string, reason: "teams" | "agents", limit: number) {
   if (lang === "pt") {
@@ -46,39 +45,56 @@ const requireWorkspaceOwnership = async (req: Request, res: Response, next: Next
   }
 };
 
+// ── GET /workspaces/:id ───────────────────────────────────────────────────────
+workspacesRouter.get("/:id", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.json(success((req as any).workspace));
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── PUT /workspaces/:id/tier ──────────────────────────────────────────────────
 workspacesRouter.put("/:id/tier", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { tier } = updateWorkspaceTierSchema.parse(req.body);
 
-    const limits = tier && tier !== "pro" ? PLANS[tier as keyof typeof PLANS] : PLANS.pro;
-    const planLimits = limits ? {
+    const [limits] = await db.select().from(plans).where(eq(plans.tier, tier));
+    if (!limits) {
+       return res.status(400).json(failure("Invalid plan tier"));
+    }
+
+    const planLimits = {
       teamLimit: limits.teamLimit,
       agentsPerTeamLimit: limits.agentsPerTeamLimit,
       monthlyAutomationLimit: limits.monthlyAutomationLimit,
-    } : {};
+      aiCreditsLimit: limits.dailyAiCredits,
+    };
 
-    if (limits) {
-      const workspaceTeams = await db.select().from(teams).where(eq(teams.workspaceId, String(req.params.id)));
-      
-      if (limits.teamLimit !== null && workspaceTeams.length > limits.teamLimit) {
-        return res.status(400).json(failure(getDowngradeErrorMsg((req as any).workspace.language, "teams", limits.teamLimit)));
-      }
+    const workspaceTeams = await db.select().from(teams).where(eq(teams.workspaceId, String(req.params.id)));
+    
+    if (limits.teamLimit !== null && workspaceTeams.length > limits.teamLimit) {
+      return res.status(400).json(failure(getDowngradeErrorMsg((req as any).workspace.language, "teams", limits.teamLimit)));
+    }
 
-      if (limits.agentsPerTeamLimit !== null) {
-        for (const team of workspaceTeams) {
-          const teamAgents = await db.select().from(agents).where(eq(agents.teamId, team.id));
-          if (teamAgents.length > limits.agentsPerTeamLimit) {
-            return res.status(400).json(failure(getDowngradeErrorMsg((req as any).workspace.language, "agents", limits.agentsPerTeamLimit)));
-          }
+    if (limits.agentsPerTeamLimit !== null) {
+      for (const team of workspaceTeams) {
+        const teamAgents = await db.select().from(agents).where(eq(agents.teamId, team.id));
+        if (teamAgents.length > limits.agentsPerTeamLimit) {
+          return res.status(400).json(failure(getDowngradeErrorMsg((req as any).workspace.language, "agents", limits.agentsPerTeamLimit)));
         }
       }
     }
+
+    const [leaderDb] = await db.select().from(llmModels).where(eq(llmModels.id, limits.defaultLeaderModel || ""));
+    const [executorDb] = await db.select().from(llmModels).where(eq(llmModels.id, limits.defaultExecutorModel || ""));
 
     const [updated] = await db
       .update(workspaces)
       .set({ 
         tier,
+        plannerLlmModel: leaderDb?.id || "gpt-5.4-mini",
+        executorLlmModel: executorDb?.id || "qwen2.5-coder:1.5b",
         ...planLimits
       })
       .where(eq(workspaces.id, String(req.params.id)))
@@ -164,6 +180,89 @@ workspacesRouter.put("/:id/language", authMiddleware, requireWorkspaceOwnership,
       .update(workspaces)
       .set({ language })
       .where(eq(workspaces.id, String(req.params.id)))
+      .returning();
+
+    res.json(success(updated));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── GET /workspaces/:id/available-models ───────────────────────────────────────
+workspacesRouter.get("/:id/available-models", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const models = await db
+      .select()
+      .from(llmModels);
+
+    res.json(success(models));
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── PUT /workspaces/:id/models ───────────────────────────────────────────────
+workspacesRouter.put("/:id/models", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const workspaceId = String(req.params.id);
+    const {
+      leaderLlmMode,
+      leaderLlmProvider,
+      plannerLlmModel,
+      leaderApiKey,
+      executorLlmMode,
+      executorLlmProvider,
+      executorLlmModel,
+      executorApiKey,
+    } = updateWorkspaceModelsSchema.parse(req.body);
+
+    const saveApiKey = async (provider: string, apiKey: string) => {
+      const [existing] = await db
+        .select()
+        .from(workspaceLlmKeys)
+        .where(and(eq(workspaceLlmKeys.workspaceId, workspaceId), eq(workspaceLlmKeys.provider, provider as any)));
+      if (existing) {
+        await db
+          .update(workspaceLlmKeys)
+          .set({ apiKey, updatedAt: new Date() })
+          .where(eq(workspaceLlmKeys.id, existing.id));
+      } else {
+        await db
+          .insert(workspaceLlmKeys)
+          .values({
+            workspaceId,
+            provider: provider as any,
+            apiKey,
+          });
+      }
+    };
+
+    if (leaderLlmProvider && leaderApiKey) {
+      await saveApiKey(leaderLlmProvider, leaderApiKey);
+    }
+    if (executorLlmProvider && executorApiKey) {
+      await saveApiKey(executorLlmProvider, executorApiKey);
+    }
+
+    const updateData: any = {};
+    if (leaderLlmMode !== undefined) {
+      updateData.leaderLlmMode = leaderLlmMode;
+    }
+    if (plannerLlmModel !== undefined) {
+      updateData.plannerLlmModel = plannerLlmModel;
+    }
+
+    if (executorLlmMode !== undefined) {
+      updateData.executorLlmMode = executorLlmMode;
+    }
+    if (executorLlmModel !== undefined) {
+      updateData.executorLlmModel = executorLlmModel;
+    }
+
+    const [updated] = await db
+      .update(workspaces)
+      .set(updateData)
+      .where(eq(workspaces.id, workspaceId))
       .returning();
 
     res.json(success(updated));
