@@ -53,8 +53,7 @@ spec:
     {{- else }}
     # Admin/Marketing Portal
     - host: {{ .Values.ingress.host }}
-...
-
+      http:
         paths:
           - path: /
             pathType: Prefix

@@ -10,8 +10,8 @@ import { eq, and } from "drizzle-orm";
 import { LLMFactory } from "./langgraph/integrations/llm-factory";
 import { ConnectorFactory } from "./langgraph/integrations/factory";
 
-function getLlm(): any {
-  return LLMFactory.createModel("orchestrator");
+async function getLlm(teamId: string): Promise<any> {
+  return await LLMFactory.createModel("orchestrator", { teamId });
 }
 
 // ==========================================
@@ -33,7 +33,7 @@ const queryClassificationSchema = z.object({
  * Classifies an operator query or message to identify its category, extracted ticket IDs, search query keywords,
  * and whether it's a simple query vs. an operational task description.
  */
-export async function classifyOperatorQuery(requestDetails: string): Promise<z.infer<typeof queryClassificationSchema>> {
+export async function classifyOperatorQuery(requestDetails: string, teamId: string): Promise<z.infer<typeof queryClassificationSchema>> {
   if (requestDetails.trim().length < 5) {
     return { category: "conversational", ticketId: null, searchQuery: null, isSimpleQuestion: true };
   }
@@ -97,9 +97,16 @@ Input: "read ticket KVO-110 from Linear and summarize it"
 -> category: "external_integration", isSimpleQuestion: false, ticketId: "KVO-110"
 
 == NOW CLASSIFY ==
-User input: "${requestDetails}"`;
+User input: "${requestDetails}"
 
-  const structuredLlm = getLlm().withStructuredOutput(queryClassificationSchema);
+You must respond ONLY with a valid JSON object matching this exact schema:
+{
+  "category": "technical_assistance" | "general_conversation" | "external_integration" | "capability_execution" | "work_planning" | "other",
+  "isSimpleQuestion": boolean,
+  "ticketId": string | null
+}`;
+
+  const structuredLlm = (await getLlm(teamId)).withStructuredOutput(queryClassificationSchema, { method: "jsonMode", name: "Classification" });
   return await structuredLlm.invoke(prompt);
 }
 
@@ -393,7 +400,7 @@ async function classifyRequestNode(state: typeof FieldInsightState.State) {
   logHeader("FIELD INSIGHTS: CLASSIFY REQUEST", "35", "🔍");
   logState("ENTRY", state);
 
-  const classification = await classifyOperatorQuery(state.requestDetails);
+  const classification = await classifyOperatorQuery(state.requestDetails, state.teamId);
 
   logSection("🔖 Classification Result", classification);
 
@@ -448,7 +455,7 @@ async function answerSimpleQuestionNode(state: typeof FieldInsightState.State) {
 
   logPrompt("answerSimpleQuestion", systemPrompt, userPrompt);
 
-  const response = await getLlm().invoke([
+  const response = await (await getLlm(state.teamId)).invoke([
     { role: "system", content: systemPrompt },
     { role: "user", content: userPrompt }
   ]);
@@ -519,12 +526,14 @@ async function evaluateMatchedCapabilityNode(state: typeof FieldInsightState.Sta
     [REMINDER: Respond in ${langName} ONLY]`;
   }
 
+  prompt += `\n\nYou must respond ONLY with a valid JSON object containing the keys "isSufficient" (boolean) and "message" (string).`;
+
   logPrompt("evaluateMatchedCapability", "Evaluate input sufficiency.", prompt);
 
-  const structuredLlm = getLlm().withStructuredOutput(z.object({
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(z.object({
     isSufficient: z.boolean(),
     message: z.string().describe(`The response message to display as Leader thoughts. Write this message in ${langName}. DO NOT greet the operator by name and DO NOT repeat the operator query details.`)
-  }));
+  }), { method: "jsonMode", name: "EvaluateMatched" });
   const result = await structuredLlm.invoke(prompt);
 
   logSection("Evaluation Result", result);
@@ -617,12 +626,14 @@ async function evaluateSelectedCapabilityNode(state: typeof FieldInsightState.St
     [REMINDER: Respond in ${langName} ONLY]`;
   }
 
+  prompt += `\n\nYou must respond ONLY with a valid JSON object containing the keys "isSufficient" (boolean) and "message" (string).`;
+
   logPrompt("evaluateSelectedCapability", "Evaluate input sufficiency.", prompt);
 
-  const structuredLlm = getLlm().withStructuredOutput(z.object({
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(z.object({
     isSufficient: z.boolean(),
     message: z.string().describe(`The response message to display as Leader thoughts. Write this message in ${langName}. DO NOT greet the operator by name and DO NOT repeat the operator query details.`)
-  }));
+  }), { method: "jsonMode", name: "EvaluateSelected" });
   const result = await structuredLlm.invoke(prompt);
 
   logSection("Evaluation Result", result);
@@ -681,11 +692,12 @@ RULES:
 - If in doubt, return null. A wrong match is worse than no match.
 - Return the identifier EXACTLY as listed, or null.
 - The suggestedTitle MUST be a concise summary of the operator's actual request details. Write it in ${langName}. NEVER copy, invent, or adapt a title from the capability descriptions, templates, examples, or team context documents.
-`;
+
+You must respond ONLY with a valid JSON object containing the keys "matchedCapabilityIdentifier" (string or null) and "suggestedTitle" (string or null).`;
 
   logPrompt("matchCapability", prompt, `Matching: "${state.requestDetails}"`);
 
-  const structuredLlm = getLlm().withStructuredOutput(capabilityMatchSchema);
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(capabilityMatchSchema, { method: "jsonMode", name: "MatchCapability" });
   const result = await structuredLlm.invoke(prompt);
 
   logSection("🎯 Match Result", result);

@@ -22,7 +22,13 @@ const INTERNAL_TOKEN = process.env.INTERNAL_SERVICE_TOKEN;
 teamsRouter.get("/mine", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const [workspace] = await db
-      .select({ id: workspaces.id, name: workspaces.name, tier: workspaces.tier })
+      .select({
+        id: workspaces.id,
+        name: workspaces.name,
+        tier: workspaces.tier,
+        leaderLlmMode: workspaces.leaderLlmMode,
+        executorLlmMode: workspaces.executorLlmMode,
+      })
       .from(workspaces)
       .where(eq(workspaces.userId, req.actor!.id))
       .limit(1);

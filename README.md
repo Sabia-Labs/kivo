@@ -77,6 +77,29 @@ Every team requires at least a **Team Lead** — the ownership and coordination 
 
 ---
 
+## Workspace Plans & LLM Presets
+
+Kivo routes LLM queries dynamically based on the workspace tier presets (Kivo Platform) or via Bring Your Own Key (BYOK) configurations.
+
+### Platform Presets & Daily Credits
+
+| Plan Tier | Daily AI Credits | Leader/Planner Preset Model | Executor/Task Preset Model |
+| :--- | :--- | :--- | :--- |
+| **Free** | 10 | `qwen3:8b` (Local, 0.1 cost/call) | `qwen2.5-coder:1.5b` (Local, 0.1 cost/call) |
+| **Basic** | 100 | `gpt-4o-mini` (OpenAI, 0.5 cost/call) | `gemini-1.5-flash` (Gemini, 0.5 cost/call) |
+| **Pro** | 500 | `gpt-4o` (OpenAI, 2.0 cost/call) | `claude-3-5-sonnet-latest` (Anthropic, 3.0 cost/call) |
+
+*Note: Different preset models deduct credits per call. Unused daily credits reset at midnight.*
+
+### Bring Your Own Key (BYOK)
+
+Workspaces can toggle to BYOK mode for either the **Leader/Planner** or **Executor/Task** roles (or both) under the workspace settings:
+- **Supported Providers**: OpenAI, Google Gemini, Anthropic Claude, DeepSeek.
+- **Credit Bypass**: BYOK queries are processed directly using the user's custom API key, carrying a cost of `0` credits/call and bypassing platform limits.
+- **Banner Hiding**: If a Free tier workspace runs both roles on BYOK mode, the limited capacity warning banner is automatically hidden.
+
+---
+
 ## Running locally
 
 The entire stack (Web, API, PostgreSQL) runs inside local Kubernetes via **Tilt**. One command starts everything.

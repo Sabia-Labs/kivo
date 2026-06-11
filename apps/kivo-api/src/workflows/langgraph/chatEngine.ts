@@ -36,7 +36,9 @@ export type ChatEngineStateType = typeof ChatEngineState.State;
 
 async function classifyIntent(state: ChatEngineStateType): Promise<Partial<ChatEngineStateType>> {
   console.log(`[chat-engine:DEBUG] [Node: classifyIntent] Analyzing message: "${state.userMessage.substring(0, 50)}..."`);
-  const llm = LLMFactory.createModel("orchestrator");
+  const [agent] = await db.select().from(agents).where(eq(agents.id, state.agentId));
+  const roleStr = agent?.isLeader ? "leader" : "executor";
+  const llm = await LLMFactory.createModel(roleStr as any, { teamId: state.teamId });
   const schema = z.object({
     intent: z.enum([
       "general_conversation",
@@ -49,18 +51,23 @@ async function classifyIntent(state: ChatEngineStateType): Promise<Partial<ChatE
     ]),
   });
 
-  const structuredLlm = llm.withStructuredOutput(schema);
+  const structuredLlm = llm.withStructuredOutput(schema, { name: "IntentClassification", method: "jsonMode" });
   const prompt = `Classify the user message intent.
 Message: "${state.userMessage}"
 
 Intents:
-- general_conversation: Small talk, greetings, general questions.
-- needs_kivo_context: Asking about the team, agents, or Kivo platform itself.
+- general_conversation: Small talk, greetings, general questions (including asking about the agent's name or identity).
+- needs_kivo_context: Asking about the team's mission, active requests, capabilities, other agents, or Kivo platform itself.
 - needs_integration_data: Asking to read/search data from external tools (Linear, Notion, GitHub).
 - needs_integration_action: Asking to perform an action on external tools (comment, create issue, etc).
 - create_request: Asking the agent to start a new work request/ticket in Kivo.
 - unsupported_action: Asking to create a task, modify a workflow, or do things Kivo agents are not allowed to do.
-- needs_clarification: Ambiguous or incomplete message.`;
+- needs_clarification: Ambiguous or incomplete message.
+
+You must respond ONLY with a valid JSON object matching this exact schema:
+{
+  "intent": "general_conversation" | "needs_kivo_context" | "needs_integration_data" | "needs_integration_action" | "create_request" | "unsupported_action" | "needs_clarification"
+}`;
 
   const result = await structuredLlm.invoke(prompt);
   console.log(`[chat-engine:DEBUG] [Node: classifyIntent] Classified as: ${result.intent}`);
@@ -159,7 +166,9 @@ async function decideAndCallMCPs(state: ChatEngineStateType): Promise<Partial<Ch
     
     if (tools.length > 0) {
       console.log(`[chat-engine:DEBUG] [Node: decideAndCallMCPs] Bound ${tools.length} tools. Querying LLM...`);
-      const llm = LLMFactory.createModel("orchestrator");
+      const [agent] = await db.select().from(agents).where(eq(agents.id, state.agentId));
+      const roleStr = agent?.isLeader ? "leader" : "executor";
+      const llm = await LLMFactory.createModel(roleStr as any, { teamId: state.teamId });
       
       if (typeof (llm as any).bindTools !== "function") {
         console.warn(`[chat-engine:DEBUG] LLM provider does not support bindTools. Skipping tools.`);
@@ -248,8 +257,8 @@ async function generateResponse(state: ChatEngineStateType): Promise<Partial<Cha
     }
   }
   
-  // Use agent specific LLM config if available
-  const llm = LLMFactory.createModel("orchestrator"); // Or pass agent specific settings if LLMFactory supports it
+  const roleStr = agent?.isLeader ? "leader" : "executor";
+  const llm = await LLMFactory.createModel(roleStr as any, { teamId: state.teamId });
   
   const lang = await resolveWorkspaceLanguage(state.teamId);
   const langName = lang === "pt" ? "Portuguese (Brazil)" : lang === "zh" ? "Chinese (Simplified)" : "English";
@@ -363,19 +372,28 @@ async function extractAndSaveMemory(state: ChatEngineStateType): Promise<Partial
   console.log(`[chat-engine:DEBUG] [Node: extractAndSaveMemory] Analyzing interaction for long-term memory.`);
   if (!state.agentResponse) return {};
   
-  const llm = LLMFactory.createModel("orchestrator");
+  const [agent] = await db.select().from(agents).where(eq(agents.id, state.agentId));
+  const roleStr = agent?.isLeader ? "leader" : "executor";
+  const llm = await LLMFactory.createModel(roleStr as any, { teamId: state.teamId });
   const schema = z.object({
     saveMemory: z.boolean().describe("True if there is an explicit request to remember something or an obvious, very important new piece of information that MUST be retained long-term."),
-    target: z.enum(["agent", "team", "none"]).describe("If saveMemory is true, is this information specific to the agent's identity/persona ('agent') or something the whole team should know ('team')?"),
-    contentToAppend: z.string().describe("A concise summary of what needs to be saved. Empty if saveMemory is false."),
+    target: z.enum(["agent", "team", "none", ""]).optional().describe("If saveMemory is true, is this information specific to the agent's identity/persona ('agent') or something the whole team should know ('team')?"),
+    contentToAppend: z.string().optional().describe("A concise summary of what needs to be saved. Empty if saveMemory is false."),
   });
 
-  const structuredLlm = llm.withStructuredOutput(schema);
+  const structuredLlm = llm.withStructuredOutput(schema, { name: "MemoryExtraction", method: "jsonMode" });
   const prompt = `Evaluate the recent conversation to determine if long-term memory should be updated.
 User Message: "${state.userMessage}"
 Agent Response: "${state.agentResponse}"
 
-Decide if anything here represents a permanent learning, a strong user preference, an explicit instruction to remember, or vital team knowledge. If yes, extract it into a concise statement to append to long-term memory.`;
+Decide if anything here represents a permanent learning, a strong user preference, an explicit instruction to remember, or vital team knowledge. If yes, extract it into a concise statement to append to long-term memory.
+
+You must respond ONLY with a valid JSON object matching this exact schema:
+{
+  "saveMemory": boolean,
+  "target": "agent" | "team" | "none" | "",
+  "contentToAppend": string
+}`;
 
   try {
     const result = await structuredLlm.invoke(prompt);

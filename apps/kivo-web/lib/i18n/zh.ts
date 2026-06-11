@@ -863,9 +863,9 @@ export const zh: Dictionary = {
   },
   systemSettings: {
     title: "系统设置",
-    subtitle: "管理工作区设置、偏好、语言和 SSH 配对隧道。",
+    subtitle: "管理工作区设置、更改套餐并定义您的 AI 模型使用策略。",
     langRegionTitle: "语言与地区",
-    langRegionDesc: "切换用户界面语言。支持英文、葡萄牙文和中文。",
+    langRegionDesc: "切换用户界面语言。",
     langChangedToast: "语言已更改为 {label}",
     securityTitle: "访问控制与安全",
     securityDesc: "配置环回网关、SSH 配对和安全的 Tailscale 连接隧道。",
@@ -883,6 +883,25 @@ export const zh: Dictionary = {
     gatewayLoopback: "环回 (127.0.0.1)",
     saveChanges: "保存修改",
     settingsSavedToast: "设置配置保存成功。",
+    plansTitle: "计划与订阅",
+    plansDesc: "管理您的订阅、代理限制和自动化。",
+    viewPlansButton: "查看计划",
+    modelsTitle: "大语言模型 (LLM Models)",
+    modelsDesc: "为您的工作区中的不同角色配置模型。",
+    leaderModelTitle: "领导者 (Leader)",
+    leaderModelDesc: "用于领导者成员、规划器和现场洞察的模型（需要较高的推理能力）。",
+    executorModelTitle: "执行者 (Executors)",
+    executorModelDesc: "用于执行代理和 Langgraph 工作流的模型（可以更快/更便宜）。",
+    defaultKivo: "默认",
+    modelsSavedToast: "模型更新成功！",
+    dailyCreditsTitle: "每日 AI 额度使用情况",
+    dailyCreditsHelper: "额度每日重置。不同的模型根据其大小和成本，每次调用消耗的额度也不同。",
+    agentRoutingTitle: "智能体能力与路由",
+    agentRoutingDesc: "为您工作区中的智能体配置 LLM 模型和 API 凭证。",
+    leaderTitle: "Lead Agents / Planner",
+    leaderDesc: "负责规划、协调和决策。",
+    executorTitle: "Team Members / Executors",
+    executorDesc: "负责任务执行和智能体聊天。",
   },
   taskPage: {
     notFound: "未找到任务。",
@@ -933,11 +952,9 @@ export const zh: Dictionary = {
         "2 个团队",
         "每个团队最多 4 个智能体",
         "基础集成",
-        "每月自动化次数有限",
-        "包含有限容量的 AI",
-        "可选自定义 API Key"
+        "包含有限容量的 AI"
       ],
-      button: "免费开始"
+      button: "切换到 Free"
     },
     basic: {
       name: "Basic",
@@ -946,12 +963,10 @@ export const zh: Dictionary = {
       features: [
         "5 个团队",
         "每个团队最多 8 个智能体",
-        "更多每月自动化次数",
         "高级集成",
-        "包含 AI，并设有合理使用限制",
-        "可选自定义 API Key"
+        "包含 AI，并设有合理使用限制"
       ],
-      button: "选择 Basic"
+      button: "切换到 Basic"
     },
     pro: {
       name: "Pro",
@@ -961,9 +976,7 @@ export const zh: Dictionary = {
         "团队数量不限",
         "智能体数量不限",
         "所有集成",
-        "最高每月自动化限制",
-        "包含高级 AI 模型",
-        "可选自定义 API Key"
+        "包含高级 AI 模型"
       ],
       button: "升级到 Pro"
     }

@@ -15,8 +15,8 @@ import { getTeamById, getOtherTeamsInWorkspace } from "../controllers/teamsContr
 import { LLMFactory } from "./langgraph/integrations/llm-factory";
 import { resolveWorkspaceLanguage, t } from "../lib/i18n";
 
-function getLlm(): any {
-  return LLMFactory.createModel("orchestrator");
+async function getLlm(teamId: string): Promise<any> {
+  return await LLMFactory.createModel("orchestrator", { teamId });
 }
 
 const IngestionState = Annotation.Root({
@@ -111,10 +111,15 @@ async function classifyRequestNode(state: typeof IngestionState.State) {
   Context:
   Kivo Context: ${state.kivoContext}
   Current Team Context: ${state.teamContext}
-  Other Teams Context: ${state.otherTeamsContext}
-  `;
+  You must respond ONLY with a valid JSON object matching this exact schema:
+  {
+    "isKivoRelated": boolean,
+    "isOtherTeamRelated": boolean,
+    "isTeamRelated": boolean,
+    "otherTeamIdentifier": string | null
+  }`;
 
-  const structuredLlm = getLlm().withStructuredOutput(classificationSchema);
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(classificationSchema, { method: "jsonMode", name: "Classification" });
   const result = await structuredLlm.invoke(prompt);
 
   return { classification: result };
@@ -144,7 +149,7 @@ Request Details: ${state.request.requestDetails || ""}
 
 [REMINDER: Respond in ${langName} ONLY]`;
   
-  const response = await getLlm().invoke(prompt);
+  const response = await (await getLlm(state.teamId)).invoke(prompt);
   const answer = response.content as string;
 
   await completeRequest(state.requestId, "success", answer);
@@ -209,10 +214,19 @@ async function getTeamCapabilityNode(state: typeof IngestionState.State) {
   2. It must match the actual competences (roles) of the team members listed in the Team Context.
   3. Clearly define the inputs required to perform the capability in 'inputsDescription'.
   4. Clearly define the expected outputs or Definition of Done in 'expectedOutputs'.
-  5. Assign the most appropriate 'assignedRole' based on the roles available in the team.
-  `;
+  You must respond ONLY with a valid JSON object matching this exact schema:
+  {
+    "matchedCapabilityIdentifier": string | null,
+    "createNew": boolean,
+    "newCapabilityName": string | null,
+    "newCapabilityIdentifier": string | null,
+    "newCapabilityInstructions": string | null,
+    "newCapabilityInputsDescription": string | null,
+    "newCapabilityExpectedOutputs": string | null,
+    "newCapabilityAssignedRole": string | null
+  }`;
 
-  const structuredLlm = getLlm().withStructuredOutput(capabilityMatchSchema);
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(capabilityMatchSchema, { method: "jsonMode", name: "CapabilityMatch" });
   const result = await structuredLlm.invoke(prompt);
 
   console.log("[request-ingestion] capability match result: ", result);
@@ -300,10 +314,12 @@ async function assignAgentNode(state: typeof IngestionState.State) {
 
   CRITICAL SELECTION RULE:
   If a Preferred Agent Role is specified and is not "None", you MUST look for an agent in the Team Agents list whose Role (roleId) exactly matches this Preferred Agent Role (for example, if Preferred Agent Role is "support-responder", select the agent with Role "support-responder").
-  Only select an agent with a different role if NO agent on the team matches the Preferred Agent Role.
-  `;
+  You must respond ONLY with a valid JSON object matching this exact schema:
+  {
+    "assignedAgentId": string
+  }`;
 
-  const structuredLlm = getLlm().withStructuredOutput(agentAssignmentSchema);
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(agentAssignmentSchema, { method: "jsonMode", name: "AgentAssignment" });
   const result = await structuredLlm.invoke(prompt);
 
   return { assignedAgentId: result.assignedAgentId };

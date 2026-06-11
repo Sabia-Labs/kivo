@@ -3,11 +3,164 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import { db } from "../db/client";
-import { agentRoles, teamTypes, teamTypeRoles, capabilities, teamTypeCapabilities } from "../db/schema";
+import { 
+  agentRoles, 
+  teamTypes, 
+  teamTypeRoles, 
+  capabilities, 
+  teamTypeCapabilities,
+  llmModels,
+  plans 
+} from "../db/schema";
 import { eq } from "drizzle-orm";
 
 export async function runTemplateSeed() {
   console.log("🌱 Starting Template Seed (Local Filesystem)...");
+
+  try {
+    // 1. Sync LLM Models
+    console.log("🔍 Syncing LLM Models catalog...");
+    const defaultModels = [
+      {
+        id: "qwen2.5-coder:1.5b",
+        name: "Qwen 2.5 Coder 1.5B (Local)",
+        provider: "local",
+        tier: "free",
+        costPerCall: 0.1,
+      },
+      {
+        id: "qwen3:8b",
+        name: "Qwen 3 8B (Local)",
+        provider: "local",
+        tier: "free",
+        costPerCall: 0.1,
+      },
+      {
+        id: "gpt-5.4-nano",
+        name: "GPT-5.4 Nano (Cheapest)",
+        provider: "openai",
+        tier: "basic",
+        costPerCall: 0.1,
+      },
+      {
+        id: "gpt-5.4-mini",
+        name: "GPT-5.4 Mini (Fast)",
+        provider: "openai",
+        tier: "basic",
+        costPerCall: 0.5,
+      },
+      {
+        id: "gemini-3.1-flash-lite",
+        name: "Gemini 3.1 Flash-Lite (Fast)",
+        provider: "gemini",
+        tier: "basic",
+        costPerCall: 0.1,
+      },
+      {
+        id: "gemini-3.5-flash",
+        name: "Gemini 3.5 Flash (Agentic)",
+        provider: "gemini",
+        tier: "basic",
+        costPerCall: 0.5,
+      },
+      {
+        id: "deepseek-v4-flash",
+        name: "DeepSeek V4 Flash (Speed)",
+        provider: "deepseek",
+        tier: "basic",
+        costPerCall: 0.5,
+      },
+      {
+        id: "gpt-5.5",
+        name: "GPT-5.5 (Top)",
+        provider: "openai",
+        tier: "pro",
+        costPerCall: 2.0,
+      },
+      {
+        id: "gemini-3.5-pro",
+        name: "Gemini 3.5 Pro (Multimodal)",
+        provider: "gemini",
+        tier: "pro",
+        costPerCall: 2.0,
+      },
+      {
+        id: "deepseek-v4-pro",
+        name: "DeepSeek V4 Pro (Flagship)",
+        provider: "deepseek",
+        tier: "pro",
+        costPerCall: 1.5,
+      }
+    ];
+
+    for (const m of defaultModels) {
+      await db
+        .insert(llmModels)
+        .values({
+          id: m.id,
+          name: m.name,
+          provider: m.provider,
+          tier: m.tier,
+          costPerCall: m.costPerCall,
+        })
+        .onConflictDoUpdate({
+          target: llmModels.id,
+          set: {
+            name: m.name,
+            provider: m.provider,
+            tier: m.tier,
+            costPerCall: m.costPerCall,
+          },
+        });
+    }
+  } catch (err) {
+    console.error("❌ LLM Models seed failed:", err instanceof Error ? err.message : err);
+  }
+
+  try {
+    console.log("🌱 Seeding Plans...");
+    const defaultPlans = [
+      {
+        tier: "free" as const,
+        teamLimit: 2,
+        agentsPerTeamLimit: 4,
+        monthlyAutomationLimit: 100,
+        dailyAiCredits: 10,
+        defaultLeaderModel: "qwen3:8b",
+        defaultExecutorModel: "qwen2.5-coder:1.5b",
+      },
+      {
+        tier: "basic" as const,
+        teamLimit: 5,
+        agentsPerTeamLimit: 8,
+        monthlyAutomationLimit: 1000,
+        dailyAiCredits: 100,
+        defaultLeaderModel: "gpt-5.4-mini",
+        defaultExecutorModel: "gemini-3.5-flash",
+      },
+      {
+        tier: "pro" as const,
+        teamLimit: 9999, // Uncapped
+        agentsPerTeamLimit: 9999,
+        monthlyAutomationLimit: 10000,
+        dailyAiCredits: 500,
+        defaultLeaderModel: "gpt-5.5",
+        defaultExecutorModel: "deepseek-v4-pro",
+      }
+    ];
+
+    for (const p of defaultPlans) {
+      await db
+        .insert(plans)
+        .values(p)
+        .onConflictDoUpdate({
+          target: plans.tier,
+          set: p,
+        });
+    }
+  } catch (err) {
+    console.error("❌ Plans seed failed:", err instanceof Error ? err.message : err);
+  }
 
   // Em dev local (tsx), __dirname = src/lib
   let definitionsPath = path.resolve(__dirname, "../../../../definitions");

@@ -26,8 +26,12 @@ export function PlanSelectionBanner() {
         if (!isMounted) return;
         const teams = data.data ?? [];
         if (teams.length > 0 && teams[0]?.workspace) {
-          // If tier is null, it means no plan selected
-          setTier(teams[0].workspace.tier);
+          const ws = teams[0].workspace;
+          if (ws.leaderLlmMode === "byok" && ws.executorLlmMode === "byok") {
+            setTier("free_byok");
+          } else {
+            setTier(ws.tier);
+          }
         } else {
           setTier("pro"); // Hide if no teams/workspace yet to avoid flicker before onboarding
         }

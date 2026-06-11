@@ -15,7 +15,7 @@ export async function summarizeMemories() {
     for (const agent of allAgents) {
       if (agent.longTermMemory && agent.longTermMemory.length > MAX_MEMORY_LENGTH) {
         console.log(`[memory-summarizer] Summarizing long-term memory for agent ${agent.id}`);
-        const summarizedText = await invokeSummarizerLLM(agent.longTermMemory, "agent");
+        const summarizedText = await invokeSummarizerLLM(agent.longTermMemory, "agent", agent.teamId);
         if (summarizedText) {
           await db.update(agents)
             .set({ longTermMemory: summarizedText, updatedAt: new Date() })
@@ -29,7 +29,7 @@ export async function summarizeMemories() {
     for (const team of allTeams) {
       if (team.longTermMemory && team.longTermMemory.length > MAX_MEMORY_LENGTH) {
         console.log(`[memory-summarizer] Summarizing long-term memory for team ${team.id}`);
-        const summarizedText = await invokeSummarizerLLM(team.longTermMemory, "team");
+        const summarizedText = await invokeSummarizerLLM(team.longTermMemory, "team", team.id);
         if (summarizedText) {
           await db.update(teams)
             .set({ longTermMemory: summarizedText, updatedAt: new Date() })
@@ -44,8 +44,8 @@ export async function summarizeMemories() {
   }
 }
 
-async function invokeSummarizerLLM(rawMemory: string, target: "agent" | "team"): Promise<string | null> {
-  const llm = LLMFactory.createModel("orchestrator");
+async function invokeSummarizerLLM(rawMemory: string, target: "agent" | "team", teamId: string): Promise<string | null> {
+  const llm = await LLMFactory.createModel("orchestrator", { teamId });
   
   const schema = z.object({
     summarizedMemory: z.string().describe("A condensed, highly dense summary of the long-term memory, retaining all absolute rules, facts, and essential knowledge. Maximum 1500 characters. Keep date timestamps if they imply an important chronological order, otherwise discard them to save space.")

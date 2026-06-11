@@ -14,8 +14,8 @@ const IntentionSchema = z.object({
   reasoning: z.string().describe("Brief reasoning for the classification."),
 });
 
-function getLlm(): any {
-  return LLMFactory.createModel("orchestrator");
+async function getLlm(teamId: string): Promise<any> {
+  return await LLMFactory.createModel("orchestrator", { teamId });
 }
 
 export async function evaluateHumanComment(
@@ -44,8 +44,8 @@ export async function evaluateHumanComment(
 
     console.log(`[comment-evaluation] Evaluating human comment on request ${request.identifier} (Task: ${lastTask.title})...`);
 
-    const llm = getLlm();
-    const structuredLlm = llm.withStructuredOutput(IntentionSchema);
+    const llm = await getLlm(teamId);
+    const structuredLlm = llm.withStructuredOutput(IntentionSchema, { method: "jsonMode", name: "CommentEvaluation" });
 
     const prompt = `You are an Intent Classifier Agent for Kivo, an autonomous Kubernetes AI developer platform.
 A human operator has just commented on a request that has stopped because a task failed.
@@ -69,7 +69,14 @@ Classify the intent into one of these 4 values:
 1. "retry": The operator wants to re-run the failed task, typically providing new details, solutions, corrections, API keys, credentials, or simply asking to try again (e.g., "try again", "try with a different input", "here is the correct credentials").
 2. "bypass": The operator wants to skip the failed task and proceed to the next task in the workflow (e.g., "skip this step").
 3. "cancel": The operator wants to abort/cancel the entire request (e.g., "cancel everything", "stop the flow", "abort it").
-4. "chat": The operator is just talking, asking a question, saying thank you, saying hello, or making comments that do not imply a do-not-trigger action.`;
+4. "chat": The operator is just talking, asking a question, saying thank you, saying hello, or making comments that do not imply a do-not-trigger action.
+
+You must respond ONLY with a valid JSON object matching this exact schema:
+{
+  "intent": "retry" | "bypass" | "cancel" | "chat",
+  "extractedInstructions": string,
+  "reasoning": string
+}`;
 
     const result = await structuredLlm.invoke(prompt);
     console.log(`[comment-evaluation] Classified intent: ${result.intent}. Reasoning: ${result.reasoning}`);

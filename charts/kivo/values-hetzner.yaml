@@ -20,6 +20,7 @@ kivoApi:
     APP_URL: "https://kivo.sabialabs.de"
     TELEGRAM_WEBHOOK_DOMAIN: "https://auth.sabialabs.de"
     FRONTEND_URL: "https://auth.sabialabs.de"
+
 kivoWeb:
   replicaCount: 1
   image:

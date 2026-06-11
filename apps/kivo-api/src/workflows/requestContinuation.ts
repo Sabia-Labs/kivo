@@ -12,8 +12,8 @@ import { getAgentsByTeam } from "../controllers/agentsController";
 import { LLMFactory } from "./langgraph/integrations/llm-factory";
 import { t, resolveWorkspaceLanguage } from "../lib/i18n";
 
-function getLlm(): any {
-  return LLMFactory.createModel("orchestrator");
+async function getLlm(teamId: string): Promise<any> {
+  return await LLMFactory.createModel("orchestrator", { teamId });
 }
 
 const ContinuationState = Annotation.Root({
@@ -140,7 +140,7 @@ Provide the concise, final summary of this entire request execution now.`;
 
     let finalSummary = taskRecord.result || "All tasks completed."; // fallback
     try {
-      const plannerModel = LLMFactory.createModel("planner");
+      const plannerModel = await LLMFactory.createModel("planner", { teamId: state.teamId });
       const { SystemMessage, HumanMessage } = await import("@langchain/core/messages");
       const response = await plannerModel.invoke([
         new SystemMessage(rewriteSystem),
@@ -231,10 +231,12 @@ async function assignAgentNode(state: typeof ContinuationState.State) {
 
   CRITICAL SELECTION RULE:
   If a Preferred Agent Role is specified and is not "None", you MUST look for an agent in the Team Agents list whose Role (roleId) exactly matches this Preferred Agent Role (for example, if Preferred Agent Role is "support-responder", select the agent with Role "support-responder").
-  Only select an agent with a different role if NO agent on the team matches the Preferred Agent Role.
-  `;
+  You must respond ONLY with a valid JSON object matching this exact schema:
+  {
+    "assignedAgentId": string
+  }`;
 
-  const structuredLlm = getLlm().withStructuredOutput(agentAssignmentSchema);
+  const structuredLlm = (await getLlm(state.teamId)).withStructuredOutput(agentAssignmentSchema, { method: "jsonMode", name: "AgentAssignment" });
   const result = await structuredLlm.invoke(prompt);
 
   return { assignedAgentId: result.assignedAgentId };
