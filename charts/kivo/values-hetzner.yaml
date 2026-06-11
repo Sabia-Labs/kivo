@@ -10,7 +10,7 @@ kivoApi:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-api
-    tag: 1beb9d115b0f15de3219f8f367a02c7f31afd4d5
+    tag: 6412ca5e2930ae265349a116e129bb42dec4a170
     pullPolicy: Always
   existingSecret: "kivo-api-secret"
   databaseSecret: "kivo-db-credentials"
@@ -20,12 +20,11 @@ kivoApi:
     APP_URL: "https://kivo.sabialabs.de"
     TELEGRAM_WEBHOOK_DOMAIN: "https://auth.sabialabs.de"
     FRONTEND_URL: "https://auth.sabialabs.de"
-
 kivoWeb:
   replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: 1beb9d115b0f15de3219f8f367a02c7f31afd4d5
+    tag: 6412ca5e2930ae265349a116e129bb42dec4a170
     pullPolicy: Always
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
