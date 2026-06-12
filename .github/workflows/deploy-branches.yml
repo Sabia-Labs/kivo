@@ -1,9 +1,8 @@
 name: Build & Push Feature Branches (CI/CD Dev)
 
 on:
-  push:
-    branches-ignore:
-      - main
+  pull_request:
+    types: [opened, synchronize, reopened, labeled]
 
 concurrency:
   group: deploy-dev-${{ github.ref }}
@@ -17,9 +16,11 @@ jobs:
   build-and-push:
     name: Build & Push Branch Images
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'preview')
     permissions:
       contents: read
       packages: write
+      deployments: write
 
     steps:
       - uses: actions/checkout@v4
@@ -34,12 +35,30 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GIT_PUSH_TOKEN }}
 
-      # Normalize branch name to be Docker tag friendly (e.g. feat/new-ui -> feat-new-ui)
+      # Normalize head branch name to be Docker tag friendly (e.g. feat/new-ui -> feat-new-ui)
       - name: Get normalized branch name
         id: branch
         run: |
-          CLEAN_NAME=$(echo "${{ github.ref_name }}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+          CLEAN_NAME=$(echo "${{ github.head_ref }}" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
           echo "normalized=${CLEAN_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Start GitHub Deployment
+        id: start_deployment
+        run: |
+          DEPLOY_ID=$(curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/deployments \
+            -d "{\"ref\":\"${{ github.head_ref }}\",\"environment\":\"preview-${{ steps.branch.outputs.normalized }}\",\"required_contexts\":[],\"transient_environment\":true,\"production_environment\":false}" \
+            | jq '.id')
+          echo "deployment_id=${DEPLOY_ID}" >> $GITHUB_OUTPUT
+          
+          # Set status to pending
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/deployments/${DEPLOY_ID}/statuses \
+            -d "{\"state\":\"pending\",\"log_url\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"description\":\"Building and pushing preview Docker images...\"}"
 
       - name: Build & push API image
         uses: docker/build-push-action@v6
@@ -62,3 +81,28 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web:${{ steps.branch.outputs.normalized }}
           cache-from: type=gha,scope=kivo-web-${{ steps.branch.outputs.normalized }}
           cache-to: type=gha,mode=max,scope=kivo-web-${{ steps.branch.outputs.normalized }}
+
+      - name: Update Deployment Status
+        if: always()
+        run: |
+          DEPLOY_ID="${{ steps.start_deployment.outputs.deployment_id }}"
+          if [ -z "$DEPLOY_ID" ] || [ "$DEPLOY_ID" = "null" ]; then
+            echo "No deployment was started."
+            exit 0
+          fi
+          
+          if [ "${{ job.status }}" = "success" ]; then
+            STATE="success"
+            DESC="Preview environment is ready!"
+            ENV_URL="https://web-${{ steps.branch.outputs.normalized }}.kivo.sabialabs.de"
+          else
+            STATE="failure"
+            DESC="Failed to build and push preview Docker images."
+            ENV_URL=""
+          fi
+          
+          curl -s -X POST \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/deployments/${DEPLOY_ID}/statuses \
+            -d "{\"state\":\"${STATE}\",\"environment_url\":\"${ENV_URL}\",\"log_url\":\"https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"description\":\"${DESC}\"}"
