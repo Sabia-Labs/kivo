@@ -40,6 +40,19 @@ async function verifyCode(email: string, code: string) {
   return !!record;
 }
 
+// ── GET /auth/config ─────────────────────────────────────────────────────────
+authRouter.get("/config", (req, res) => {
+  const allowDevLogin = process.env.ALLOW_DEV_LOGIN === "true";
+  const isProductionDomain = 
+    req.hostname === "kivo.sabialabs.de" || 
+    req.hostname === "auth.sabialabs.de" ||
+    process.env.KIVO_ENV === "production";
+
+  res.json(success({
+    allowDevLogin: allowDevLogin && !isProductionDomain
+  }));
+});
+
 // ── GET /auth/me ─────────────────────────────────────────────────────────────
 authRouter.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
