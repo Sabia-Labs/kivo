@@ -58,6 +58,12 @@ fi
   G_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_REDIRECT_URI=$(grep "^GOOGLE_REDIRECT_URI=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
 
+  PLATFORM_OAI_KEY=$(grep "^PLATFORM_OPENAI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
+  PLATFORM_GEMINI_KEY=$(grep "^PLATFORM_GEMINI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
+  PLATFORM_DEEPSEEK_KEY=$(grep "^PLATFORM_DEEPSEEK_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
+  PLATFORM_ANTHROPIC_KEY=$(grep "^PLATFORM_ANTHROPIC_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
+  PLATFORM_OPENROUTER_KEY=$(grep "^PLATFORM_OPENROUTER_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
+
   # Generate or reuse sensitive tokens
   JWT_SECRET=$(k get secret kivo-api-secret -n "$NS" -o jsonpath='{.data.JWT_SECRET}' 2>/dev/null | base64 -d || openssl rand -base64 32)
   INTERNAL_TOKEN=$(k get secret kivo-api-secret -n "$NS" -o jsonpath='{.data.INTERNAL_SERVICE_TOKEN}' 2>/dev/null | base64 -d || openssl rand -base64 32)
@@ -78,6 +84,11 @@ stringData:
   GOOGLE_REDIRECT_URI: "$G_REDIRECT_URI"
   GEMINI_API_KEY: "$GEMINI_KEY"
   RESEND_API_KEY: "$RESEND_KEY"
+  PLATFORM_OPENAI_API_KEY: "$PLATFORM_OAI_KEY"
+  PLATFORM_GEMINI_API_KEY: "$PLATFORM_GEMINI_KEY"
+  PLATFORM_DEEPSEEK_API_KEY: "$PLATFORM_DEEPSEEK_KEY"
+  PLATFORM_ANTHROPIC_API_KEY: "$PLATFORM_ANTHROPIC_KEY"
+  PLATFORM_OPENROUTER_API_KEY: "$PLATFORM_OPENROUTER_KEY"
 EOF
 
 echo "✅ Secrets initialized for $ENV."
