@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
+  const pathname = usePathname();
 
   if (isLoading) {
     return (
@@ -23,7 +24,6 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const pathname = usePathname();
   const publicRoutes = ["/", "/login", "/signup", "/redirect-login", "/redirect-app", "/auth/google/callback", "/auth/callback"];
   const isPublicRoute = publicRoutes.includes(pathname);
 
@@ -34,7 +34,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         <Sidebar />
 
         {/* Right Content Pane */}
-        <main className="flex-1 min-w-0 overflow-y-auto relative flex flex-col">
+        <main className="flex-1 min-w-0 overflow-y-auto relative flex flex-col pb-20 md:pb-0">
           <PlanSelectionBanner />
           {children}
         </main>

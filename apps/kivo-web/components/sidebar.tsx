@@ -13,7 +13,6 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal,
   LogOut,
   ChevronDown
 } from "lucide-react";
@@ -40,9 +39,11 @@ export function Sidebar() {
   });
 
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect -- Sidebar preferences hydrate from localStorage after mount. */
     setMounted(true);
     const saved = localStorage.getItem("kivo_sidebar_collapsed");
     setIsCollapsed(saved === "true");
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     // Fetch workspace name from teams if token is present
     if (token) {
@@ -107,17 +108,44 @@ export function Sidebar() {
   if (!mounted) {
     // Avoid hydration layout shifting
     return (
-      <aside className="w-16 md:w-64 border-r border-border/40 bg-background flex flex-col shrink-0 min-h-screen h-screen sticky top-0" />
+      <aside className="hidden w-16 md:flex md:w-64 border-r border-border/40 bg-background flex-col shrink-0 min-h-screen h-screen sticky top-0" />
     );
   }
 
   return (
-    <aside
-      className={cn(
-        "border-r border-border/40 bg-card/65 backdrop-blur-md flex flex-col shrink-0 min-h-screen h-screen sticky top-0 transition-all duration-300 ease-in-out z-40 select-none",
-        isCollapsed ? "w-[72px]" : "w-64"
-      )}
-    >
+    <>
+      <nav className="fixed inset-x-3 bottom-3 z-50 md:hidden rounded-2xl border border-border/70 bg-card/95 p-1.5 shadow-2xl shadow-black/10 backdrop-blur-xl">
+        <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {menuItems.map((item) => {
+            const active = isActive(item.href);
+            const Icon = item.icon;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-label={item.label}
+                title={item.label}
+                className={cn(
+                  "flex h-11 min-w-12 flex-1 items-center justify-center rounded-xl text-muted-foreground transition-all duration-200",
+                  active
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    : "hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <Icon className="size-5 shrink-0" />
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      <aside
+        className={cn(
+          "hidden border-r border-border/40 bg-card/65 backdrop-blur-md md:flex flex-col shrink-0 min-h-screen h-screen sticky top-0 transition-all duration-300 ease-in-out z-40 select-none",
+          isCollapsed ? "w-[72px]" : "w-64"
+        )}
+      >
       {/* ── TOP SECTION: LOGO ── */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-border/40">
         <Link
@@ -315,6 +343,7 @@ export function Sidebar() {
           </>
         )}
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
