@@ -101,6 +101,36 @@ spec:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: GEMINI_API_KEY
                   optional: true
+            - name: PLATFORM_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_OPENAI_API_KEY
+                  optional: true
+            - name: PLATFORM_GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_GEMINI_API_KEY
+                  optional: true
+            - name: PLATFORM_DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_DEEPSEEK_API_KEY
+                  optional: true
+            - name: PLATFORM_ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_ANTHROPIC_API_KEY
+                  optional: true
+            - name: PLATFORM_OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_OPENROUTER_API_KEY
+                  optional: true
             {{- end }}
       {{- end }}
 
@@ -182,6 +212,36 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.kivoApi.existingSecret }}
                   key: GEMINI_API_KEY
+                  optional: true
+            - name: PLATFORM_OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_OPENAI_API_KEY
+                  optional: true
+            - name: PLATFORM_GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_GEMINI_API_KEY
+                  optional: true
+            - name: PLATFORM_DEEPSEEK_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_DEEPSEEK_API_KEY
+                  optional: true
+            - name: PLATFORM_ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_ANTHROPIC_API_KEY
+                  optional: true
+            - name: PLATFORM_OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.kivoApi.existingSecret }}
+                  key: PLATFORM_OPENROUTER_API_KEY
                   optional: true
             {{- end }}
           livenessProbe:
