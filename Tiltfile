@@ -128,7 +128,7 @@ docker_build(
     'NEXT_PUBLIC_API_URL': 'http://localhost:4000',
     'API_INTERNAL_URL': 'http://kivo-api:4000',
   },
-  ignore=['node_modules', '.next', '*.md'],
+  ignore=['**/node_modules', '**/.next', '*.md'],
 )
 
 
