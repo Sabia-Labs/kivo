@@ -57,9 +57,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     fetch(`${API_BASE}/auth/config`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load config");
+        return res.json();
+      })
       .then((data) => {
-        if (data.success && data.data) {
+        if (data && data.data) {
           setAllowDevLogin(data.data.allowDevLogin);
         }
       })
