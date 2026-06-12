@@ -20,6 +20,8 @@ kivoApi:
     APP_URL: "https://kivo.sabialabs.de"
     TELEGRAM_WEBHOOK_DOMAIN: "https://auth.sabialabs.de"
     FRONTEND_URL: "https://auth.sabialabs.de"
+    LOCAL_LLM_BASE_URL: "http://ollama.kivo-staging.svc.cluster.local:11434/v1"
+    OLLAMA_BASE_URL: "http://ollama.kivo-staging.svc.cluster.local:11434/v1"
 kivoWeb:
   replicaCount: 1
   image:
