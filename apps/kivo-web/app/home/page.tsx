@@ -70,8 +70,8 @@ export default function HomePage() {
           </div>
           <h1 className="text-3xl font-bold tracking-tight mt-1">
             {user?.name
-              ? t.homePage.welcomeBack.replace("{name}", user.name) + "!!!"
-              : t.homePage.welcomeBackDefault + "!!!"}
+              ? t.homePage.welcomeBack.replace("{name}", user.name)
+              : t.homePage.welcomeBackDefault}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             {t.homePage.tagline}
