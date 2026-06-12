@@ -178,5 +178,9 @@ networkPolicy:
 
 # ── Image Pull Secrets (for ghcr.io or private registries) ───────────────────
 imagePullSecrets: []
+
+# ── Secret Replication with Reflector ────────────────────────────────────────
+reflector:
+  enabled: false
 # - name: ghcr-pull-secret
 
