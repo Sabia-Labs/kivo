@@ -40,6 +40,11 @@ spec:
         - protocol: TCP
           port: 443
 
+    # Allow connection to Ollama (local/shared model server)
+    - ports:
+        - protocol: TCP
+          port: 11434
+
     {{- if .Values.postgresql.embedded }}
     # Allow connection to embedded PostgreSQL
     - to:
