@@ -144,7 +144,9 @@ export default function LoginPage() {
     window.location.href = `${API_BASE}/auth/google`;
   };
 
-  const isDevMode = process.env.NODE_ENV === "development";
+  const isDevMode = 
+    process.env.NODE_ENV === "development" || 
+    process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true";
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
