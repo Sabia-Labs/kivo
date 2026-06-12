@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GalleryVerticalEnd, Loader2, Apple, Code } from "lucide-react";
@@ -53,6 +53,21 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [step, setStep] = useState(1);
+  const [allowDevLogin, setAllowDevLogin] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/auth/config`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load config");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.data) {
+          setAllowDevLogin(data.data.allowDevLogin);
+        }
+      })
+      .catch((err) => console.error("Failed to load dev login config", err));
+  }, []);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -144,7 +159,9 @@ export default function LoginPage() {
     window.location.href = `${API_BASE}/auth/google`;
   };
 
-  const isDevMode = process.env.NODE_ENV === "development";
+  const isDevMode = 
+    process.env.NODE_ENV === "development" || 
+    allowDevLogin;
 
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">

@@ -40,6 +40,19 @@ async function verifyCode(email: string, code: string) {
   return !!record;
 }
 
+// ── GET /auth/config ─────────────────────────────────────────────────────────
+authRouter.get("/config", (req, res) => {
+  const allowDevLogin = process.env.ALLOW_DEV_LOGIN === "true";
+  const isProductionDomain = 
+    req.hostname === "kivo.sabialabs.de" || 
+    req.hostname === "auth.sabialabs.de" ||
+    process.env.KIVO_ENV === "production";
+
+  res.json(success({
+    allowDevLogin: allowDevLogin && !isProductionDomain
+  }));
+});
+
 // ── GET /auth/me ─────────────────────────────────────────────────────────────
 authRouter.get("/me", authMiddleware, async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -71,20 +84,77 @@ authRouter.get("/me", authMiddleware, async (req: Request, res: Response, next: 
 
 // ── Dev Login ────────────────────────────────────────────────────────────────
 authRouter.post("/dev-login", async (req, res, next) => {
-  if (process.env.NODE_ENV !== "development") {
+  const allowDevLogin = process.env.ALLOW_DEV_LOGIN === "true";
+
+  // Layer 1 & Layer 3: Hard Environment/Configuration check
+  if (
+    process.env.NODE_ENV !== "development" && 
+    !allowDevLogin
+  ) {
+    return res.status(404).json(failure("Not found"));
+  }
+
+  // Layer 2: Domain Guard (hardcoded block for staging and production domains)
+  if (
+    req.hostname === "kivo.sabialabs.de" || 
+    req.hostname === "auth.sabialabs.de" ||
+    process.env.KIVO_ENV === "production"
+  ) {
     return res.status(404).json(failure("Not found"));
   }
 
   try {
-    // Hardcoded to seed user
     const devEmail = "wei.chen@acme.dev";
-    const [user] = await db.select().from(users).where(eq(users.email, devEmail));
-    
-    if (!user) {
-      return res.status(400).json(failure("Dev user not found in DB. Did you run make db-seed?"));
-    }
+    let [user] = await db.select().from(users).where(eq(users.email, devEmail));
+    let workspace;
 
-    const [workspace] = await db.select().from(workspaces).where(eq(workspaces.userId, user.id));
+    // If the dev user doesn't exist (e.g. in a fresh branch database), bootstrap it!
+    if (!user) {
+      const userId = randomUUID();
+      const workspaceId = randomUUID();
+
+      // Run transactional bootstrap
+      const result = await db.transaction(async (tx) => {
+        const [newUser] = await tx.insert(users).values({
+          id: userId,
+          email: devEmail,
+          name: "Wei Chen",
+          isAdmin: true
+        }).returning();
+
+        // Find plans limits (fallback to free)
+        const [freePlan] = await tx.select().from(plans).where(eq(plans.tier, "free"));
+        const [leaderDb] = await tx.select().from(llmModels).where(eq(llmModels.id, freePlan?.defaultLeaderModel || ""));
+        const [executorDb] = await tx.select().from(llmModels).where(eq(llmModels.id, freePlan?.defaultExecutorModel || ""));
+
+        const [newWorkspace] = await tx.insert(workspaces).values({
+          id: workspaceId,
+          userId: userId,
+          name: "Acme Dev",
+          langchain: true,
+          tier: "free",
+          language: "en",
+          teamLimit: freePlan?.teamLimit || 2,
+          agentsPerTeamLimit: freePlan?.agentsPerTeamLimit || 4,
+          monthlyAutomationLimit: freePlan?.monthlyAutomationLimit || 100,
+          plannerLlmModel: leaderDb?.id || "gpt-5.4-mini",
+          executorLlmModel: executorDb?.id || "qwen2.5-coder:1.5b",
+          leaderLlmMode: "platform",
+          executorLlmMode: "platform",
+          aiCreditsLimit: freePlan?.dailyAiCredits || 10,
+          aiCreditsUsed: 0,
+          k8sNamespace: process.env.KIVO_SHARED_NAMESPACE || `kivo-ws-${workspaceId.substring(0, 8)}`
+        }).returning();
+
+        return { user: newUser, workspace: newWorkspace };
+      });
+
+      user = result.user;
+      workspace = result.workspace;
+    } else {
+      const [existingWorkspace] = await db.select().from(workspaces).where(eq(workspaces.userId, user.id));
+      workspace = existingWorkspace;
+    }
 
     const token = signToken({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
     res.json(success({
