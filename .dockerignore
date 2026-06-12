@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+.git
+.github
+.next
+**/.next
+dist
+**/dist
+.env
+**/.env
+.DS_Store
+**/.DS_Store
+tilt-settings.yaml
+scratch
+**/scratch
