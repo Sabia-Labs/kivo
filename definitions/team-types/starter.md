@@ -9,6 +9,17 @@ composition:
   - roleId: executive-assistant
     quantity: 1
     isLeader: true
+external_tools:
+  - role: "Email / Inbox"
+    description: "Inbox used to read, draft, and organize communication."
+  - role: "Calendar"
+    description: "Calendar used to understand schedule, availability, and reminders."
+  - role: "Personal / Workspace Documentation"
+    description: "Docs, notes, files, and durable context for the operator."
+  - role: "Task Management"
+    description: "System used to track personal tasks, follow-ups, and priorities."
+  - role: "Communication Channel"
+    description: "Primary channel for contacting the operator or collaborators."
 ---
 
 # MISSION

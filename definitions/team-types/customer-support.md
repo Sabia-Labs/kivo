@@ -17,11 +17,15 @@ composition:
     isLeader: false
 external_tools:
   - role: "Ticketing"
-    description: "System to read and manage customer support tickets."
+    description: "System to read, triage, update, and resolve customer support tickets."
   - role: "Knowledge Base"
-    description: "Knowledge base with procedures (SOPs) and common resolutions."
+    description: "Knowledge base with SOPs, FAQs, troubleshooting guides, and common resolutions."
   - role: "Team Documentation"
-    description: "Internal team's documentation"
+    description: "Internal documentation for support processes, escalation paths, and product context."
+  - role: "Customer Communication"
+    description: "Channel used to send replies or follow-ups to customers."
+  - role: "Product Feedback / Bug Tracking"
+    description: "System used to escalate bugs, product feedback, and recurring customer issues to product or engineering."
 ---
 
 # MISSION

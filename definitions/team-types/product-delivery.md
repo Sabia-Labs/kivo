@@ -18,6 +18,19 @@ composition:
   - roleId: software-engineer
     quantity: 2
     isLeader: false
+external_tools:
+  - role: "Work Management"
+    description: "Source of truth for product issues, tasks, backlog, sprint or kanban status, and delivery priorities."
+  - role: "Code Repository"
+    description: "Repositories, branching rules, PR workflow, ownership boundaries, and review expectations."
+  - role: "Team Documentation"
+    description: "Product specs, technical docs, architecture notes, ADRs, and implementation guidelines."
+  - role: "CI/CD"
+    description: "Build, test, deployment, and release pipeline information."
+  - role: "Observability"
+    description: "Monitoring, errors, logs, incidents, and production health signals."
+  - role: "Communication Channel"
+    description: "Channel where the team coordinates with humans and reports delivery status."
 ---
 
 # MISSION

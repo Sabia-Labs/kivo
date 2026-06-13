@@ -15,6 +15,19 @@ composition:
   - roleId: business-operations-analyst
     quantity: 1
     isLeader: false
+external_tools:
+  - role: "Calendar"
+    description: "Executive calendar, meeting schedule, availability, and recurring operating rhythm."
+  - role: "Email / Inbox"
+    description: "Executive inbox or shared mailbox used for follow-ups, summaries, and stakeholder communication."
+  - role: "Meeting Notes"
+    description: "Meeting transcripts, notes, decisions, action items, and historical context."
+  - role: "Company Documentation"
+    description: "Internal docs, strategy docs, OKRs, board materials, policies, and planning artifacts."
+  - role: "Work Tracking"
+    description: "System used to track commitments, initiatives, OKRs, and follow-up actions."
+  - role: "Communication Channel"
+    description: "Primary channel where leadership coordination, status updates, and approvals happen."
 ---
 
 # MISSION

@@ -9,6 +9,19 @@ composition:
   - roleId: sales-manager
     quantity: 1
     isLeader: true
+external_tools:
+  - role: "CRM"
+    description: "Source of truth for accounts, contacts, leads, opportunities, pipeline stages, and deal notes."
+  - role: "Email / Outreach"
+    description: "System used to send, receive, and track prospect or customer communication."
+  - role: "Calendar"
+    description: "Meetings, demos, follow-ups, and sales calls."
+  - role: "Sales Enablement"
+    description: "Docs, pitch decks, pricing notes, objection handling, and product collateral."
+  - role: "Contract / Proposal Management"
+    description: "Quotes, proposals, order forms, contracts, and signature status."
+  - role: "Communication Channel"
+    description: "Internal channel for deal review, handoffs, and approvals."
 ---
 # MISSION
 Drive revenue and build lasting customer relationships.
