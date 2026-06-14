@@ -5,7 +5,7 @@ O ambiente está configurado e seguro com HTTPS!
 ### 🌍 Endereços Oficiais
 - **Aplicação (App):** 👉 [https://kivo-stg.sabialabs.de](https://kivo-stg.sabialabs.de)
 - **Site (WWW - Cloudflare):** 👉 [https://www.sabialabs.de](https://www.sabialabs.de)
-- **Admin API:** 👉 [https://kivo-stg.sabialabs.de/api](https://kivo-stg.sabialabs.de/api)
+- **API:** 👉 [https://kivo-stg.sabialabs.de/api](https://kivo-stg.sabialabs.de/api)
 
 ### 🔑 Credenciais Google OAuth
 - **Redirect URI:** `https://kivo-stg.sabialabs.de/api/auth/callback/google`
