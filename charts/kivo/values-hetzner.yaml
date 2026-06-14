@@ -16,10 +16,10 @@ kivoApi:
   databaseSecret: "kivo-db-credentials"
   runMigrations: true
   env:
-    CORS_ORIGIN: "https://kivo.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de,https://auth.sabialabs.de"
-    APP_URL: "https://kivo.sabialabs.de"
-    TELEGRAM_WEBHOOK_DOMAIN: "https://auth.sabialabs.de"
-    FRONTEND_URL: "https://auth.sabialabs.de"
+    CORS_ORIGIN: "https://kivo-stg.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de"
+    APP_URL: "https://kivo-stg.sabialabs.de"
+    TELEGRAM_WEBHOOK_DOMAIN: "https://kivo-stg.sabialabs.de"
+    FRONTEND_URL: "https://kivo-stg.sabialabs.de"
     LOCAL_LLM_BASE_URL: "http://ollama.kivo-staging.svc.cluster.local:11434/v1"
     OLLAMA_BASE_URL: "http://ollama.kivo-staging.svc.cluster.local:11434/v1"
 kivoWeb:
@@ -31,15 +31,15 @@ kivoWeb:
   env:
     API_INTERNAL_URL: "http://kivo-api:4000"
     NEXT_PUBLIC_API_URL: "/api"
-    NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
-    SITE_URL: "https://auth.sabialabs.de"
+    NEXT_PUBLIC_SITE_URL: "https://kivo-stg.sabialabs.de"
+    SITE_URL: "https://kivo-stg.sabialabs.de"
 networkPolicy:
   enabled: true
 ingress:
   enabled: true
   className: traefik
   # Set host to the root domain for the helper templates, but we will override the rules
-  host: sabialabs.de
+  host: kivo-stg.sabialabs.de
   tls:
     enabled: true
     secretName: kivo-tls
@@ -48,5 +48,4 @@ ingress:
       clusterIssuer: letsencrypt-prod
     # Explicitly list ONLY the domains that are passing validation
     hosts:
-      - kivo.sabialabs.de
-      - auth.sabialabs.de
+      - kivo-stg.sabialabs.de

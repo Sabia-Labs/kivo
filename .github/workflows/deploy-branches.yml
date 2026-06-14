@@ -94,7 +94,7 @@ jobs:
           if [ "${{ job.status }}" = "success" ]; then
             STATE="success"
             DESC="Preview environment is ready!"
-            ENV_URL="https://web-${{ steps.branch.outputs.normalized }}.kivo.sabialabs.de"
+            ENV_URL="https://web-${{ steps.branch.outputs.normalized }}.kivo-stg.sabialabs.de"
           else
             STATE="failure"
             DESC="Failed to build and push preview Docker images."
