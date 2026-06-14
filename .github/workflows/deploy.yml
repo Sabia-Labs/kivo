@@ -92,21 +92,21 @@ jobs:
           token: ${{ secrets.GIT_PUSH_TOKEN }}
           ref: main
           
-      - name: Update Hetzner values with new image tag
+      - name: Update Staging values with new image tag
         run: |
-          # Use yq to update the image tag for all components in values-hetzner.yaml
-          yq -i '.kivoApi.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
-          yq -i '.kivoWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-hetzner.yaml
+          # Use yq to update the image tag for all components in values-staging.yaml
+          yq -i '.kivoApi.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
+          yq -i '.kivoWeb.image.tag = "${{ github.sha }}"' charts/kivo/values-staging.yaml
           
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add charts/kivo/values-hetzner.yaml
+          git add charts/kivo/values-staging.yaml
           
           # Only commit if there are changes
           if ! git diff-index --quiet HEAD; then
-            git commit -m "chore: deploy ${{ github.sha }} to hetzner [skip ci]"
+            git commit -m "chore: deploy ${{ github.sha }} to staging [skip ci]"
             git pull --rebase origin main
             git push origin HEAD:main
           else

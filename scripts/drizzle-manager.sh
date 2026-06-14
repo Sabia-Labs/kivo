@@ -5,7 +5,7 @@
 set -euo pipefail
 
 TYPE=$1    # kivo | admin
-ENV=$2     # local | staging | hetzner
+ENV=$2     # local | staging
 CTX=$3
 NS=$4
 

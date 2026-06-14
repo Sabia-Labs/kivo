@@ -45,7 +45,7 @@ authRouter.get("/config", (req, res) => {
   const allowDevLogin = process.env.ALLOW_DEV_LOGIN === "true";
   const isProductionDomain = 
     req.hostname === "kivo.sabialabs.de" || 
-    req.hostname === "auth.sabialabs.de" ||
+    req.hostname === "kivo-stg.sabialabs.de" ||
     process.env.KIVO_ENV === "production";
 
   res.json(success({
@@ -97,7 +97,7 @@ authRouter.post("/dev-login", async (req, res, next) => {
   // Layer 2: Domain Guard (hardcoded block for staging and production domains)
   if (
     req.hostname === "kivo.sabialabs.de" || 
-    req.hostname === "auth.sabialabs.de" ||
+    req.hostname === "kivo-stg.sabialabs.de" ||
     process.env.KIVO_ENV === "production"
   ) {
     return res.status(404).json(failure("Not found"));
@@ -196,7 +196,7 @@ authRouter.post("/otp/send", async (req, res, next) => {
     } else {
       console.log("[auth/otp/send] Sending OTP via Resend", { email });
       const resendResponse = await resend.emails.send({
-        from: "Sabia Labs <noreply@auth.sabialabs.de>",
+        from: "Sabia Labs <noreply@kivo.sabialabs.de>",
         to: email,
         subject: "Your Kivo Login Code",
         html: `<p>Your login code is: <strong>${code}</strong></p><p>It will expire in 15 minutes.</p>`,

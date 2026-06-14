@@ -1,84 +1,51 @@
-# ── Staging Environment Overrides ─────────────────────────────────────────────────
-# Used by: helm upgrade --install kivo charts/kivo -f values-staging.yaml \
-#            --set kivoApi.image.tag=$GIT_SHA ...
+# ── Staging Overrides (k3s) ──────────────────────────────────────────────
+# Used by: make up ENV=staging
 
 namespace: kivo-staging
 adminNamespace: kivo-staging
+tiltDeploy: false
+imagePullSecrets:
+  - name: ghcr-pull-secret
 kivoApi:
   replicaCount: 1
   image:
-    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-api
-    tag: "9527ad650cf01f46d7633672dee232566c189ae9" # injected by CI
+    repository: ghcr.io/sabia-labs/kivo-api
+    tag: 1aa9e9e4d96ec873c0d41a7c2af82662ce779eb0
     pullPolicy: Always
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-      ephemeral-storage: "100Mi"
-    limits:
-      cpu: "500m"
-      memory: 512Mi
+  existingSecret: "kivo-api-secret"
+  databaseSecret: "kivo-db-credentials"
+  runMigrations: true
   env:
-    NODE_ENV: production
-    PORT: "4000"
-    CORS_ORIGIN: "https://app.kivo-staging.34-141-70-109.nip.io"
-    ADMIN_API_INTERNAL_URL: "http://kivo-admin-api:4001"
-    KIVO_SHARED_NAMESPACE: "kivo-staging"
-  existingSecret: kivo-api-secret
-  databaseSecret: kivo-db-credentials
-  runMigrations: false
+    CORS_ORIGIN: "https://kivo-stg.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de"
+    APP_URL: "https://kivo-stg.sabialabs.de"
+    TELEGRAM_WEBHOOK_DOMAIN: "https://kivo-stg.sabialabs.de"
+    FRONTEND_URL: "https://kivo-stg.sabialabs.de"
+    LOCAL_LLM_BASE_URL: "http://ollama.kivo-staging.svc.cluster.local:11434/v1"
+    OLLAMA_BASE_URL: "http://ollama.kivo-staging.svc.cluster.local:11434/v1"
 kivoWeb:
   replicaCount: 1
   image:
-    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/kivo-web
-    tag: "9527ad650cf01f46d7633672dee232566c189ae9"
+    repository: ghcr.io/sabia-labs/kivo-web
+    tag: 1aa9e9e4d96ec873c0d41a7c2af82662ce779eb0
     pullPolicy: Always
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-      ephemeral-storage: "100Mi"
   env:
-    NODE_ENV: production
-    PORT: "3000"
-    NEXT_PUBLIC_API_URL: "https://app.kivo-staging.34-141-70-109.nip.io/api"
-    NEXT_PUBLIC_SITE_URL: "https://www.kivo-staging.34-141-70-109.nip.io"
     API_INTERNAL_URL: "http://kivo-api:4000"
-adminApi:
-  replicaCount: 1
-  image:
-    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-api
-    tag: "9527ad650cf01f46d7633672dee232566c189ae9"
-    pullPolicy: Always
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-      ephemeral-storage: "100Mi"
-  env:
-    NODE_ENV: production
-    ADMIN_PORT: "4001"
-    CORS_ORIGIN: "https://www.kivo-staging.34-141-70-109.nip.io"
-    FRONTEND_URL: "https://www.kivo-staging.34-141-70-109.nip.io"
-    GOOGLE_REDIRECT_URI: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api/auth/google/callback"
-    KIVO_API_INTERNAL_URL: "http://kivo-api:4000"
-    KIVO_SHARED_NAMESPACE: "kivo-staging"
-  existingSecret: kivo-api-secret
-  databaseSecret: kivo-admin-db-credentials
-adminWeb:
-  replicaCount: 1
-  image:
-    repository: europe-west3-docker.pkg.dev/sabia-infra/sabia-artifacts/admin-web
-    tag: "9527ad650cf01f46d7633672dee232566c189ae9"
-    pullPolicy: Always
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-      ephemeral-storage: "100Mi"
-  env:
-    NODE_ENV: production
-    PORT: "3001"
-    NEXT_PUBLIC_API_URL: "https://www.kivo-staging.34-141-70-109.nip.io/admin-api"
-    NEXT_PUBLIC_KIVO_WEB_URL: "https://app.kivo-staging.34-141-70-109.nip.io"
-    API_INTERNAL_URL: "http://kivo-admin-api:4001"
+    NEXT_PUBLIC_API_URL: "/api"
+    NEXT_PUBLIC_SITE_URL: "https://kivo-stg.sabialabs.de"
+    SITE_URL: "https://kivo-stg.sabialabs.de"
+networkPolicy:
+  enabled: true
+ingress:
+  enabled: true
+  className: traefik
+  # Set host to the root domain for the helper templates, but we will override the rules
+  host: kivo-stg.sabialabs.de
+  tls:
+    enabled: true
+    secretName: kivo-tls
+    certManager:
+      enabled: true
+      clusterIssuer: letsencrypt-prod
+    # Explicitly list ONLY the domains that are passing validation
+    hosts:
+      - kivo-stg.sabialabs.de

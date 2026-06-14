@@ -1,0 +1,32 @@
+# ── Azure Production Overrides ──────────────────────────────────────────────
+# Used by: Azure CD pipeline (To be defined)
+
+namespace: kivo
+adminNamespace: kivo
+tiltDeploy: false
+
+kivoApi:
+  env:
+    CORS_ORIGIN: "https://kivo.sabialabs.de,https://www.sabialabs.de,https://sabialabs.de"
+    APP_URL: "https://kivo.sabialabs.de"
+    TELEGRAM_WEBHOOK_DOMAIN: "https://kivo.sabialabs.de"
+    FRONTEND_URL: "https://kivo.sabialabs.de"
+
+kivoWeb:
+  env:
+    NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
+    SITE_URL: "https://kivo.sabialabs.de"
+
+ingress:
+  enabled: true
+  className: nginx
+  host: kivo.sabialabs.de
+  tls:
+    enabled: true
+    secretName: kivo-tls
+    certManager:
+      enabled: true
+      clusterIssuer: letsencrypt-prod
+    hosts:
+      - kivo.sabialabs.de
+      - www.kivo.sabialabs.de

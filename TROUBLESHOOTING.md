@@ -9,7 +9,7 @@ For infrastructure-specific issues (Terraform, Cloud IAM, Networking), please re
 ## 🏗 Environments & Contexts
 
 - **Local:** Runs inside Tilt/Docker Desktop. Namespaces: `kivo`, `kivo-admin`.
-- **Staging:** Runs on GKE. Namespaces: `kivo-staging`.
+- **Staging:** Runs on Hetzner VPS. Namespaces: `kivo-staging`.
 - **Production:** TBD.
 
 ---
@@ -59,7 +59,7 @@ If you deleted the `kivo-staging` namespace or performed a total wipe, follow th
 The ArgoCD deployment will fail (Error: Secret not found) until you provide the initial credentials.
 ```bash
 make ctx-staging
-make staging-bootstrap
+make up ENV=staging
 ```
 *This script will ask for a password (default: `kivo_local_only`) and generate JWT and Internal Service tokens.*
 
@@ -69,7 +69,7 @@ ArgoCD will now detect the secrets and successfully deploy the pods, including t
 ### 3. Initialize Databases and Seeds
 Once the `kivo-postgresql-0` pod is **Running**, perform a total reset to create the databases (`kivo` and `kivo_admin`), run migrations, and apply the default seeds.
 ```bash
-make staging-reset
+make reset ENV=staging
 ```
 
 ---
@@ -117,7 +117,7 @@ make staging-reset
 **Symptom:** Strange database errors or missing metadata (Agent Roles, Team Types).
 **Fix:** Perform a total reset of the staging environment to align databases and seeds.
 ```bash
-make staging-reset
+make reset ENV=staging
 ```
 
 ### 4. Connectivity & Network Policies

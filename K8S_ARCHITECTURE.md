@@ -21,8 +21,8 @@ graph TD
         Controller[Agent Controller]
     end
 
-    subgraph Tenant_Namespace [Namespace: kivo-ws-xyz]
-        Agent[Kivo Agent Pod]
+    subgraph Agent_Execution [Namespace: kivo (Shared)]
+        Agent[Kivo Agent Pods]
     end
 
     AdminAPI --- AppDB
@@ -46,7 +46,7 @@ Located in the `kivo` namespace. It hosts the core services that users interact 
 
 ## ── Tenant Workloads (The Agents) ──────────────────────────────────────────────
 
-Every workspace gets its own isolated namespace (`kivo-ws-<id>`).
+Atualmente, todos os agentes rodam em um namespace compartilhado (ex: `kivo` em produção ou `kivo-staging`), definido pela variável de ambiente `KIVO_SHARED_NAMESPACE`. O modelo de namespaces efêmeros por workspace foi depreciado em prol da eficiência de recursos e simplicidade de orquestração.
 
 1.  **Kivo Agent Pod:** Contains two containers:
     - **`kivo` (OpenClaw):** The AI brain.
@@ -60,7 +60,7 @@ Every workspace gets its own isolated namespace (`kivo-ws-<id>`).
 
 ## 🛡️ Security & Isolation
 
-- **Namespace Isolation:** Agents run in dedicated namespaces with restricted ServiceAccounts.
-- **Network Policies:** Strict rules prevent agents from talking to anything except the `kivo-api`.
+- **Namespace Compartilhado:** Agentes rodam no mesmo namespace que a aplicação (ou em um namespace específico unificado), usando RBAC e restrições no nível do Pod para garantir isolamento.
+- **Network Policies:** Regras estritas impedem que os agentes conversem com outros agentes livremente ou acessem serviços não autorizados, limitando o tráfego à `kivo-api`.
 - **Token Authentication:** Every inter-service communication requires an `INTERNAL_SERVICE_TOKEN`.
 - **Brokerless:** By removing centralized message brokers (RabbitMQ), we reduced the attack surface and simplified tenant data isolation.

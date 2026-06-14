@@ -1,17 +1,16 @@
-# 🚀 Kivo Infrastructure - Hetzner VPS
+# 🚀 Kivo Infrastructure - Staging
 
 O ambiente está configurado e seguro com HTTPS!
 
 ### 🌍 Endereços Oficiais
-- **Aplicação (App):** 👉 [https://kivo.sabialabs.de](https://kivo.sabialabs.de)
+- **Aplicação (App):** 👉 [https://kivo-stg.sabialabs.de](https://kivo-stg.sabialabs.de)
 - **Site (WWW - Cloudflare):** 👉 [https://www.sabialabs.de](https://www.sabialabs.de)
-- **Portal de Autenticação (Auth):** 👉 [https://auth.sabialabs.de](https://auth.sabialabs.de)
-- **Admin API:** 👉 [https://auth.sabialabs.de/admin-api](https://auth.sabialabs.de/admin-api)
+- **API:** 👉 [https://kivo-stg.sabialabs.de/api](https://kivo-stg.sabialabs.de/api)
 
 ### 🔑 Credenciais Google OAuth
-- **Redirect URI:** `https://auth.sabialabs.de/admin-api/auth/google/callback`
+- **Redirect URI:** `https://kivo-stg.sabialabs.de/api/auth/callback/google`
 
 ### 🛠️ Comandos Úteis
-- **Deploy:** `make up ENV=hetzner`
-- **Reset DB:** `make db-reset ENV=hetzner`
+- **Deploy:** `make up ENV=staging`
+- **Reset DB:** `make db-reset ENV=staging`
 - **Logs:** `kubectl logs -l app.kubernetes.io/instance=kivo -n kivo-staging`
