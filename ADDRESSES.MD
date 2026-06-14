@@ -1,4 +1,4 @@
-# 🚀 Kivo Infrastructure - Hetzner VPS
+# 🚀 Kivo Infrastructure - Staging
 
 O ambiente está configurado e seguro com HTTPS!
 
@@ -11,6 +11,6 @@ O ambiente está configurado e seguro com HTTPS!
 - **Redirect URI:** `https://kivo-stg.sabialabs.de/api/auth/callback/google`
 
 ### 🛠️ Comandos Úteis
-- **Deploy:** `make up ENV=hetzner`
-- **Reset DB:** `make db-reset ENV=hetzner`
+- **Deploy:** `make up ENV=staging`
+- **Reset DB:** `make db-reset ENV=staging`
 - **Logs:** `kubectl logs -l app.kubernetes.io/instance=kivo -n kivo-staging`

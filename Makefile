@@ -1,4 +1,4 @@
-.PHONY: help up down reset status ctx-local ctx-staging ctx-hetzner ctx-alibaba
+.PHONY: help up down reset status ctx-local ctx-staging
 
 # ── CONFIGURATION ─────────────────────────────────────────────────────────────
 ENV ?= local
@@ -8,13 +8,7 @@ CTX = docker-desktop
 ifeq ($(ENV),local)
 	NAMESPACE = kivo
 else ifeq ($(ENV),staging)
-	CTX = gke_sabia-infra_europe-west3_kivo-staging
-	NAMESPACE = kivo-staging
-else ifeq ($(ENV),hetzner)
 	CTX = hetzner-vps
-	NAMESPACE = kivo-staging
-else ifeq ($(ENV),alibaba)
-	CTX = default
 	NAMESPACE = kivo-staging
 endif
 
@@ -44,7 +38,7 @@ secrets: ## 🔐 Initialize/Update secrets for current ENV
 	@chmod +x scripts/*.sh
 	@scripts/env-manager.sh bootstrap $(ENV) $(CTX) $(NAMESPACE)
 
-drizzle-kivo: ## 🗄️ Open Drizzle Studio for Kivo DB (ENV=local|staging|hetzner)
+drizzle-kivo: ## 🗄️ Open Drizzle Studio for Kivo DB (ENV=local|staging)
 	@chmod +x scripts/*.sh
 	@scripts/drizzle-manager.sh kivo $(ENV) $(CTX) $(NAMESPACE)
 
@@ -56,7 +50,7 @@ gcloud-auth: ## 🔐 Authenticate with Google Cloud
 	@gcloud auth login
 	@gcloud auth application-default login
 
-hetzner-install-cert-manager: ## 🛡️ Install cert-manager on Hetzner
+staging-install-cert-manager: ## 🛡️ Install cert-manager on Staging
 	@echo "🛡️ Installing cert-manager on $(CTX)..."
 	@KUBECONFIG=$(KUBECONFIG) helm --kube-context $(CTX) repo add jetstack https://charts.jetstack.io || true
 	@KUBECONFIG=$(KUBECONFIG) helm --kube-context $(CTX) repo update
@@ -84,15 +78,11 @@ status: ## 📊 Show cluster health
 ctx-local:
 	kubectl config use-context docker-desktop
 ctx-staging:
-	kubectl config use-context gke_sabia-infra_europe-west3_kivo-staging
-ctx-hetzner:
 	kubectl config use-context hetzner-vps
-ctx-alibaba:
-	kubectl config use-context alibaba-vps
 
 # ── HELP ──────────────────────────────────────────────────────────────────────
 help: ## Show this help
 	@echo "\n  \033[1mKivo Environment Manager\033[0m"
 	@echo "  \033[1mUsage:\033[0m make ENV=<env> <target>"
-	@echo "  \033[1mEnvironments:\033[0m local (default), staging (GCP), hetzner, alibaba\n"
+	@echo "  \033[1mEnvironments:\033[0m local (default), staging (Hetzner)\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'

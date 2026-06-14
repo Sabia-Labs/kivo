@@ -29,8 +29,8 @@ case $ACTION in
   "bootstrap")
     echo "🔐 Initializing secrets for $ENV..."
     RELEASE_NAME="kivo"
-    if [ "$ENV" = "hetzner" ]; then
-      RELEASE_NAME="kivo-hetzner"
+    if [ "$ENV" = "staging" ]; then
+      RELEASE_NAME="kivo-staging"
     fi
     "$SCRIPT_DIR/bootstrap-secrets.sh" "$ENV" "$CTX" "$NS" "$RELEASE_NAME"
     ;;
@@ -39,11 +39,9 @@ case $ACTION in
     echo "☸️ Deploying Helm chart to $ENV..."
     RELEASE_NAME="kivo"
     VALUES_FILE="charts/kivo/values.yaml"
-    if [ "$ENV" = "hetzner" ]; then
-      VALUES_FILE="charts/kivo/values-hetzner.yaml"
-      RELEASE_NAME="kivo-hetzner"
-    elif [ "$ENV" = "alibaba" ]; then
-      VALUES_FILE="charts/kivo/values-alibaba.yaml"
+    if [ "$ENV" = "staging" ]; then
+      VALUES_FILE="charts/kivo/values-staging.yaml"
+      RELEASE_NAME="kivo-staging"
     fi
     
     h upgrade --install "$RELEASE_NAME" ./charts/kivo \
@@ -61,8 +59,8 @@ case $ACTION in
     
     # 2. Uninstall Helm
     RELEASE_NAME="kivo"
-    if [ "$ENV" = "hetzner" ]; then
-      RELEASE_NAME="kivo-hetzner"
+    if [ "$ENV" = "staging" ]; then
+      RELEASE_NAME="kivo-staging"
     fi
     echo "→ Uninstalling Helm release $RELEASE_NAME..."
     h uninstall "$RELEASE_NAME" -n "$NS" --ignore-not-found
