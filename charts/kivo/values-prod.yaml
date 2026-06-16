@@ -4,14 +4,14 @@
 
 namespace: kivo-prod
 kivoApi:
-  replicaCount: 2 # HA — 2 replicas in prod
+  replicaCount: 1 # Single replica to save CPU
   image:
     repository: ghcr.io/sabia-labs/kivo-api
     tag: "v1.0.2" # injected by CI: --set api.image.tag=$GIT_SHA
     pullPolicy: Always
   resources:
     requests:
-      cpu: 250m
+      cpu: 50m
       memory: 512Mi
     limits:
       cpu: "1"
@@ -24,14 +24,14 @@ kivoApi:
   existingSecret: kivo-api-prod-secret
   runMigrations: false # Run migrations as a separate, gated step in CI/CD in prod
 kivoWeb:
-  replicaCount: 2
+  replicaCount: 1
   image:
     repository: ghcr.io/sabia-labs/kivo-web
     tag: "v1.0.2"
     pullPolicy: Always
   resources:
     requests:
-      cpu: 250m
+      cpu: 50m
       memory: 512Mi
     limits:
       cpu: "1"
