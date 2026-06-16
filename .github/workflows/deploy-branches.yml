@@ -32,8 +32,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GIT_PUSH_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       # Normalize head branch name to be Docker tag friendly (e.g. feat/new-ui -> feat-new-ui)
       - name: Get normalized branch name
