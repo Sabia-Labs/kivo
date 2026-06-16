@@ -1,0 +1,104 @@
+name: Build & Push Production (GHCR)
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-prod-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME_PREFIX: sabia-labs/kivo
+
+jobs:
+  build-and-push:
+    name: Build & Push Production Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GIT_PUSH_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-api
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-api
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-admin-web
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-controller
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-agent
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-consumer
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Build & push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/kivo-api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-api:${{ github.ref_name }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build & push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/kivo-web/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_PREFIX }}-web:${{ github.ref_name }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  update-manifests:
+    name: Update Production Manifests
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GIT_PUSH_TOKEN }}
+          ref: main
+          
+      - name: Update Production values with new tag
+        run: |
+          # Use yq to update the image tag in values-production.yaml
+          yq -i '.kivoApi.image.tag = "${{ github.ref_name }}"' charts/kivo/values-production.yaml
+          yq -i '.kivoWeb.image.tag = "${{ github.ref_name }}"' charts/kivo/values-production.yaml
+          
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add charts/kivo/values-production.yaml
+          
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "chore: deploy ${{ github.ref_name }} to production [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          else
+            echo "No changes to commit"
+          fi
