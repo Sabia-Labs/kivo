@@ -7,7 +7,7 @@ kivoApi:
   replicaCount: 2 # HA — 2 replicas in prod
   image:
     repository: ghcr.io/sabia-labs/kivo-api
-    tag: "" # injected by CI: --set api.image.tag=$GIT_SHA
+    tag: "v1.0.2" # injected by CI: --set api.image.tag=$GIT_SHA
     pullPolicy: Always
   resources:
     requests:
@@ -27,7 +27,7 @@ kivoWeb:
   replicaCount: 2
   image:
     repository: ghcr.io/sabia-labs/kivo-web
-    tag: ""
+    tag: "v1.0.2"
     pullPolicy: Always
   resources:
     requests:
