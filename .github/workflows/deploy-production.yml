@@ -88,15 +88,15 @@ jobs:
           
       - name: Update Production values with new tag
         run: |
-          # Use yq to update the image tag in values-production.yaml
-          yq -i '.kivoApi.image.tag = "${{ github.ref_name }}"' charts/kivo/values-production.yaml
-          yq -i '.kivoWeb.image.tag = "${{ github.ref_name }}"' charts/kivo/values-production.yaml
+          # Use yq to update the image tag in values-prod.yaml
+          yq -i '.kivoApi.image.tag = "${{ github.ref_name }}"' charts/kivo/values-prod.yaml
+          yq -i '.kivoWeb.image.tag = "${{ github.ref_name }}"' charts/kivo/values-prod.yaml
           
       - name: Commit and push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add charts/kivo/values-production.yaml
+          git add charts/kivo/values-prod.yaml
           
           if ! git diff-index --quiet HEAD; then
             git commit -m "chore: deploy ${{ github.ref_name }} to production [skip ci]"
