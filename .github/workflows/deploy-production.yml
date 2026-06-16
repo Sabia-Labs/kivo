@@ -82,7 +82,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GIT_PUSH_TOKEN }}
           repository: Sabia-Labs/kivo
           ref: main
           
