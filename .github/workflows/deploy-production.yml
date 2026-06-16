@@ -82,7 +82,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GIT_PUSH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: Sabia-Labs/kivo
           ref: main
           
       - name: Update Production values with new tag
