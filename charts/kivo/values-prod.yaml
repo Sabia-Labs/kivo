@@ -3,12 +3,11 @@
 #            --set api.image.tag=$GIT_SHA --set web.image.tag=$GIT_SHA
 
 namespace: kivo-prod
-
 api:
-  replicaCount: 2      # HA — 2 replicas in prod
+  replicaCount: 2 # HA — 2 replicas in prod
   image:
     repository: ghcr.io/ltreven/kivo-api
-    tag: ""             # injected by CI: --set api.image.tag=$GIT_SHA
+    tag: "" # injected by CI: --set api.image.tag=$GIT_SHA
     pullPolicy: Always
   resources:
     requests:
@@ -23,8 +22,7 @@ api:
     CORS_ORIGIN: "https://kivo.example.com"
   # Secret must be pre-created in the cluster by the ops team / Terraform
   existingSecret: kivo-api-prod-secret
-  runMigrations: false  # Run migrations as a separate, gated step in CI/CD in prod
-
+  runMigrations: false # Run migrations as a separate, gated step in CI/CD in prod
 web:
   replicaCount: 2
   image:
@@ -42,24 +40,26 @@ web:
     NODE_ENV: production
     PORT: "3000"
     NEXT_PUBLIC_API_URL: "https://kivo.example.com/api"
-
 ingress:
   enabled: true
-  className: nginx       # managed by Terraform in target cluster
-  host: kivo.example.com  # CHANGE: update to actual production hostname
+  className: nginx # managed by Terraform in target cluster
+  host: kivo.example.com # CHANGE: update to actual production hostname
   tls:
     enabled: true
     secretName: kivo-prod-tls
     certManager:
       enabled: true
-      clusterIssuer: letsencrypt-prod   # production Let's Encrypt
-
+      clusterIssuer: letsencrypt-prod # production Let's Encrypt
 postgresql:
-  embedded: false         # Use managed DB (RDS / Cloud SQL / Neon)
+  embedded: false # Use managed DB (RDS / Cloud SQL / Neon)
   # Connection string injected via kivo-api-prod-secret (DATABASE_URL key)
-
 networkPolicy:
   enabled: true
-
 imagePullSecrets:
   - name: ghcr-pull-secret
+kivoApi:
+  image:
+    tag: v1.0.1
+kivoWeb:
+  image:
+    tag: v1.0.1
