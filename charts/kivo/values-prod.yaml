@@ -3,10 +3,10 @@
 #            --set api.image.tag=$GIT_SHA --set web.image.tag=$GIT_SHA
 
 namespace: kivo-prod
-api:
+kivoApi:
   replicaCount: 2 # HA — 2 replicas in prod
   image:
-    repository: ghcr.io/ltreven/kivo-api
+    repository: ghcr.io/sabia-labs/kivo-api
     tag: "" # injected by CI: --set api.image.tag=$GIT_SHA
     pullPolicy: Always
   resources:
@@ -23,10 +23,10 @@ api:
   # Secret must be pre-created in the cluster by the ops team / Terraform
   existingSecret: kivo-api-prod-secret
   runMigrations: false # Run migrations as a separate, gated step in CI/CD in prod
-web:
+kivoWeb:
   replicaCount: 2
   image:
-    repository: ghcr.io/ltreven/kivo-web
+    repository: ghcr.io/sabia-labs/kivo-web
     tag: ""
     pullPolicy: Always
   resources:
@@ -57,9 +57,3 @@ networkPolicy:
   enabled: true
 imagePullSecrets:
   - name: ghcr-pull-secret
-kivoApi:
-  image:
-    tag: v1.0.1
-kivoWeb:
-  image:
-    tag: v1.0.1
