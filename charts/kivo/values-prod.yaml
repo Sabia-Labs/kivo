@@ -21,6 +21,10 @@ kivoApi:
     PORT: "4000"
     CORS_ORIGIN: "https://kivo.sabialabs.de"
     FRONTEND_URL: "https://kivo.sabialabs.de"
+    APP_URL: "https://kivo.sabialabs.de"
+    TELEGRAM_WEBHOOK_DOMAIN: "https://kivo.sabialabs.de"
+    LOCAL_LLM_BASE_URL: "http://ollama.kivo-production.svc.cluster.local:11434/v1"
+    OLLAMA_BASE_URL: "http://ollama.kivo-production.svc.cluster.local:11434/v1"
   # Secret must be pre-created in the cluster by the ops team / Terraform
   existingSecret: kivo-api-prod-secret
   runMigrations: false # Run migrations as a separate, gated step in CI/CD in prod
@@ -40,7 +44,10 @@ kivoWeb:
   env:
     NODE_ENV: production
     PORT: "3000"
-    NEXT_PUBLIC_API_URL: "https://api.kivo.sabialabs.de"
+    API_INTERNAL_URL: "http://kivo-api:4000"
+    NEXT_PUBLIC_API_URL: "/api"
+    NEXT_PUBLIC_SITE_URL: "https://kivo.sabialabs.de"
+    SITE_URL: "https://kivo.sabialabs.de"
 ingress:
   enabled: true
   className: nginx # managed by Terraform in target cluster
