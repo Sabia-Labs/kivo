@@ -20,6 +20,7 @@ kivoApi:
     NODE_ENV: production
     PORT: "4000"
     CORS_ORIGIN: "https://kivo.sabialabs.de"
+    FRONTEND_URL: "https://kivo.sabialabs.de"
   # Secret must be pre-created in the cluster by the ops team / Terraform
   existingSecret: kivo-api-prod-secret
   runMigrations: false # Run migrations as a separate, gated step in CI/CD in prod
