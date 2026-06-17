@@ -10,6 +10,9 @@ ifeq ($(ENV),local)
 else ifeq ($(ENV),staging)
 	CTX = hetzner-vps
 	NAMESPACE = kivo-staging
+else ifeq ($(ENV),production)
+	CTX = kivo-prod-aks
+	NAMESPACE = kivo-production
 endif
 
 # ── CORE TARGETS ──────────────────────────────────────────────────────────────
@@ -70,7 +73,7 @@ argo: ## 🌐 Open ArgoCD UI (Port-forward + Credentials)
 status: ## 📊 Show cluster health
 	@echo "🏥 Cluster: $(CTX) | Namespace: $(NAMESPACE)"
 	@kubectl --context $(CTX) get pods -n $(NAMESPACE)
-	@kubectl --context $(CTX) get agents -n $(NAMESPACE)
+	@kubectl --context $(CTX) get agents -n $(NAMESPACE) || true
 	@echo "🌐 Workspace Namespaces:"
 	@kubectl --context $(CTX) get ns | grep kivo-ws- || echo "None"
 
@@ -79,10 +82,12 @@ ctx-local:
 	kubectl config use-context docker-desktop
 ctx-staging:
 	kubectl config use-context hetzner-vps
+ctx-production:
+	kubectl config use-context kivo-prod-aks
 
 # ── HELP ──────────────────────────────────────────────────────────────────────
 help: ## Show this help
 	@echo "\n  \033[1mKivo Environment Manager\033[0m"
 	@echo "  \033[1mUsage:\033[0m make ENV=<env> <target>"
-	@echo "  \033[1mEnvironments:\033[0m local (default), staging (Hetzner)\n"
+	@echo "  \033[1mEnvironments:\033[0m local (default), staging (Hetzner), production (AKS)\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-24s\033[0m %s\n", $$1, $$2}'
