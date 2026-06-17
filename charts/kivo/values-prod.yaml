@@ -19,7 +19,7 @@ kivoApi:
   env:
     NODE_ENV: production
     PORT: "4000"
-    CORS_ORIGIN: "https://kivo.example.com"
+    CORS_ORIGIN: "https://kivo.sabialabs.de"
   # Secret must be pre-created in the cluster by the ops team / Terraform
   existingSecret: kivo-api-prod-secret
   runMigrations: false # Run migrations as a separate, gated step in CI/CD in prod
@@ -39,11 +39,11 @@ kivoWeb:
   env:
     NODE_ENV: production
     PORT: "3000"
-    NEXT_PUBLIC_API_URL: "https://kivo.example.com/api"
+    NEXT_PUBLIC_API_URL: "https://api.kivo.sabialabs.de"
 ingress:
   enabled: true
   className: nginx # managed by Terraform in target cluster
-  host: kivo.example.com # CHANGE: update to actual production hostname
+  host: kivo.sabialabs.de # CHANGE: update to actual production hostname
   tls:
     enabled: true
     secretName: kivo-prod-tls
