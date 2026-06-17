@@ -25,6 +25,16 @@ h() {
   helm --kube-context "$CTX" "$@"
 }
 
+# ── SAFETY LOCK FOR PRODUCTION ────────────────────────────────────────────────
+if [ "$ENV" = "production" ]; then
+  if [[ "$ACTION" == "deploy" || "$ACTION" == "down" || "$ACTION" == "reset" || "$ACTION" == "bootstrap" ]]; then
+    echo "❌ ERROR: Modifying production directly from the terminal is forbidden."
+    echo "Produção deve ser gerida exclusivamente pelo fluxo GitOps (ArgoCD)."
+    echo "Por favor, abra uma Pull Request com as alterações desejadas."
+    exit 1
+  fi
+fi
+
 case $ACTION in
   "bootstrap")
     echo "🔐 Initializing secrets for $ENV..."
