@@ -279,6 +279,7 @@ authRouter.post("/signup/verify", async (req, res, next) => {
       let lang = input.language || "en";
       if (!input.language) {
         if (acceptLang.startsWith("pt")) lang = "pt";
+        else if (acceptLang.startsWith("de")) lang = "de";
         else if (acceptLang.startsWith("zh")) lang = "zh";
       }
 

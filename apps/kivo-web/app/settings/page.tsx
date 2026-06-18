@@ -270,7 +270,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {languages.map((l) => {
               const isActive = lang === l.code;
               return (

@@ -4,11 +4,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { en } from "./en";
 import { zh } from "./zh";
 import { pt } from "./pt";
+import { de } from "./de";
 import type { Dictionary } from "./en";
 
-export type Language = "en" | "zh" | "pt";
+export type Language = "en" | "zh" | "pt" | "de";
 
-const dictionaries: Record<Language, Dictionary> = { en, zh, pt };
+const dictionaries: Record<Language, Dictionary> = { en, zh, pt, de };
 
 const STORAGE_KEY = "kivo-lang";
 
@@ -93,5 +94,6 @@ export function useTranslation() {
 export const languages: { code: Language; label: string; flag: string }[] = [
   { code: "en", label: "English", flag: "🇺🇸" },
   { code: "pt", label: "Português", flag: "🇧🇷" },
+  { code: "de", label: "Deutsch", flag: "🇩🇪" },
   { code: "zh", label: "中文", flag: "🇨🇳" },
 ];

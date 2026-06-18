@@ -172,7 +172,7 @@ workspacesRouter.get("/:id/llm-keys", authMiddleware, requireWorkspaceOwnership,
 workspacesRouter.put("/:id/language", authMiddleware, requireWorkspaceOwnership, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { language } = req.body;
-    if (!language || !["en", "pt", "zh"].includes(language)) {
+    if (!language || !["en", "pt", "de", "zh"].includes(language)) {
       return res.status(400).json(failure("Invalid language selection"));
     }
 
