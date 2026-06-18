@@ -854,10 +854,16 @@ ${Object.keys(prep.expectedOutputSchema || {}).join(", ")}`;
         val = content.trim();
       }
 
+      const expectedDesc = prep.expectedOutputSchema[k] || "";
+      const isOptional = expectedDesc.toLowerCase().includes("optional") || k.toLowerCase().includes("failure");
+
       const isInvalid = (v: any) => {
-        if (v === undefined || v === null) return true;
+        if (v === undefined || v === null) return !isOptional;
         const s = String(v).trim().toLowerCase();
-        return s === "" || s === "null" || s === "none" || s === "undefined";
+        if (s === "" || s === "null" || s === "none" || s === "n/a" || s === "undefined") {
+          return !isOptional;
+        }
+        return false;
       };
 
       if (isInvalid(val)) {
@@ -888,10 +894,16 @@ ${JSON.stringify(state.messages.slice(-5).map((m: any) => ({ type: m._getType(),
         const stillMissing: string[] = [];
         expectedKeys.forEach(k => {
           let val = extractedJson[k];
+          const expectedDesc = prep.expectedOutputSchema[k] || "";
+          const isOptional = expectedDesc.toLowerCase().includes("optional") || k.toLowerCase().includes("failure");
+
           const isInvalid = (v: any) => {
-            if (v === undefined || v === null) return true;
+            if (v === undefined || v === null) return !isOptional;
             const s = String(v).trim().toLowerCase();
-            return s === "" || s === "null" || s === "none" || s === "undefined";
+            if (s === "" || s === "null" || s === "none" || s === "n/a" || s === "undefined") {
+              return !isOptional;
+            }
+            return false;
           };
           if (isInvalid(val)) {
             stillMissing.push(k);
