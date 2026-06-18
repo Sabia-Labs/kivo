@@ -145,17 +145,16 @@ async function decideAndCallMCPs(state: ChatEngineStateType): Promise<Partial<Ch
     const teamIntegrations = await db.select().from(integrations).where(eq(integrations.teamId, state.teamId));
     
     for (const integ of teamIntegrations) {
-      let roleKey = integ.role ? integ.role.toLowerCase().replace(/\s+/g, "_") : "";
-      if (roleKey.includes("ticket")) roleKey = "ticketing";
-      else if (roleKey.includes("knowledge")) roleKey = "knowledge_base";
-      else if (roleKey.includes("calendar")) roleKey = "calendar";
-      else if (roleKey.includes("code")) roleKey = "code_repository";
-
       const config = { ...(integ.metadata as object || {}), apiKey: integ.apiKey };
       const adapter = ConnectorFactory.createAdapter(integ.provider, config);
       
       if (adapter) {
-        connectorAdapters[roleKey] = adapter;
+        let capabilityKey = "unknown";
+        if (adapter.interfaceType === "ITicketingSystem" || adapter.interfaceType === "ITicketing") capabilityKey = "ticketing";
+        else if (adapter.interfaceType === "IKnowledgeBase") capabilityKey = "knowledge_base";
+        else if (adapter.interfaceType === "IProjectManager") capabilityKey = "project";
+
+        connectorAdapters[capabilityKey] = adapter;
         integrationInstructions += `- Integration Role: ${integ.role || integ.provider}\n  Instructions: ${integ.instructions || "No specific instructions."}\n`;
       }
     }
