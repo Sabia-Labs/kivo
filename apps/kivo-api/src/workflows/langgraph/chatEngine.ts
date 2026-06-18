@@ -147,9 +147,15 @@ async function decideAndCallMCPs(state: ChatEngineStateType): Promise<Partial<Ch
     for (const integ of teamIntegrations) {
       let roleKey = integ.role ? integ.role.toLowerCase().replace(/\s+/g, "_") : "";
       if (roleKey.includes("ticket")) roleKey = "ticketing";
-      else if (roleKey.includes("knowledge")) roleKey = "knowledge_base";
+      else if (roleKey.includes("knowledge") || roleKey.includes("documentation")) roleKey = "knowledge_base";
       else if (roleKey.includes("calendar")) roleKey = "calendar";
       else if (roleKey.includes("code")) roleKey = "code_repository";
+      else if (roleKey.includes("task_management") && integ.provider === "notion") {
+        // Notion only supports knowledge base search currently
+        roleKey = "knowledge_base";
+      } else if (roleKey.includes("task") || roleKey.includes("project")) {
+        roleKey = "project";
+      }
 
       const config = { ...(integ.metadata as object || {}), apiKey: integ.apiKey };
       const adapter = ConnectorFactory.createAdapter(integ.provider, config);
