@@ -257,6 +257,7 @@ interface ExternalToolConfigSectionProps {
   onSave: (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => Promise<void>;
   teamIntegrations: Integration[];
   teamId: string;
+  initialProvider?: string;
 }
 
 function ExternalToolConfigSection({
@@ -265,10 +266,11 @@ function ExternalToolConfigSection({
   onSave,
   teamIntegrations,
   teamId,
+  initialProvider,
 }: ExternalToolConfigSectionProps) {
   const { t } = useTranslation();
   const isNotionConnected = teamIntegrations.some(i => i.provider === "notion");
-  const [provider, setProvider] = useState<IntegrationProvider | "">(integration?.provider || "");
+  const [provider, setProvider] = useState<IntegrationProvider | "">(integration?.provider || (initialProvider as IntegrationProvider) || "");
   const [apiKey, setApiKey] = useState(integration?.apiKey || "");
   const [appId, setAppId] = useState(integration?.metadata?.appId || "");
   const [installationId, setInstallationId] = useState(integration?.metadata?.installationId || "");
@@ -278,12 +280,12 @@ function ExternalToolConfigSection({
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    setProvider(integration?.provider || "");
+    setProvider(integration?.provider || (initialProvider as IntegrationProvider) || "");
     setApiKey(integration?.apiKey || "");
     setAppId(integration?.metadata?.appId || "");
     setInstallationId(integration?.metadata?.installationId || "");
     setInstructions(integration?.instructions || "");
-  }, [integration]);
+  }, [integration, initialProvider]);
 
   const handleSave = async () => {
     if (!provider) {
@@ -529,7 +531,11 @@ function ExternalToolConfigSection({
                   A integração do Notion utiliza OAuth a nível de equipe. Clique abaixo para conectar.
                 </p>
                 <Button type="button" onClick={() => {
-                  const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/notion?teamId=${teamId}&redirect=${encodeURIComponent(window.location.href)}`;
+                  const redirectUrl = new URL(window.location.href);
+                  redirectUrl.searchParams.set("tab", "integrations");
+                  redirectUrl.searchParams.set("openRole", role);
+                  redirectUrl.searchParams.set("openProvider", "notion");
+                  const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/notion?teamId=${teamId}&redirect=${encodeURIComponent(redirectUrl.toString())}`;
                   window.location.href = url;
                 }} className="gap-2 font-semibold">
                   {SVGS.notion} Connect Notion
@@ -614,6 +620,20 @@ export default function TeamSettingsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"general" | "workflow" | "integrations" | "danger">("general");
+  const [openRoleParam, setOpenRoleParam] = useState<string>("");
+  const [openProviderParam, setOpenProviderParam] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "general" || tab === "workflow" || tab === "integrations" || tab === "danger") {
+        setActiveTab(tab);
+      }
+      setOpenRoleParam(params.get("openRole") || "");
+      setOpenProviderParam(params.get("openProvider") || "");
+    }
+  }, []);
 
   const [team, setTeam] = useState<any>(null);
 
@@ -680,6 +700,13 @@ export default function TeamSettingsPage() {
             en[i.role] = true; 
           }
         });
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const openRole = params.get("openRole");
+          if (openRole) {
+            en[openRole] = true;
+          }
+        }
         setEnabledIntegrations(en);
       }
     } catch (err) { toast.error("Failed to load settings data."); } 
@@ -1063,6 +1090,7 @@ export default function TeamSettingsPage() {
                                   integration={integration}
                                   teamIntegrations={integrations}
                                   teamId={teamId}
+                                  initialProvider={openRoleParam === tool.role ? openProviderParam : ""}
                                   onSave={async (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => {
                                     await saveIntegration(tool.role, data);
                                   }}
