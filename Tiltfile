@@ -39,6 +39,9 @@ FEATURE_FLAG_LANGCHAIN = _env.get("FEATURE_FLAG_LANGCHAIN", "false")
 
 GOOGLE_CLIENT_ID        = _env.get("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET    = _env.get("GOOGLE_CLIENT_SECRET", "")
+NOTION_CLIENT_ID        = _env.get("NOTION_CLIENT_ID", "")
+NOTION_CLIENT_SECRET    = _env.get("NOTION_CLIENT_SECRET", "")
+NOTION_REDIRECT_URI     = _env.get("NOTION_REDIRECT_URI", "")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 NAMESPACE       = "kivo"
@@ -155,6 +158,9 @@ k8s_yaml(
       'kivoApi.env.FEATURE_FLAG_LANGCHAIN=' + FEATURE_FLAG_LANGCHAIN,
       'kivoApi.env.GOOGLE_CLIENT_ID=' + GOOGLE_CLIENT_ID,
       'kivoApi.env.GOOGLE_CLIENT_SECRET=' + GOOGLE_CLIENT_SECRET,
+      'kivoApi.env.NOTION_CLIENT_ID=' + NOTION_CLIENT_ID,
+      'kivoApi.env.NOTION_CLIENT_SECRET=' + NOTION_CLIENT_SECRET,
+      'kivoApi.env.NOTION_REDIRECT_URI=' + NOTION_REDIRECT_URI,
     ],
   )
 )

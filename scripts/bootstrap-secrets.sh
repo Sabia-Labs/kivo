@@ -57,6 +57,9 @@ fi
   G_CLIENT_ID=$(grep "^GOOGLE_CLIENT_ID=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_CLIENT_SECRET=$(grep "^GOOGLE_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
   G_REDIRECT_URI=$(grep "^GOOGLE_REDIRECT_URI=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  N_CLIENT_ID=$(grep "^NOTION_CLIENT_ID=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  N_CLIENT_SECRET=$(grep "^NOTION_CLIENT_SECRET=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
+  N_REDIRECT_URI=$(grep "^NOTION_REDIRECT_URI=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "placeholder")
 
   PLATFORM_OAI_KEY=$(grep "^PLATFORM_OPENAI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
   PLATFORM_GEMINI_KEY=$(grep "^PLATFORM_GEMINI_API_KEY=" .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" || echo "")
@@ -82,6 +85,9 @@ stringData:
   GOOGLE_CLIENT_ID: "$G_CLIENT_ID"
   GOOGLE_CLIENT_SECRET: "$G_CLIENT_SECRET"
   GOOGLE_REDIRECT_URI: "$G_REDIRECT_URI"
+  NOTION_CLIENT_ID: "$N_CLIENT_ID"
+  NOTION_CLIENT_SECRET: "$N_CLIENT_SECRET"
+  NOTION_REDIRECT_URI: "$N_REDIRECT_URI"
   GEMINI_API_KEY: "$GEMINI_KEY"
   RESEND_API_KEY: "$RESEND_KEY"
   PLATFORM_OPENAI_API_KEY: "$PLATFORM_OAI_KEY"
