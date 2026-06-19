@@ -255,14 +255,19 @@ interface ExternalToolConfigSectionProps {
   role: string;
   integration?: Integration;
   onSave: (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => Promise<void>;
+  teamIntegrations: Integration[];
+  teamId: string;
 }
 
 function ExternalToolConfigSection({
   role,
   integration,
   onSave,
+  teamIntegrations,
+  teamId,
 }: ExternalToolConfigSectionProps) {
   const { t } = useTranslation();
+  const isNotionConnected = teamIntegrations.some(i => i.provider === "notion");
   const [provider, setProvider] = useState<IntegrationProvider | "">(integration?.provider || "");
   const [apiKey, setApiKey] = useState(integration?.apiKey || "");
   const [appId, setAppId] = useState(integration?.metadata?.appId || "");
@@ -502,13 +507,35 @@ function ExternalToolConfigSection({
               </div>
             </div>
           ) : provider === "notion" ? (
-            <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 p-3">
-              <p className="text-sm font-semibold text-primary">Notion OAuth</p>
-              <p className="text-xs text-muted-foreground">
-                A integração do Notion é gerenciada a nível de equipe via OAuth. 
-                Certifique-se de conectar seu workspace na aba "Integrations".
-              </p>
-            </div>
+            isNotionConnected ? (
+              <div className="flex items-center gap-3 rounded-md border border-primary/20 bg-primary/5 p-4">
+                <div className="flex size-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+                  <Check className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-primary">Notion OAuth Connected</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Seu time já está conectado ao Notion. Preencha as instruções abaixo e clique em Salvar.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 p-6 text-center">
+                <span className="mb-4 flex size-10 items-center justify-center rounded-full bg-primary/10">
+                  {SVGS.notion}
+                </span>
+                <h3 className="mb-2 text-sm font-semibold text-foreground">Conectar ao Notion</h3>
+                <p className="mb-6 max-w-sm text-xs text-muted-foreground">
+                  A integração do Notion utiliza OAuth a nível de equipe. Clique abaixo para conectar.
+                </p>
+                <Button type="button" onClick={() => {
+                  const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/notion?teamId=${teamId}&redirect=${encodeURIComponent(window.location.href)}`;
+                  window.location.href = url;
+                }} className="gap-2 font-semibold">
+                  {SVGS.notion} Connect Notion
+                </Button>
+              </div>
+            )
           ) : (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -1034,6 +1061,8 @@ export default function TeamSettingsPage() {
                                 <ExternalToolConfigSection
                                   role={tool.role}
                                   integration={integration}
+                                  teamIntegrations={integrations}
+                                  teamId={teamId}
                                   onSave={async (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => {
                                     await saveIntegration(tool.role, data);
                                   }}
