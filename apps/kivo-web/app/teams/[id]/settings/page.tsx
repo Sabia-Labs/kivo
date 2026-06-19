@@ -501,6 +501,14 @@ function ExternalToolConfigSection({
                 />
               </div>
             </div>
+          ) : provider === "notion" ? (
+            <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 p-3">
+              <p className="text-sm font-semibold text-primary">Notion OAuth</p>
+              <p className="text-xs text-muted-foreground">
+                A integração do Notion é gerenciada a nível de equipe via OAuth. 
+                Certifique-se de conectar seu workspace na aba "Integrations".
+              </p>
+            </div>
           ) : (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -517,6 +525,7 @@ function ExternalToolConfigSection({
               />
             </div>
           )}
+
 
           {/* Context / Instructions */}
           <div className="space-y-1.5 pt-1">
