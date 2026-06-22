@@ -280,7 +280,7 @@ export async function runLangchainExecutor(taskId: string) {
 
     const adapter = ConnectorFactory.createAdapter(integ.provider, {
       ...(integ.metadata as any || {}),
-      apiKey: integ.apiKey,
+      apiKey: integ.apiKey || teamIntegrations.find(i => i.provider === integ.provider && !i.role)?.apiKey,
     });
 
     if (adapter) {
