@@ -255,30 +255,39 @@ interface ExternalToolConfigSectionProps {
   role: string;
   integration?: Integration;
   onSave: (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => Promise<void>;
+  teamIntegrations: Integration[];
+  teamId: string;
+  initialProvider?: string;
+  initialInstructions?: string;
 }
 
 function ExternalToolConfigSection({
   role,
   integration,
   onSave,
+  teamIntegrations,
+  teamId,
+  initialProvider,
+  initialInstructions,
 }: ExternalToolConfigSectionProps) {
   const { t } = useTranslation();
-  const [provider, setProvider] = useState<IntegrationProvider | "">(integration?.provider || "");
+  const isNotionConnected = teamIntegrations.some(i => i.provider === "notion");
+  const [provider, setProvider] = useState<IntegrationProvider | "">(integration?.provider || (initialProvider as IntegrationProvider) || "");
   const [apiKey, setApiKey] = useState(integration?.apiKey || "");
   const [appId, setAppId] = useState(integration?.metadata?.appId || "");
   const [installationId, setInstallationId] = useState(integration?.metadata?.installationId || "");
-  const [instructions, setInstructions] = useState(integration?.instructions || "");
+  const [instructions, setInstructions] = useState(integration?.instructions || initialInstructions || "");
   const [isSaving, setIsSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    setProvider(integration?.provider || "");
+    setProvider(integration?.provider || (initialProvider as IntegrationProvider) || "");
     setApiKey(integration?.apiKey || "");
     setAppId(integration?.metadata?.appId || "");
     setInstallationId(integration?.metadata?.installationId || "");
-    setInstructions(integration?.instructions || "");
-  }, [integration]);
+    setInstructions(integration?.instructions || initialInstructions || "");
+  }, [integration, initialProvider, initialInstructions]);
 
   const handleSave = async () => {
     if (!provider) {
@@ -501,6 +510,41 @@ function ExternalToolConfigSection({
                 />
               </div>
             </div>
+          ) : provider === "notion" ? (
+            isNotionConnected ? (
+              <div className="flex items-center gap-3 rounded-md border border-primary/20 bg-primary/5 p-4">
+                <div className="flex size-8 items-center justify-center rounded-full bg-primary/20 text-primary">
+                  <Check className="size-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-primary">Notion OAuth Connected</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Seu time já está conectado ao Notion. Preencha as instruções abaixo e clique em Salvar.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 p-6 text-center">
+                <span className="mb-4 flex size-10 items-center justify-center rounded-full bg-primary/10">
+                  {SVGS.notion}
+                </span>
+                <h3 className="mb-2 text-sm font-semibold text-foreground">Conectar ao Notion</h3>
+                <p className="mb-6 max-w-sm text-xs text-muted-foreground">
+                  A integração do Notion utiliza OAuth a nível de equipe. Clique abaixo para conectar.
+                </p>
+                <Button type="button" onClick={() => {
+                  const redirectUrl = new URL(window.location.href);
+                  redirectUrl.searchParams.set("tab", "integrations");
+                  redirectUrl.searchParams.set("openRole", role);
+                  redirectUrl.searchParams.set("openProvider", "notion");
+                  if (instructions) redirectUrl.searchParams.set("openInstructions", instructions);
+                  const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/notion?teamId=${teamId}&redirect=${encodeURIComponent(redirectUrl.toString())}`;
+                  window.location.href = url;
+                }} className="gap-2 font-semibold">
+                  {SVGS.notion} Connect Notion
+                </Button>
+              </div>
+            )
           ) : (
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -517,6 +561,7 @@ function ExternalToolConfigSection({
               />
             </div>
           )}
+
 
           {/* Context / Instructions */}
           <div className="space-y-1.5 pt-1">
@@ -578,6 +623,22 @@ export default function TeamSettingsPage() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"general" | "workflow" | "integrations" | "danger">("general");
+  const [openRoleParam, setOpenRoleParam] = useState<string>("");
+  const [openProviderParam, setOpenProviderParam] = useState<string>("");
+  const [openInstructionsParam, setOpenInstructionsParam] = useState<string>("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab === "general" || tab === "workflow" || tab === "integrations" || tab === "danger") {
+        setActiveTab(tab);
+      }
+      setOpenRoleParam(params.get("openRole") || "");
+      setOpenProviderParam(params.get("openProvider") || "");
+      setOpenInstructionsParam(params.get("openInstructions") || "");
+    }
+  }, []);
 
   const [team, setTeam] = useState<any>(null);
 
@@ -644,6 +705,13 @@ export default function TeamSettingsPage() {
             en[i.role] = true; 
           }
         });
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const openRole = params.get("openRole");
+          if (openRole) {
+            en[openRole] = true;
+          }
+        }
         setEnabledIntegrations(en);
       }
     } catch (err) { toast.error("Failed to load settings data."); } 
@@ -1025,6 +1093,10 @@ export default function TeamSettingsPage() {
                                 <ExternalToolConfigSection
                                   role={tool.role}
                                   integration={integration}
+                                  teamIntegrations={integrations}
+                                  teamId={teamId}
+                                  initialProvider={openRoleParam === tool.role ? openProviderParam : ""}
+                                  initialInstructions={openRoleParam === tool.role ? openInstructionsParam : ""}
                                   onSave={async (data: { provider: string; apiKey?: string; metadata?: any; instructions?: string }) => {
                                     await saveIntegration(tool.role, data);
                                   }}

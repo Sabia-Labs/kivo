@@ -221,7 +221,7 @@ export default function TeamIntegrationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [team, setTeam] = useState<Team | null>(null);
   const [isSavingGitHub, setIsSavingGitHub] = useState(false);
-  const [isSavingNotion, setIsSavingNotion] = useState(false);
+
 
   // PM integrations
   const [selectedPm, setSelectedPm] = useState<string>("internal");
@@ -289,24 +289,7 @@ export default function TeamIntegrationsPage() {
     } finally { setIsSavingGitHub(false); }
   };
 
-  const saveNotion = async () => {
-    if (!notionToken.trim()) { toast.error("Notion Integration Token is required."); return; }
-    setIsSavingNotion(true);
-    try {
-      const r = await fetch(`${API_BASE}/teams/${teamId}/integrations`, {
-        method: "POST", headers: authHeaders(),
-        body: JSON.stringify({
-          provider: "notion",
-          apiKey: notionToken.trim(),
-          metadata: {},
-        }),
-      });
-      if (!r.ok) throw new Error();
-      toast.success("Notion integration saved.");
-    } catch {
-      toast.error("Failed to save Notion integration.");
-    } finally { setIsSavingNotion(false); }
-  };
+
 
   if (authLoading || isLoading) {
     return (
@@ -386,23 +369,39 @@ export default function TeamIntegrationsPage() {
 
           {selectedDoc === "notion" && (
             <div className="mt-6 flex flex-col gap-4 border-t border-border pt-6">
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="notion-token" className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Integration Token
-                </label>
-                <Input id="notion-token" type="password" value={notionToken}
-                  onChange={(e) => setNotionToken(e.target.value)}
-                  placeholder="secret_..." />
-                <p className="text-xs text-muted-foreground">
-                  Create an internal integration in your <a href="https://www.notion.so/my-integrations" target="_blank" rel="noreferrer" className="text-primary hover:underline">Notion settings</a> and paste the token here.
-                </p>
-              </div>
-              <Button id="save-notion" className="gap-2 font-semibold"
-                disabled={isSavingNotion} onClick={saveNotion}>
-                {isSavingNotion
-                  ? <><Loader2 className="size-3.5 animate-spin" /> Saving…</>
-                  : <><Check className="size-3.5" /> Save Notion Integration</>}
-              </Button>
+              {notionToken ? (
+                <div className="flex items-center justify-between rounded-xl border border-border bg-card p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
+                      <Check className="size-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Notion Connected</p>
+                      <p className="text-xs text-muted-foreground">Your team is synced with Notion.</p>
+                    </div>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/notion?teamId=${teamId}&redirect=${encodeURIComponent(window.location.href)}`;
+                    window.location.href = url;
+                  }}>
+                    Reconnect
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/10 p-6 py-10 text-center">
+                  <NotionIcon className="mb-4 size-8 text-foreground/80" />
+                  <h3 className="mb-2 text-sm font-semibold text-foreground">Connect your Notion Workspace</h3>
+                  <p className="mb-6 max-w-sm text-xs text-muted-foreground">
+                    Link your team to Notion to allow your agents to read from your knowledge base and documentation.
+                  </p>
+                  <Button id="connect-notion" onClick={() => {
+                    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/notion?teamId=${teamId}&redirect=${encodeURIComponent(window.location.href)}`;
+                    window.location.href = url;
+                  }} className="gap-2 font-semibold">
+                    <NotionIcon className="size-4" /> Connect Notion
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

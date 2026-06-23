@@ -145,7 +145,8 @@ async function decideAndCallMCPs(state: ChatEngineStateType): Promise<Partial<Ch
     const teamIntegrations = await db.select().from(integrations).where(eq(integrations.teamId, state.teamId));
     
     for (const integ of teamIntegrations) {
-      const config = { ...(integ.metadata as object || {}), apiKey: integ.apiKey };
+      const fallbackApiKey = teamIntegrations.find(i => i.provider === integ.provider && !i.role)?.apiKey;
+      const config = { ...(integ.metadata as object || {}), apiKey: integ.apiKey || fallbackApiKey };
       const adapter = ConnectorFactory.createAdapter(integ.provider, config);
       
       if (adapter) {

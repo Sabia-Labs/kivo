@@ -4,7 +4,7 @@ import { eq, and, gt } from "drizzle-orm";
 import { OAuth2Client } from "google-auth-library";
 import { Resend } from "resend";
 import { db } from "../db/client";
-import { users, workspaces, verificationCodes, plans, llmModels } from "../db/schema";
+import { users, workspaces, verificationCodes, plans, llmModels, integrations } from "../db/schema";
 import { loginSchema, signupSchema, otpSendSchema } from "../schemas/auth.schema";
 import { signToken } from "../lib/jwt";
 import { authMiddleware } from "../middleware/authMiddleware";
@@ -459,5 +459,112 @@ authRouter.get("/google/callback", async (req, res) => {
       hasClientSecret: Boolean(process.env.GOOGLE_CLIENT_SECRET),
     });
     res.status(500).send("Authentication failed");
+  }
+});
+
+// ── GET /auth/notion ─────────────────────────────────────────────────────────
+authRouter.get("/notion", (req, res) => {
+  const teamId = req.query.teamId as string;
+  const redirect = (req.query.redirect as string) || (process.env.FRONTEND_URL || "http://localhost:3000");
+
+  if (!teamId) {
+    return res.status(400).send("Missing teamId");
+  }
+
+  if (!process.env.NOTION_CLIENT_ID || !process.env.NOTION_REDIRECT_URI) {
+    console.error("[auth/notion] Missing NOTION_CLIENT_ID or NOTION_REDIRECT_URI env vars");
+    return res.status(500).send("Notion OAuth is not configured");
+  }
+
+  const stateObj = { teamId, redirect };
+  const state = Buffer.from(JSON.stringify(stateObj)).toString("base64url");
+
+  const authUrl = new URL("https://api.notion.com/v1/oauth/authorize");
+  authUrl.searchParams.set("client_id", process.env.NOTION_CLIENT_ID);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("owner", "user");
+  authUrl.searchParams.set("redirect_uri", process.env.NOTION_REDIRECT_URI);
+  authUrl.searchParams.set("state", state);
+
+  res.redirect(authUrl.toString());
+});
+
+// ── GET /auth/notion/callback ────────────────────────────────────────────────
+authRouter.get("/notion/callback", async (req, res) => {
+  try {
+    const code = req.query.code as string;
+    const stateStr = req.query.state as string;
+
+    if (!code) {
+      return res.status(400).send("Missing Notion authorization code");
+    }
+
+    if (!stateStr) {
+      return res.status(400).send("Missing state parameter");
+    }
+
+    if (!process.env.NOTION_CLIENT_ID || !process.env.NOTION_CLIENT_SECRET || !process.env.NOTION_REDIRECT_URI) {
+      return res.status(500).send("Notion OAuth is not configured");
+    }
+
+    let state: { teamId: string; redirect: string };
+    try {
+      state = JSON.parse(Buffer.from(stateStr, "base64url").toString("utf-8"));
+    } catch (e) {
+      return res.status(400).send("Invalid state parameter");
+    }
+
+    const { teamId, redirect } = state;
+
+    // Exchange code for token
+    const tokenResponse = await fetch("https://api.notion.com/v1/oauth/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${Buffer.from(`${process.env.NOTION_CLIENT_ID}:${process.env.NOTION_CLIENT_SECRET}`).toString("base64")}`,
+      },
+      body: JSON.stringify({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: process.env.NOTION_REDIRECT_URI,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errText = await tokenResponse.text();
+      console.error("[auth/notion/callback] Token exchange failed:", errText);
+      return res.status(400).send("Failed to exchange Notion code for token");
+    }
+
+    const data = await tokenResponse.json() as any;
+    const accessToken = data.access_token;
+    const workspaceId = data.workspace_id;
+    const workspaceName = data.workspace_name;
+    const botId = data.bot_id;
+
+    // Save integration
+    const [existing] = await db
+      .select()
+      .from(integrations)
+      .where(and(eq(integrations.teamId, teamId), eq(integrations.provider, "notion")));
+
+    if (existing) {
+      await db.update(integrations).set({
+        apiKey: accessToken,
+        metadata: { workspaceId, workspaceName, botId },
+      }).where(eq(integrations.id, existing.id));
+    } else {
+      await db.insert(integrations).values({
+        teamId,
+        provider: "notion",
+        apiKey: accessToken,
+        metadata: { workspaceId, workspaceName, botId },
+      });
+    }
+
+    res.redirect(redirect);
+  } catch (err) {
+    console.error("[auth/notion/callback] Notion Auth Error:", err);
+    res.status(500).send("Notion Authentication failed");
   }
 });
