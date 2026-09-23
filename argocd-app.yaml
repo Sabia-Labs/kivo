@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: kivo-staging
+  name: kivo-hetzner
   namespace: argocd
 spec:
   project: default
@@ -10,6 +10,7 @@ spec:
     targetRevision: main
     path: charts/kivo
     helm:
+      releaseName: kivo-staging
       valueFiles:
         - values-staging.yaml
   destination:
